@@ -1,0 +1,13 @@
+# Скопируйте в config.yaml. Креды S3 — только здесь (storage_service).
+# Kafka берётся из shared config (shared/config/default.yaml или SHARED_CONFIG_PATH).
+
+logging:
+  level: INFO
+
+s3:
+  endpoint_url: https://s3.example.com
+  key_id: ""
+  secret_key: ""
+  bucket_name: ""
+  tenant_id: ""
+  region: ru-central-1

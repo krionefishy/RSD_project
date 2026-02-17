@@ -1,0 +1,3 @@
+S3_UPLOAD_CONSUMERS: list = []
+
+__all__ = ["S3_UPLOAD_CONSUMERS"]

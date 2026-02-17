@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
 from typing import Optional
-import os
+
 import yaml
+
+from shared.config_utils import get_kafka_settings_from_shared
 
 SERVICE_URL_KEYS = (
     "users_service_url",
@@ -16,6 +19,7 @@ class Settings:
     DATABASE_URL: Optional[str] = None
     LOGGING_LEVEL: str = "INFO"
     SERVICES: dict[str, Optional[str]] = {k: None for k in SERVICE_URL_KEYS}
+    KAFKA: Optional[dict] = None  # из shared config
 
 
 def setup_config(config_path: Optional[str] = None) -> Settings:
@@ -40,6 +44,7 @@ def setup_config(config_path: Optional[str] = None) -> Settings:
             for key in SERVICE_URL_KEYS:
                 if key in services and services[key]:
                     Settings.SERVICES[key] = services[key]
+        Settings.KAFKA = get_kafka_settings_from_shared(os.environ)
     else:
         Settings.DATABASE_URL = os.getenv("DATABASE_URL")
         if Settings.DATABASE_URL and Settings.DATABASE_URL.startswith("postgresql://"):
@@ -56,4 +61,5 @@ def setup_config(config_path: Optional[str] = None) -> Settings:
             Settings.SERVICES[key] = os.getenv(key.upper())
     if not Settings.DATABASE_URL:
         raise ValueError("DATABASE_URL is not set")
+    Settings.KAFKA = get_kafka_settings_from_shared(os.environ)
     return Settings

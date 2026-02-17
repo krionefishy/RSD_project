@@ -1,0 +1,9 @@
+logging:
+  level: WARNING
+
+services:
+  users_service_url: http://localhost:8001
+  checklists_service_url: http://localhost:8002
+  reports_service_url: http://localhost:8003
+  organizations_service_url: http://localhost:8004
+  admin_service_url: http://localhost:8005

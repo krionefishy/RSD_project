@@ -1,7 +1,10 @@
+import os
 from pathlib import Path
 from typing import Optional
-import os
+
 import yaml
+
+from shared.config_utils import get_kafka_settings_from_shared
 
 
 class Settings:
@@ -11,6 +14,7 @@ class Settings:
     ORGANIZATIONS_SERVICE_URL: str = "http://localhost:8004"
     ADMIN_SERVICE_URL: str = "http://localhost:8005"
     LOGGING_LEVEL: str = "INFO"
+    KAFKA: Optional[dict] = None  # из shared config
 
 
 def setup_config(config_path: Optional[str] = None) -> Settings:
@@ -37,4 +41,5 @@ def setup_config(config_path: Optional[str] = None) -> Settings:
     for key in ("USERS_SERVICE_URL", "CHECKLISTS_SERVICE_URL", "REPORTS_SERVICE_URL", "ORGANIZATIONS_SERVICE_URL", "ADMIN_SERVICE_URL"):
         if os.getenv(key):
             setattr(Settings, key, os.getenv(key))
+    Settings.KAFKA = get_kafka_settings_from_shared(os.environ)
     return Settings

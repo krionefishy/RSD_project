@@ -1,9 +1,7 @@
-# Миграции в стиле Barista_KPI_project: async-движок, compare_type, load_dotenv
 import asyncio
 import os
 import sys
 
-# Корень монорепо в path для импорта backend.*
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), "..")))
 
 from logging.config import fileConfig
@@ -14,7 +12,6 @@ from alembic import context
 
 from backend.shared.base import Base
 
-# Импорт моделей всех сервисов для autogenerate (метаданные в Base.metadata)
 try:
     from backend.users_service.app.repository.models import User  # noqa: F401
 except Exception:

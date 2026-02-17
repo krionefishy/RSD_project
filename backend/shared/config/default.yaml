@@ -1,0 +1,6 @@
+# Общий конфиг для всех сервисов (Kafka и т.п.).
+# Путь задаётся через SHARED_CONFIG_PATH или по умолчанию shared/config/default.yaml.
+kafka:
+  bootstrap_servers: localhost:9092
+  consumer_group: audit_trail_consumer
+  max_request_size: 10485760

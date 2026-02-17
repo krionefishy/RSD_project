@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/**"
+      - "migrations/**"
+      - ".github/workflows/ci.yaml"
+      - "docker-compose.ci.yaml"
+      - "alembic.ini"
+      - "justfile"
+  pull_request:
+    branches: ["main", "dev"]
+    paths:
+      - "backend/**"
+      - "migrations/**"
+      - ".github/workflows/ci.yaml"
+      - "docker-compose.ci.yaml"
+      - "alembic.ini"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies (all services)
+        run: |
+          pip install -r backend/users_service/requirements.txt
+          pip install -r backend/checklists_service/requirements.txt
+          pip install -r backend/reports_service/requirements.txt
+          pip install -r backend/organizations_service/requirements.txt
+          pip install -r backend/admin_service/requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Start database
+        run: |
+          docker compose -f docker-compose.ci.yaml up -d
+          timeout 20s bash -c 'until docker compose -f docker-compose.ci.yaml exec -T db pg_isready -U app -d audit_trail_test; do sleep 2; done'
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_test
+        run: alembic upgrade head
+
+      - name: Run tests (all services)
+        env:
+          DATABASE_URL: postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_test
+        run: |
+          cd backend && \
+          for svc in users_service checklists_service reports_service organizations_service admin_service; do
+            PYTHONPATH=.:$svc CONFIG_PATH=$svc/config.test.yaml pytest $svc/tests/ -v --tb=short
+          done
+
+      - name: Stop database
+        if: always()
+        run: docker compose -f docker-compose.ci.yaml down --remove-orphans
