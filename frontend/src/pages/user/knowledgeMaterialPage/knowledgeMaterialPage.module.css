@@ -1,0 +1,129 @@
+.container {
+  min-height: 100%;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  cursor: pointer;
+  color: #666;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.backButton:hover {
+  color: #000;
+}
+
+.backButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.content {
+  padding: 0 20px 20px;
+}
+
+.card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.description {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 24px;
+  font-style: italic;
+}
+
+/* Formatted text styles */
+.text {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.text h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 24px 0 16px;
+  color: #000;
+}
+
+.text h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 20px 0 12px;
+  color: #000;
+}
+
+.text p {
+  margin: 0 0 16px;
+}
+
+.text ul,
+.text ol {
+  margin: 0 0 16px;
+  padding-left: 24px;
+}
+
+.text li {
+  margin-bottom: 8px;
+}
+
+.text strong {
+  font-weight: 600;
+  color: #000;
+}
+
+/* Attachments */
+.attachments {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.attachments h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.attachmentsPlaceholder {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+/* Actions */
+.actionSection {
+  margin-top: 24px;
+}
+
+.completedMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background-color: #e8f5e9;
+  border-radius: 12px;
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.completedMessage svg {
+  width: 20px;
+  height: 20px;
+  stroke: #4caf50;
+}

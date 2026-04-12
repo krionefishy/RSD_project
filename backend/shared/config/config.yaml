@@ -1,0 +1,41 @@
+# Общий конфигурационный файл для всех микросервисов
+# Каждый сервис берет отсюда нужные секции через переменные окружения
+
+# База данных (общая для всех сервисов)
+database:
+  host: ${DB_HOST:-db}
+  port: ${DB_PORT:-5432}
+  user: ${DB_USER:-app}
+  password: ${DB_PASSWORD:-appsecret}
+  database: ${DB_NAME:-rsd_db}
+
+# Логирование (общие настройки)
+logging:
+  level: ${LOG_LEVEL:-INFO}
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Kafka (общий брокер сообщений)
+kafka:
+  bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+  client_id: ${SERVICE_NAME:-unknown}
+
+# Redis (общий кэш)
+redis:
+  host: ${REDIS_HOST:-redis}
+  port: ${REDIS_PORT:-6379}
+  password: ${REDIS_PASSWORD:-}
+  db: ${REDIS_DB:-0}
+
+# URL микросервисов (для межсервисного общения)
+services:
+  gateway_url: ${GATEWAY_URL:-http://gateway:8000}
+  auth_service_url: ${AUTH_SERVICE_URL:-http://auth_service:8001}
+  knowledge_base_service_url: ${KNOWLEDGE_BASE_SERVICE_URL:-http://knowledge_base_service:8002}
+  # Добавлять новые сервисы здесь по мере создания
+
+# Настройки безопасности
+security:
+  jwt_secret: ${JWT_SECRET:-change-me-in-production}
+  jwt_algorithm: HS256
+  access_token_expire_minutes: 30
+  refresh_token_expire_days: 7

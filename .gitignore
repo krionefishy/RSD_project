@@ -56,3 +56,9 @@ out/
 # OS
 .DS_Store
 Thumbs.db
+
+# Infrastructure
+letsencrypt/
+
+frontend_example/
+results/
