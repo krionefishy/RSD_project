@@ -8,9 +8,9 @@ export default function AdminPersonnelDashboardPage() {
   if (!user) return null;
 
   const stats = [
-    { label: "Всего сотрудников", value: 142, icon: Users, color: "#1A56DB", bg: "#EFF6FF" },
+    { label: "Всего сотрудников", value: 142, icon: Users, color: "#2E7D32", bg: "#E8F5E9" },
     { label: "На смене", value: 98, icon: UserCheck, color: "#22C55E", bg: "#F0FDF4" },
-    { label: "В отпуске", value: 12, icon: Clock, color: "#0891B2", bg: "#ECFEFF" },
+    { label: "В отпуске", value: 12, icon: Clock, color: "#F5A623", bg: "#ECFEFF" },
     { label: "На больничном", value: 4, icon: UserX, color: "#F59E0B", bg: "#FFFBEB" },
   ];
 
@@ -22,7 +22,7 @@ export default function AdminPersonnelDashboardPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <div className="flex items-center gap-3">
           <Avatar name={user.name} size={44} />
           <div>

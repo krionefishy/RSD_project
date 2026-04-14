@@ -73,7 +73,7 @@ export default function CreateTestPage() {
             <p style={{ color: "#64748B", fontSize: 12, marginBottom: 8 }}>Варианты ответов (выберите правильный):</p>
             {q.options.map((opt, oIdx) => (
               <div key={oIdx} className="flex items-center gap-2 mb-2">
-                <input type="radio" name={`correct-${q.id}`} checked={q.correct === oIdx} onChange={() => updateQuestion(q.id, "correct", oIdx)} className="w-4 h-4" style={{ accentColor: "#1A56DB" }} />
+                <input type="radio" name={`correct-${q.id}`} checked={q.correct === oIdx} onChange={() => updateQuestion(q.id, "correct", oIdx)} className="w-4 h-4" style={{ accentColor: "#2E7D32" }} />
                 <input type="text" value={opt} onChange={(e) => updateOption(q.id, oIdx, e.target.value)} placeholder={`Вариант ${oIdx + 1}`} className="flex-1 h-9 px-3 rounded-lg border" style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }} />
                 {q.options.length > 2 && (
                   <button onClick={() => removeOption(q.id, oIdx)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#FEF2F2" }}>
@@ -82,19 +82,19 @@ export default function CreateTestPage() {
                 )}
               </div>
             ))}
-            <button onClick={() => addOption(q.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg mt-1" style={{ color: "#7C3AED", fontSize: 13, fontWeight: 500 }}>
+            <button onClick={() => addOption(q.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg mt-1" style={{ color: "#C41E3A", fontSize: 13, fontWeight: 500 }}>
               <Plus size={14} />
               Добавить вариант
             </button>
           </div>
         ))}
 
-        <button onClick={addQuestion} className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2" style={{ border: "2px dashed #7C3AED", color: "#7C3AED", fontSize: 14, fontWeight: 600, background: "transparent" }}>
+        <button onClick={addQuestion} className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2" style={{ border: "2px dashed #C41E3A", color: "#C41E3A", fontSize: 14, fontWeight: 600, background: "transparent" }}>
           <Plus size={18} />
           Добавить вопрос
         </button>
 
-        <button className="w-full h-12 rounded-[10px] flex items-center justify-center" style={{ background: "#7C3AED", color: "#fff", fontSize: 15, fontWeight: 600, marginTop: 8 }}>
+        <button className="w-full h-12 rounded-[10px] flex items-center justify-center" style={{ background: "#C41E3A", color: "#fff", fontSize: 15, fontWeight: 600, marginTop: 8 }}>
           Создать тест
         </button>
       </div>

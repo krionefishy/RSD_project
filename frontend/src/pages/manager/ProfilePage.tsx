@@ -16,7 +16,7 @@ export default function ManagerProfilePage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-8 pb-6 flex flex-col items-center" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-8 pb-6 flex flex-col items-center" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <Avatar name={user.name} size={72} />
         <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginTop: 12 }}>{user.name}</h2>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{user.position}</p>

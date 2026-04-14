@@ -9,14 +9,14 @@ export default function AdminPODashboardPage() {
   if (!user) return null;
 
   const stats = [
-    { label: "Всего аккаунтов", value: accounts.length, icon: Users, color: "#1A56DB", bg: "#EFF6FF" },
+    { label: "Всего аккаунтов", value: accounts.length, icon: Users, color: "#2E7D32", bg: "#E8F5E9" },
     { label: "Активных", value: accounts.filter(a => a.status === "active").length, icon: Shield, color: "#22C55E", bg: "#F0FDF4" },
     { label: "Заблокированных", value: accounts.filter(a => a.status === "blocked").length, icon: Shield, color: "#EF4444", bg: "#FEF2F2" },
   ];
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <div className="flex items-center gap-3">
           <Avatar name={user.name} size={44} />
           <div>
@@ -62,8 +62,8 @@ export default function AdminPODashboardPage() {
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Системные функции</p>
           <div className="grid grid-cols-2 gap-3">
-            <button className="p-4 rounded-xl text-center" style={{ background: "#EFF6FF" }}>
-              <Database size={24} color="#1A56DB" className="mx-auto mb-2" />
+            <button className="p-4 rounded-xl text-center" style={{ background: "#E8F5E9" }}>
+              <Database size={24} color="#2E7D32" className="mx-auto mb-2" />
               <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>Резервное копирование</p>
             </button>
             <button className="p-4 rounded-xl text-center" style={{ background: "#F0FDF4" }}>

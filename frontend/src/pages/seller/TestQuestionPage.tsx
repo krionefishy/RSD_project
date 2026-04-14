@@ -39,7 +39,7 @@ export default function TestQuestionPage() {
       <div style={{ background: "#F8FAFC", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="text-center px-6">
           <p style={{ color: "#1E293B", fontSize: 18, fontWeight: 600, marginBottom: 8 }}>Тест не найден</p>
-          <button onClick={() => navigate(-1)} style={{ color: "#1A56DB", fontSize: 14, fontWeight: 500 }}>← Назад к тестам</button>
+          <button onClick={() => navigate(-1)} style={{ color: "#2E7D32", fontSize: 14, fontWeight: 500 }}>← Назад к тестам</button>
         </div>
       </div>
     );
@@ -72,7 +72,7 @@ export default function TestQuestionPage() {
         <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
           <div
             className="h-full rounded-full transition-all duration-300"
-            style={{ width: `${progress}%`, background: "#1A56DB" }}
+            style={{ width: `${progress}%`, background: "#2E7D32" }}
           />
         </div>
       </div>
@@ -97,16 +97,16 @@ export default function TestQuestionPage() {
                 onClick={() => setAnswers((prev) => ({ ...prev, [currentQ]: i }))}
                 className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl text-left"
                 style={{
-                  background: selected ? "#EFF6FF" : "#fff",
-                  border: `2px solid ${selected ? "#1A56DB" : "#E2E8F0"}`,
+                  background: selected ? "#E8F5E9" : "#fff",
+                  border: `2px solid ${selected ? "#2E7D32" : "#E2E8F0"}`,
                   transition: "all 0.15s",
                 }}
               >
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{
-                    border: `2px solid ${selected ? "#1A56DB" : "#CBD5E1"}`,
-                    background: selected ? "#1A56DB" : "transparent",
+                    border: `2px solid ${selected ? "#2E7D32" : "#CBD5E1"}`,
+                    background: selected ? "#2E7D32" : "transparent",
                   }}
                 >
                   {selected && (
@@ -115,7 +115,7 @@ export default function TestQuestionPage() {
                 </div>
                 <span
                   style={{
-                    color: selected ? "#1A56DB" : "#374151",
+                    color: selected ? "#2E7D32" : "#374151",
                     fontSize: 14,
                     fontWeight: selected ? 500 : 400,
                     lineHeight: 1.4,
@@ -136,7 +136,7 @@ export default function TestQuestionPage() {
           disabled={answers[currentQ] === undefined}
           className="w-full h-12 rounded-[10px] flex items-center justify-center"
           style={{
-            background: answers[currentQ] !== undefined ? "#1A56DB" : "#E2E8F0",
+            background: answers[currentQ] !== undefined ? "#2E7D32" : "#E2E8F0",
             color: answers[currentQ] !== undefined ? "#fff" : "#94A3B8",
             fontSize: 15,
             fontWeight: 600,

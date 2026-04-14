@@ -12,8 +12,8 @@ import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 
 const menuItems = [
-  { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#1A56DB" },
-  { icon: Plane, label: "Мои отпуска и отгулы", path: "", color: "#7C3AED" },
+  { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#2E7D32" },
+  { icon: Plane, label: "Мои отпуска и отгулы", path: "", color: "#C41E3A" },
   { icon: Info, label: "О приложении", path: "", color: "#64748B" },
 ];
 
@@ -28,7 +28,7 @@ export default function ProfilePage() {
       {/* Profile header */}
       <div
         className="px-4 pt-8 pb-6 flex flex-col items-center"
-        style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <div className="relative">
           <Avatar name={user.name} size={80} />
@@ -36,7 +36,7 @@ export default function ProfilePage() {
             className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center"
             style={{ background: "#fff" }}
           >
-            <Camera size={14} color="#1A56DB" />
+            <Camera size={14} color="#2E7D32" />
           </button>
         </div>
         <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginTop: 12 }}>{user.name}</h2>
@@ -53,13 +53,12 @@ export default function ProfilePage() {
           {[
             { label: "Email", value: user.email },
             { label: "Телефон", value: user.phone },
-            { label: "Дата приёма", value: user.joinDate },
             { label: "Блок", value: user.block },
           ].map((item, i) => (
             <div
               key={i}
               className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: i < 3 ? "1px solid #F1F5F9" : "none" }}
+              style={{ borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}
             >
               <span style={{ color: "#64748B", fontSize: 13 }}>{item.label}</span>
               <span style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{item.value}</span>

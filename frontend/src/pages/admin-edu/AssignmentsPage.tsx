@@ -22,7 +22,7 @@ const assignments: Assignment[] = [
 
 const statusConfig = {
   completed: { label: "Сдан", color: "#22C55E", bg: "#F0FDF4", icon: CheckCircle },
-  "in-progress": { label: "В процессе", color: "#1A56DB", bg: "#EFF6FF", icon: Clock },
+  "in-progress": { label: "В процессе", color: "#2E7D32", bg: "#E8F5E9", icon: Clock },
   overdue: { label: "Просрочен", color: "#EF4444", bg: "#FEF2F2", icon: AlertTriangle },
   pending: { label: "Ожидает", color: "#94A3B8", bg: "#F1F5F9", icon: Clock },
 };
@@ -44,7 +44,7 @@ export default function AdminEduAssignmentsPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #7C3AED 0%, #6D28D9 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #C41E3A 0%, #A3152E 100%)" }}>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Назначения</h1>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 2 }}>Контроль прохождения тестов и курсов</p>
       </div>
@@ -52,7 +52,7 @@ export default function AdminEduAssignmentsPage() {
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl p-3 text-center" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <p style={{ fontSize: 20, fontWeight: 700, color: "#1A56DB" }}>{inProgressCount}</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: "#2E7D32" }}>{inProgressCount}</p>
             <p style={{ fontSize: 10, color: "#64748B" }}>В процессе</p>
           </div>
           <div className="rounded-xl p-3 text-center" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
@@ -72,7 +72,7 @@ export default function AdminEduAssignmentsPage() {
 
         <div className="flex gap-2">
           {[{ key: "all", label: "Все" }, { key: "overdue", label: "Просроченные" }, { key: "completed", label: "Сдавшие" }].map((f) => (
-            <button key={f.key} onClick={() => setFilter(f.key as any)} className="px-3 py-1.5 rounded-lg" style={{ background: filter === f.key ? "#7C3AED" : "#F1F5F9", color: filter === f.key ? "#fff" : "#374151", fontSize: 12, fontWeight: filter === f.key ? 600 : 400 }}>
+            <button key={f.key} onClick={() => setFilter(f.key as any)} className="px-3 py-1.5 rounded-lg" style={{ background: filter === f.key ? "#C41E3A" : "#F1F5F9", color: filter === f.key ? "#fff" : "#374151", fontSize: 12, fontWeight: filter === f.key ? 600 : 400 }}>
               {f.label}
             </button>
           ))}
@@ -105,7 +105,7 @@ export default function AdminEduAssignmentsPage() {
           )}
         </div>
 
-        <button className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#7C3AED", color: "#fff", fontSize: 14, fontWeight: 600 }}>
+        <button className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#C41E3A", color: "#fff", fontSize: 14, fontWeight: 600 }}>
           <Users size={16} />
           Назначить тест сотрудникам
         </button>

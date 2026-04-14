@@ -13,14 +13,14 @@ export default function DashboardPage() {
   if (!user) return null;
 
   const planPercent = salesData.daily.percent;
-  const planColor = planPercent >= 100 ? "#22C55E" : planPercent >= 70 ? "#1A56DB" : "#F59E0B";
+  const planColor = planPercent >= 100 ? "#22C55E" : planPercent >= 70 ? "#2E7D32" : "#F59E0B";
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
       <div
         className="px-4 pt-6 pb-5"
-        style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -94,8 +94,8 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#F5F3FF" }}>
-                <BookOpen size={16} color="#7C3AED" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FCE4EC" }}>
+                <BookOpen size={16} color="#C41E3A" />
               </div>
               <div>
                 <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600 }}>Обучение</p>
@@ -105,7 +105,7 @@ export default function DashboardPage() {
             <button
               onClick={() => navigate("/seller/knowledge")}
               className="px-3 py-1.5 rounded-[8px]"
-              style={{ background: "#7C3AED", color: "#fff", fontSize: 12, fontWeight: 500 }}
+              style={{ background: "#C41E3A", color: "#fff", fontSize: 12, fontWeight: 500 }}
             >
               Продолжить
             </button>
@@ -113,10 +113,10 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between mb-1">
               <span style={{ color: "#64748B", fontSize: 12 }}>Прогресс обучения</span>
-              <span style={{ color: "#7C3AED", fontSize: 12, fontWeight: 600 }}>58%</span>
+              <span style={{ color: "#C41E3A", fontSize: 12, fontWeight: 600 }}>58%</span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
-              <div className="h-full rounded-full" style={{ width: "58%", background: "#7C3AED" }} />
+              <div className="h-full rounded-full" style={{ width: "58%", background: "#C41E3A" }} />
             </div>
           </div>
         </div>

@@ -31,8 +31,8 @@ export default function MaterialPage() {
           <span
             className="px-2 py-1 rounded-md"
             style={{
-              background: material.type === "video" ? "#F5F3FF" : material.type === "document" ? "#ECFEFF" : "#F0FDF4",
-              color: material.type === "video" ? "#7C3AED" : material.type === "document" ? "#0891B2" : "#059669",
+              background: material.type === "video" ? "#FCE4EC" : material.type === "document" ? "#ECFEFF" : "#F0FDF4",
+              color: material.type === "video" ? "#C41E3A" : material.type === "document" ? "#F5A623" : "#059669",
               fontSize: 11,
               fontWeight: 600,
             }}
@@ -105,7 +105,7 @@ export default function MaterialPage() {
                   const parts = line.replace("- **", "").split("** — ");
                   return (
                     <div key={i} className="flex gap-2 mb-2 ml-2">
-                      <span style={{ color: "#1A56DB", fontSize: 14 }}>•</span>
+                      <span style={{ color: "#2E7D32", fontSize: 14 }}>•</span>
                       <p style={{ color: "#374151", fontSize: 14 }}>
                         <span style={{ fontWeight: 600 }}>{parts[0]}</span>
                         {parts[1] ? ` — ${parts[1]}` : ""}
@@ -116,7 +116,7 @@ export default function MaterialPage() {
                 if (line.match(/^\d+\./)) {
                   return (
                     <div key={i} className="flex gap-2 mb-2 ml-2">
-                      <span style={{ color: "#1A56DB", fontSize: 14, fontWeight: 600, minWidth: 20 }}>
+                      <span style={{ color: "#2E7D32", fontSize: 14, fontWeight: 600, minWidth: 20 }}>
                         {line.split(".")[0]}.
                       </span>
                       <p style={{ color: "#374151", fontSize: 14 }}>{line.replace(/^\d+\.\s/, "")}</p>
@@ -136,12 +136,12 @@ export default function MaterialPage() {
               <p style={{ color: "#374151", fontSize: 14, lineHeight: 1.7 }}>
                 Добро пожаловать в раздел «{material.title}». Этот материал поможет вам освоить ключевые навыки работы в торговой точке.
               </p>
-              <div className="mt-4 p-4 rounded-xl" style={{ background: "#EFF6FF" }}>
-                <p style={{ color: "#1A56DB", fontSize: 13, fontWeight: 600 }}>💡 Ключевые моменты</p>
+              <div className="mt-4 p-4 rounded-xl" style={{ background: "#E8F5E9" }}>
+                <p style={{ color: "#2E7D32", fontSize: 13, fontWeight: 600 }}>💡 Ключевые моменты</p>
                 <ul className="mt-2 flex flex-col gap-1.5">
                   {["Изучите теоретическую часть", "Посмотрите примеры из практики", "Выполните практические задания", "Пройдите проверочный тест"].map((item, i) => (
                     <li key={i} className="flex gap-2">
-                      <span style={{ color: "#1A56DB" }}>•</span>
+                      <span style={{ color: "#2E7D32" }}>•</span>
                       <span style={{ color: "#374151", fontSize: 13 }}>{item}</span>
                     </li>
                   ))}

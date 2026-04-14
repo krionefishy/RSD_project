@@ -8,7 +8,7 @@ export function MobileShell({ children }: MobileShellProps) {
   return (
     <div
       className="min-h-screen flex items-start justify-center"
-      style={{ background: "linear-gradient(135deg, #1A56DB 0%, #0D3A9E 100%)" }}
+      style={{ background: "linear-gradient(135deg, #2E7D32 0%, #0D3A9E 100%)" }}
     >
       <div
         className="relative w-full max-w-[430px] min-h-screen shadow-2xl overflow-hidden"

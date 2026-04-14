@@ -35,8 +35,8 @@ export default function ManagerTemplate() {
               onClick={() => navigate(tab.path)}
               className="flex-1 flex flex-col items-center justify-center gap-0.5"
             >
-              <tab.Icon size={22} color={active ? "#1A56DB" : "#94A3B8"} strokeWidth={active ? 2.5 : 1.8} />
-              <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, color: active ? "#1A56DB" : "#94A3B8", lineHeight: 1.2 }}>
+              <tab.Icon size={22} color={active ? "#2E7D32" : "#94A3B8"} strokeWidth={active ? 2.5 : 1.8} />
+              <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, color: active ? "#2E7D32" : "#94A3B8", lineHeight: 1.2 }}>
                 {tab.label}
               </span>
             </button>

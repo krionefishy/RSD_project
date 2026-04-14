@@ -13,7 +13,7 @@ export function ProgressCircle({
   value,
   size = 120,
   strokeWidth = 10,
-  color = "#1A56DB",
+  color = "#2E7D32",
   trackColor = "#E2E8F0",
   children,
 }: ProgressCircleProps) {

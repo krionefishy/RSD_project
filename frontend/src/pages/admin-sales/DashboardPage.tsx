@@ -8,7 +8,7 @@ export default function AdminSalesDashboardPage() {
   if (!user) return null;
 
   const stats = [
-    { label: "Выручка сети", value: "12.4M ₽", change: "+8.2%", icon: DollarSign, color: "#1A56DB" },
+    { label: "Выручка сети", value: "12.4M ₽", change: "+8.2%", icon: DollarSign, color: "#2E7D32" },
     { label: "Количество продаж", value: "8,420", change: "+12.1%", icon: ShoppingCart, color: "#22C55E" },
     { label: "Средний чек", value: "1,475 ₽", change: "-2.4%", icon: BarChart3, color: "#F59E0B" },
   ];
@@ -22,7 +22,7 @@ export default function AdminSalesDashboardPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <div className="flex items-center gap-3">
           <Avatar name={user.name} size={44} />
           <div>
@@ -59,7 +59,7 @@ export default function AdminSalesDashboardPage() {
                   <span style={{ color: "#1E293B", fontSize: 13, fontWeight: 600 }}>{block.sales}</span>
                 </div>
                 <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
-                  <div className="h-full rounded-full" style={{ width: `${block.percent}%`, background: block.percent >= 90 ? "#22C55E" : block.percent >= 70 ? "#1A56DB" : "#F59E0B" }} />
+                  <div className="h-full rounded-full" style={{ width: `${block.percent}%`, background: block.percent >= 90 ? "#22C55E" : block.percent >= 70 ? "#2E7D32" : "#F59E0B" }} />
                 </div>
               </div>
             ))}

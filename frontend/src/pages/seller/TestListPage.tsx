@@ -5,7 +5,7 @@ import { tests } from "../../mock/mockData";
 
 const statusConfig = {
   passed: { label: "Пройден", icon: <CheckCircle size={15} color="#22C55E" />, color: "#22C55E", bg: "#F0FDF4" },
-  assigned: { label: "Назначен", icon: <AlertCircle size={15} color="#1A56DB" />, color: "#1A56DB", bg: "#EFF6FF" },
+  assigned: { label: "Назначен", icon: <AlertCircle size={15} color="#2E7D32" />, color: "#2E7D32", bg: "#E8F5E9" },
   repeat: { label: "Повторный", icon: <RotateCcw size={15} color="#EF4444" />, color: "#EF4444", bg: "#FEF2F2" },
   "not-assigned": { label: "Не назначен", icon: <Clock size={15} color="#94A3B8" />, color: "#94A3B8", bg: "#F1F5F9" },
 };

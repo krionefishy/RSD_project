@@ -9,13 +9,13 @@ interface BadgeProps {
 }
 
 const variants: Record<BadgeVariant, string> = {
-  blue: "bg-[#EFF6FF] text-[#1A56DB]",
+  blue: "bg-[#E8F5E9] text-[#2E7D32]",
   green: "bg-[#F0FDF4] text-[#16A34A]",
   amber: "bg-[#FFFBEB] text-[#D97706]",
   red: "bg-[#FEF2F2] text-[#DC2626]",
-  purple: "bg-[#F5F3FF] text-[#7C3AED]",
+  purple: "bg-[#FCE4EC] text-[#C41E3A]",
   gray: "bg-[#F1F5F9] text-[#64748B]",
-  teal: "bg-[#ECFEFF] text-[#0891B2]",
+  teal: "bg-[#ECFEFF] text-[#F5A623]",
 };
 
 export function Badge({ children, variant = "blue", size = "md" }: BadgeProps) {

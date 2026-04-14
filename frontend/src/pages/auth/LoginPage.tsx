@@ -23,6 +23,24 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const resolveUserByEmail = (rawEmail: string) => {
+    const normalized = rawEmail.trim().toLowerCase();
+    const emailAliases: Record<string, string> = {
+      "anna.ivanova@rsd.ru": "a.ivanova@rsd.ru",
+      "maria.fedorova@rsd.ru": "d.petrov@rsd.ru",
+      "elena.morozova@rsd.ru": "e.smirnova@rsd.ru",
+      "dmitry.volkov@rsd.ru": "n.novikova@rsd.ru",
+      "sergey.lebedev@rsd.ru": "a.kozlov@rsd.ru",
+      "alexey.smirnov@rsd.ru": "s.morozov@rsd.ru",
+      "irina.kozlova@rsd.ru": "m.sokolov@rsd.ru",
+    };
+
+    const candidates = [normalized, emailAliases[normalized]].filter(Boolean);
+    return Object.values(mockUsers).find((u) =>
+      candidates.includes(u.email.toLowerCase()),
+    );
+  };
+
   const handleLogin = () => {
     if (!email || !password) {
       toast.error("Введите email и пароль");
@@ -31,14 +49,14 @@ export default function LoginPage() {
 
     setLoading(true);
     setTimeout(() => {
-      const user = Object.values(mockUsers).find((u) => u.email.toLowerCase() === email.toLowerCase());
+      const user = resolveUserByEmail(email);
 
       if (user) {
         setUser(user);
         navigate(roleRoutes[user.role]);
         toast.success(`Добро пожаловать, ${user.firstName}!`);
       } else {
-        toast.error("Пользователь не найден или неверный пароль");
+        toast.error("Пользователь не найден. Проверьте email.");
       }
       setLoading(false);
     }, 800);
@@ -48,7 +66,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col" style={{ background: "#F8FAFC" }}>
       <div
         className="flex-shrink-0 flex flex-col items-center justify-center pt-16 pb-10 px-6"
-        style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <div
           className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
@@ -61,13 +79,53 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col px-5 py-8" style={{ background: "#F8FAFC" }}>
+      <div className="flex-1 flex flex-col px-5 py-6" style={{ background: "#F8FAFC" }}>
         <h2 style={{ color: "#1E293B", fontSize: 22, fontWeight: 700, marginBottom: 6 }}>
           Добро пожаловать
         </h2>
-        <p style={{ color: "#64748B", fontSize: 14, marginBottom: 24 }}>
+        <p style={{ color: "#64748B", fontSize: 14, marginBottom: 20 }}>
           Войдите в свой аккаунт
         </p>
+
+        {/* Test Credentials */}
+        <div className="mb-5 rounded-xl p-3" style={{ background: "#F1F5F9" }}>
+          <p style={{ color: "#64748B", fontSize: 11, fontWeight: 600, marginBottom: 8, textTransform: "uppercase" }}>
+            Тестовые данные для входа
+          </p>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>Продавец:</span>
+            <span style={{ color: "#2E7D32", fontWeight: 500 }}>a.ivanova@rsd.ru</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>Менеджер:</span>
+              <span style={{ color: "#2E7D32", fontWeight: 500 }}>d.petrov@rsd.ru</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>Админ Обучения:</span>
+              <span style={{ color: "#2E7D32", fontWeight: 500 }}>e.smirnova@rsd.ru</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>Админ Персонала:</span>
+              <span style={{ color: "#2E7D32", fontWeight: 500 }}>n.novikova@rsd.ru</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>Админ Продаж:</span>
+              <span style={{ color: "#2E7D32", fontWeight: 500 }}>a.kozlov@rsd.ru</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>Админ ПО:</span>
+              <span style={{ color: "#2E7D32", fontWeight: 500 }}>s.morozov@rsd.ru</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#374151" }}>СуперАдмин:</span>
+              <span style={{ color: "#2E7D32", fontWeight: 500 }}>m.sokolov@rsd.ru</span>
+            </div>
+          </div>
+          <p style={{ color: "#94A3B8", fontSize: 10, marginTop: 6 }}>
+            Пароль любой (обязателен для кнопки входа)
+          </p>
+        </div>
 
         <div className="mb-4">
           <label style={{ display: "block", color: "#374151", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
@@ -88,6 +146,7 @@ export default function LoginPage() {
                 background: "#fff",
                 fontSize: 15,
               }}
+              placeholder="Введите email"
             />
           </div>
         </div>
@@ -104,13 +163,14 @@ export default function LoginPage() {
               type={showPass ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-12 pl-10 pr-12 rounded-[10px] border outline-none"
+              className="w-full h-12 pl-10 pr-10 rounded-[10px] border outline-none"
               style={{
                 border: "1.5px solid #E2E8F0",
                 color: "#1E293B",
                 background: "#fff",
                 fontSize: 15,
               }}
+              placeholder="Введите пароль"
             />
             <button
               onClick={() => setShowPass(!showPass)}
@@ -124,40 +184,19 @@ export default function LoginPage() {
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full h-12 rounded-[10px] flex items-center justify-center mt-4"
+          className="w-full h-12 rounded-[10px] flex items-center justify-center"
           style={{
-            background: loading ? "#93AEED" : "#1A56DB",
+            background: loading ? "#A5D6A7" : "#2E7D32",
             color: "#fff",
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: 600,
           }}
         >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            "Войти"
-          )}
+          {loading ? "Вход..." : "Войти"}
         </button>
 
-        <div className="mt-6 p-4 rounded-xl bg-slate-100 border border-slate-200">
-           <p className="text-[11px] text-slate-500 font-medium mb-2 uppercase tracking-wider">Доступные аккаунты для теста:</p>
-           <div className="space-y-1">
-              <p className="text-xs text-slate-600">Продавец: <span className="font-mono text-blue-600">a.ivanova@rsd.ru</span></p>
-              <p className="text-xs text-slate-600">Управляющий: <span className="font-mono text-blue-600">d.petrov@rsd.ru</span></p>
-              <p className="text-xs text-slate-600">Основатель: <span className="font-mono text-blue-600">m.sokolov@rsd.ru</span></p>
-           </div>
-           <p className="text-[10px] text-slate-400 mt-2">Пароль любой</p>
-        </div>
-
-        <button className="mt-4 text-center" style={{ color: "#1A56DB", fontSize: 14, fontWeight: 500 }}>
-          Забыли пароль?
-        </button>
-
-        <p className="mt-auto pt-8 text-center" style={{ color: "#94A3B8", fontSize: 12 }}>
-          Используя приложение, вы соглашаетесь с{" "}
-          <span style={{ color: "#1A56DB", textDecoration: "underline" }}>
-            пользовательским соглашением
-          </span>
+        <p style={{ color: "#94A3B8", fontSize: 12, marginTop: 16, textAlign: "center" }}>
+          Забыли пароль? Обратитесь к администратору
         </p>
       </div>
     </div>

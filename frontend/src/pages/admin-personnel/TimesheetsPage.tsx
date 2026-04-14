@@ -5,7 +5,7 @@ import { timesheetUploads } from "../../mock/mockData";
 
 const statusConfig = {
   processed: { label: "Обработан", icon: CheckCircle, color: "#22C55E", bg: "#F0FDF4" },
-  processing: { label: "В обработке", icon: Clock, color: "#1A56DB", bg: "#EFF6FF" },
+  processing: { label: "В обработке", icon: Clock, color: "#2E7D32", bg: "#E8F5E9" },
   error: { label: "Ошибка", icon: AlertCircle, color: "#EF4444", bg: "#FEF2F2" },
 };
 
@@ -39,7 +39,7 @@ export default function TimesheetsPage() {
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Текущий период: Апрель 2026</p>
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl p-3 text-center" style={{ background: "#F8FAFC" }}>
-              <p style={{ color: "#1A56DB", fontSize: 22, fontWeight: 700 }}>142</p>
+              <p style={{ color: "#2E7D32", fontSize: 22, fontWeight: 700 }}>142</p>
               <p style={{ color: "#64748B", fontSize: 11 }}>Сотрудников</p>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: "#F8FAFC" }}>
@@ -47,7 +47,7 @@ export default function TimesheetsPage() {
               <p style={{ color: "#64748B", fontSize: 11 }}>Рабочих дней</p>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: "#F8FAFC" }}>
-              <p style={{ color: "#0891B2", fontSize: 22, fontWeight: 700 }}>4,256</p>
+              <p style={{ color: "#F5A623", fontSize: 22, fontWeight: 700 }}>4,256</p>
               <p style={{ color: "#64748B", fontSize: 11 }}>Часов</p>
             </div>
           </div>
@@ -62,12 +62,12 @@ export default function TimesheetsPage() {
             onDrop={handleDrop}
             className="rounded-xl border-2 border-dashed flex flex-col items-center justify-center py-8"
             style={{
-              borderColor: isDragging ? "#1A56DB" : "#E2E8F0",
-              background: isDragging ? "#EFF6FF" : "#F8FAFC",
+              borderColor: isDragging ? "#2E7D32" : "#E2E8F0",
+              background: isDragging ? "#E8F5E9" : "#F8FAFC",
             }}
           >
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-3" style={{ background: "#EFF6FF" }}>
-              <Upload size={28} color="#1A56DB" />
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-3" style={{ background: "#E8F5E9" }}>
+              <Upload size={28} color="#2E7D32" />
             </div>
             <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>Перетащите файл или нажмите для выбора</p>
             <p style={{ color: "#94A3B8", fontSize: 12, marginTop: 4 }}>Поддерживаемые форматы: XLSX, CSV</p>
@@ -88,8 +88,8 @@ export default function TimesheetsPage() {
               const cfg = statusConfig[upload.status];
               return (
                 <div key={upload.id} className="flex items-center gap-3 px-3 py-3 rounded-xl" style={{ background: "#F8FAFC" }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#EFF6FF" }}>
-                    <FileSpreadsheet size={20} color="#1A56DB" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#E8F5E9" }}>
+                    <FileSpreadsheet size={20} color="#2E7D32" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }} className="truncate">{upload.fileName}</p>

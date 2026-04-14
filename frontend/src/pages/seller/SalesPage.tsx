@@ -11,7 +11,7 @@ export default function SalesPage() {
   const [openAccordion, setOpenAccordion] = useState(false);
 
   const data = tab === "daily" ? salesData.daily : salesData.periodic;
-  const color = data.percent >= 100 ? "#22C55E" : data.percent >= 70 ? "#1A56DB" : "#F59E0B";
+  const color = data.percent >= 100 ? "#22C55E" : data.percent >= 70 ? "#2E7D32" : "#F59E0B";
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -34,7 +34,7 @@ export default function SalesPage() {
       {/* Header */}
       <div
         className="px-4 pt-6 pb-4"
-        style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Апрель 2026</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Мои продажи</h1>
@@ -141,7 +141,7 @@ export default function SalesPage() {
         {/* Motivation card */}
         <div
           className="rounded-2xl p-4"
-          style={{ background: "linear-gradient(135deg, #1A56DB, #1248BA)", boxShadow: "0 4px 12px rgba(26,86,219,0.3)" }}
+          style={{ background: "linear-gradient(135deg, #2E7D32, #1B5E20)", boxShadow: "0 4px 12px rgba(26,86,219,0.3)" }}
         >
           <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Расчётная мотивация</p>
           <p style={{ color: "#fff", fontSize: 28, fontWeight: 800, lineHeight: 1.2, marginTop: 2 }}>
@@ -178,7 +178,7 @@ export default function SalesPage() {
             <div style={{ borderTop: "1px solid #F1F5F9" }}>
               {data.positions.map((pos, i) => {
                 const pct = Math.round((pos.fact / pos.plan) * 100);
-                const c = pct >= 100 ? "#22C55E" : pct >= 70 ? "#1A56DB" : "#F59E0B";
+                const c = pct >= 100 ? "#22C55E" : pct >= 70 ? "#2E7D32" : "#F59E0B";
                 return (
                   <div
                     key={i}

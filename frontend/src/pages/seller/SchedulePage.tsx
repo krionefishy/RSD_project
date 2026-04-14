@@ -6,7 +6,7 @@ import { scheduleData } from "../../mock/mockData";
 const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const typeConfig = {
-  work: { color: "#1A56DB", bg: "#EFF6FF", label: "Смена" },
+  work: { color: "#2E7D32", bg: "#E8F5E9", label: "Смена" },
   off: { color: "#94A3B8", bg: "#F1F5F9", label: "Выходной" },
   vacation: { color: "#22C55E", bg: "#F0FDF4", label: "Отпуск" },
   sick: { color: "#F59E0B", bg: "#FFFBEB", label: "Больничный" },
@@ -78,7 +78,7 @@ export default function SchedulePage() {
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center"
                     style={{
-                      background: isSelected ? "#1A56DB" : isToday ? cfg.bg : "transparent",
+                      background: isSelected ? "#2E7D32" : isToday ? cfg.bg : "transparent",
                       border: isToday && !isSelected ? `1.5px solid ${cfg.color}` : "none",
                     }}
                   >
@@ -161,10 +161,10 @@ export default function SchedulePage() {
           </p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Рабочих дней", value: "18", color: "#1A56DB" },
+              { label: "Рабочих дней", value: "18", color: "#2E7D32" },
               { label: "Выходных", value: "7", color: "#94A3B8" },
               { label: "Отпуск", value: "5", color: "#22C55E" },
-              { label: "Часов", value: "144", color: "#7C3AED" },
+              { label: "Часов", value: "144", color: "#C41E3A" },
             ].map((s) => (
               <div
                 key={s.label}

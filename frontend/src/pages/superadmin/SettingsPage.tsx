@@ -39,8 +39,8 @@ export default function SuperAdminSettingsPage() {
           <div key={section.id} className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <div className="px-4 py-3 border-b border-[#F1F5F9]" style={{ background: "#F8FAFC" }}>
               <div className="flex items-center gap-2">
-                <section.icon size={18} color="#7C3AED" />
-                <span style={{ color: "#7C3AED", fontSize: 13, fontWeight: 600 }}>{section.label}</span>
+                <section.icon size={18} color="#C41E3A" />
+                <span style={{ color: "#C41E3A", fontSize: 13, fontWeight: 600 }}>{section.label}</span>
               </div>
             </div>
             {section.items.map((item, i) => (
@@ -52,7 +52,7 @@ export default function SuperAdminSettingsPage() {
               >
                 <span style={{ color: "#1E293B", fontSize: 15 }}>{item.label}</span>
                 {item.toggle ? (
-                  <div className="w-11 h-6 rounded-full relative" style={{ background: item.active ? "#7C3AED" : "#E2E8F0", transition: "all 0.2s" }}>
+                  <div className="w-11 h-6 rounded-full relative" style={{ background: item.active ? "#C41E3A" : "#E2E8F0", transition: "all 0.2s" }}>
                     <div className="absolute top-1 w-4 h-4 rounded-full bg-white" style={{ left: item.active ? "26px" : "6px", transition: "all 0.2s" }} />
                   </div>
                 ) : (

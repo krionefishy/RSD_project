@@ -6,7 +6,7 @@ import { managerEmployees, managerStores } from "../../mock/mockData";
 const statusBadge = {
   work: { label: "На смене", color: "#22C55E", bg: "#F0FDF4" },
   off: { label: "Выходной", color: "#94A3B8", bg: "#F1F5F9" },
-  vacation: { label: "Отпуск", color: "#0891B2", bg: "#ECFEFF" },
+  vacation: { label: "Отпуск", color: "#F5A623", bg: "#ECFEFF" },
   sick: { label: "Больничный", color: "#F59E0B", bg: "#FFFBEB" },
 };
 
@@ -24,7 +24,7 @@ export default function EmployeesPage() {
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Блок А — Север</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Сотрудники</h1>
         {/* Search */}
@@ -50,7 +50,7 @@ export default function EmployeesPage() {
             onClick={() => setFilterStore(name)}
             className="flex-shrink-0 px-3 py-1.5 rounded-full"
             style={{
-              background: filterStore === name ? "#1A56DB" : "#F1F5F9",
+              background: filterStore === name ? "#2E7D32" : "#F1F5F9",
               color: filterStore === name ? "#fff" : "#374151",
               fontSize: 12,
               fontWeight: filterStore === name ? 600 : 400,
@@ -81,7 +81,7 @@ export default function EmployeesPage() {
                   <p style={{ color: "#94A3B8", fontSize: 12 }}>{emp.store}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="h-1 w-16 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
-                      <div className="h-full rounded-full" style={{ width: `${Math.min(emp.salesPercent, 100)}%`, background: emp.salesPercent >= 90 ? "#22C55E" : emp.salesPercent >= 70 ? "#1A56DB" : "#F59E0B" }} />
+                      <div className="h-full rounded-full" style={{ width: `${Math.min(emp.salesPercent, 100)}%`, background: emp.salesPercent >= 90 ? "#22C55E" : emp.salesPercent >= 70 ? "#2E7D32" : "#F59E0B" }} />
                     </div>
                     <span style={{ color: "#64748B", fontSize: 11 }}>Продажи: {emp.salesPercent}%</span>
                   </div>

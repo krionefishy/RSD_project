@@ -14,7 +14,7 @@ export default function RatingPage() {
       {/* Header */}
       <div
         className="px-4 pt-6 pb-4"
-        style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Апрель 2026</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Рейтинг</h1>
@@ -48,7 +48,7 @@ export default function RatingPage() {
         <div
           className="rounded-2xl p-4"
           style={{
-            background: "linear-gradient(135deg, #1A56DB, #1248BA)",
+            background: "linear-gradient(135deg, #2E7D32, #1B5E20)",
             boxShadow: "0 4px 16px rgba(26,86,219,0.3)",
           }}
         >
@@ -104,9 +104,9 @@ export default function RatingPage() {
                 key={item.rank}
                 className="flex items-center gap-3 px-4 py-3"
                 style={{
-                  background: item.isMe ? "#EFF6FF" : "#fff",
+                  background: item.isMe ? "#E8F5E9" : "#fff",
                   borderBottom: i < data.list.length - 1 ? "1px solid #F1F5F9" : "none",
-                  borderLeft: item.isMe ? "3px solid #1A56DB" : "3px solid transparent",
+                  borderLeft: item.isMe ? "3px solid #2E7D32" : "3px solid transparent",
                 }}
               >
                 {/* Rank */}
@@ -116,7 +116,7 @@ export default function RatingPage() {
                   ) : (
                     <span
                       style={{
-                        color: item.isMe ? "#1A56DB" : "#94A3B8",
+                        color: item.isMe ? "#2E7D32" : "#94A3B8",
                         fontSize: 14,
                         fontWeight: item.isMe ? 700 : 400,
                       }}
@@ -143,7 +143,7 @@ export default function RatingPage() {
                     {item.isMe && (
                       <span
                         className="ml-1.5 px-1.5 py-0.5 rounded"
-                        style={{ background: "#1A56DB", color: "#fff", fontSize: 9, fontWeight: 700 }}
+                        style={{ background: "#2E7D32", color: "#fff", fontSize: 9, fontWeight: 700 }}
                       >
                         Я
                       </span>
@@ -155,7 +155,7 @@ export default function RatingPage() {
                 {/* Value */}
                 <span
                   style={{
-                    color: item.isMe ? "#1A56DB" : "#1E293B",
+                    color: item.isMe ? "#2E7D32" : "#1E293B",
                     fontSize: 13,
                     fontWeight: item.isMe ? 700 : 500,
                   }}

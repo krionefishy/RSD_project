@@ -157,7 +157,7 @@ export default function TestResultPage() {
           <button
             onClick={() => navigate(-1)}
             className="w-full h-12 rounded-[10px] flex items-center justify-center gap-2"
-            style={{ background: "#1A56DB", color: "#fff", fontSize: 15, fontWeight: 600 }}
+            style={{ background: "#2E7D32", color: "#fff", fontSize: 15, fontWeight: 600 }}
           >
             <RotateCcw size={18} />
             Пройти заново
@@ -167,7 +167,7 @@ export default function TestResultPage() {
           onClick={() => navigate("/seller/tests")}
           className="w-full h-12 rounded-[10px] flex items-center justify-center gap-2"
           style={{
-            background: passed ? "#1A56DB" : "#fff",
+            background: passed ? "#2E7D32" : "#fff",
             color: passed ? "#fff" : "#374151",
             fontSize: 15,
             fontWeight: 600,

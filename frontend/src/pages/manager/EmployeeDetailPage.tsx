@@ -13,8 +13,8 @@ export default function EmployeeDetailPage() {
   const emp = managerEmployees.find((e) => e.id === employeeId);
   if (!emp) return null;
 
-  const salesColor = emp.salesPercent >= 100 ? "#22C55E" : emp.salesPercent >= 70 ? "#1A56DB" : "#F59E0B";
-  const learningColor = emp.learningPercent >= 90 ? "#22C55E" : emp.learningPercent >= 70 ? "#1A56DB" : "#F59E0B";
+  const salesColor = emp.salesPercent >= 100 ? "#22C55E" : emp.salesPercent >= 70 ? "#2E7D32" : "#F59E0B";
+  const learningColor = emp.learningPercent >= 90 ? "#22C55E" : emp.learningPercent >= 70 ? "#2E7D32" : "#F59E0B";
 
   const salesChartData = [
     { day: "Пн", fact: 45000 },
@@ -31,7 +31,7 @@ export default function EmployeeDetailPage() {
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
-      <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 mb-4" style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>
           <ChevronLeft size={18} color="rgba(255,255,255,0.8)" />
           Сотрудники
@@ -54,7 +54,7 @@ export default function EmployeeDetailPage() {
             onClick={() => setTab(t)}
             className="flex-shrink-0 px-4 py-2 rounded-xl"
             style={{
-              background: tab === t ? "#1A56DB" : "#F1F5F9",
+              background: tab === t ? "#2E7D32" : "#F1F5F9",
               color: tab === t ? "#fff" : "#374151",
               fontSize: 13,
               fontWeight: tab === t ? 600 : 400,
@@ -130,12 +130,12 @@ export default function EmployeeDetailPage() {
             {shiftDays.map((day, i) => (
               <div key={i} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: i < shiftDays.length - 1 ? "1px solid #F1F5F9" : "none" }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#EFF6FF" }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#E8F5E9" }}>
                     <span style={{ fontSize: 14 }}>💼</span>
                   </div>
                   <span style={{ color: "#374151", fontSize: 14 }}>{day}</span>
                 </div>
-                <span style={{ color: "#1A56DB", fontSize: 13, fontWeight: 500 }}>09:00–18:00</span>
+                <span style={{ color: "#2E7D32", fontSize: 13, fontWeight: 500 }}>09:00–18:00</span>
               </div>
             ))}
           </div>

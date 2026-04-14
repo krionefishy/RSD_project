@@ -8,7 +8,7 @@ interface AvatarProps {
 }
 
 const COLORS = [
-  "#1A56DB", "#7C3AED", "#0891B2", "#059669", "#D97706", "#DC2626",
+  "#2E7D32", "#C41E3A", "#F5A623", "#059669", "#D97706", "#DC2626",
 ];
 
 function getColor(name: string): string {

@@ -3,10 +3,10 @@ import { FileBarChart, Download, ChevronRight, Filter } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
 
 const reports = [
-  { id: "r1", title: "Мотивация — ежедневный стакан", desc: "План/факт и бонус за ежедневные продажи", period: "Апрель 2026", updated: "14.04.2026", color: "#1A56DB", bg: "#EFF6FF" },
-  { id: "r2", title: "Мотивация — периодический стакан", desc: "Сводный расчёт бонуса за период", period: "Q2 2026", updated: "14.04.2026", color: "#7C3AED", bg: "#F5F3FF" },
+  { id: "r1", title: "Мотивация — ежедневный стакан", desc: "План/факт и бонус за ежедневные продажи", period: "Апрель 2026", updated: "14.04.2026", color: "#2E7D32", bg: "#E8F5E9" },
+  { id: "r2", title: "Мотивация — периодический стакан", desc: "Сводный расчёт бонуса за период", period: "Q2 2026", updated: "14.04.2026", color: "#C41E3A", bg: "#FCE4EC" },
   { id: "r3", title: "Сводный отчёт по продажам", desc: "Детализация по точкам и продавцам", period: "Апрель 2026", updated: "14.04.2026", color: "#059669", bg: "#ECFDF5" },
-  { id: "r4", title: "Прогресс обучения", desc: "Процент прохождения курсов и тестов", period: "Q2 2026", updated: "13.04.2026", color: "#0891B2", bg: "#ECFEFF" },
+  { id: "r4", title: "Прогресс обучения", desc: "Процент прохождения курсов и тестов", period: "Q2 2026", updated: "13.04.2026", color: "#F5A623", bg: "#ECFEFF" },
 ];
 
 export default function ReportsPage() {
@@ -18,7 +18,7 @@ export default function ReportsPage() {
     return (
       <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
         <AppHeader title={report.title} showBack white rightAction={
-          <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg" style={{ background: "#1A56DB" }}>
+          <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg" style={{ background: "#2E7D32" }}>
             <Download size={14} color="#fff" />
             <span style={{ color: "#fff", fontSize: 12, fontWeight: 500 }}>Выгрузить</span>
           </button>
@@ -59,7 +59,7 @@ export default function ReportsPage() {
                 <span style={{ flex: 1, color: "#1E293B", fontSize: 12, fontWeight: 500, textAlign: "right" }}>{row.fact}</span>
                 <span style={{
                   flex: 1, fontSize: 12, fontWeight: 600, textAlign: "right",
-                  color: row.pct >= 100 ? "#22C55E" : row.pct >= 70 ? "#1A56DB" : "#F59E0B"
+                  color: row.pct >= 100 ? "#22C55E" : row.pct >= 70 ? "#2E7D32" : "#F59E0B"
                 }}>
                   {row.pct}%
                 </span>
@@ -73,7 +73,7 @@ export default function ReportsPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Менеджер</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Отчёты</h1>
       </div>

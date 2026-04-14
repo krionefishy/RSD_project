@@ -4,10 +4,10 @@ import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 
 const activityLog = [
-  { action: "Опубликован материал", name: "«Стандарты обслуживания 2026»", time: "Сегодня, 11:30", color: "#22C55E" },
-  { action: "Назначен тест", name: "«Регламенты работы» всем продавцам Блока А", time: "Сегодня, 10:15", color: "#1A56DB" },
-  { action: "Добавлено видео", name: "«Работа с кассовым аппаратом»", time: "Вчера, 16:45", color: "#7C3AED" },
-  { action: "Обновлён курс", name: "«Технологические карты»", time: "Вчера, 14:20", color: "#0891B2" },
+  { action: "Опубликован курс", name: "«Ассортимент и продукция»", time: "Сегодня, 11:30", color: "#22C55E" },
+  { action: "Назначен курс", name: "«Стандарты обслуживания» 12 продавцам", time: "Сегодня, 10:15", color: "#2E7D32" },
+  { action: "Создан тест", name: "«Итоговый тест: Базовый курс»", time: "Вчера, 16:45", color: "#C41E3A" },
+  { action: "Обновлён материал", name: "«Работа с кассовым аппаратом»", time: "Вчера, 14:20", color: "#F5A623" },
 ];
 
 export default function AdminEduDashboardPage() {
@@ -15,18 +15,18 @@ export default function AdminEduDashboardPage() {
   if (!user) return null;
 
   const counters = [
-    { label: "Материалов в базе", value: 50, icon: BookOpen, color: "#7C3AED", bg: "#F5F3FF" },
-    { label: "Активных тестов", value: 8, icon: TestTube2, color: "#1A56DB", bg: "#EFF6FF" },
-    { label: "Назначено курсов", value: 24, icon: Users, color: "#059669", bg: "#ECFDF5" },
+    { label: "Курсов в системе", value: 6, icon: BookOpen, color: "#C41E3A", bg: "#FCE4EC" },
+    { label: "Активных тестов", value: 5, icon: TestTube2, color: "#2E7D32", bg: "#E8F5E9" },
+    { label: "Назначено курсов", value: 148, icon: Users, color: "#059669", bg: "#ECFDF5" },
     { label: "Просроченных тестов", value: 4, icon: AlertTriangle, color: "#DC2626", bg: "#FEF2F2" },
   ];
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #7C3AED 0%, #6D28D9 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #C41E3A 0%, #A3152E 100%)" }}>
         <div className="flex items-center gap-3">
-          <Avatar name={user.name} size={44} bgColor="#6D28D9" />
+          <Avatar name={user.name} size={44} bgColor="#A3152E" />
           <div>
             <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>Администратор обучения</p>
             <p style={{ color: "#fff", fontSize: 17, fontWeight: 600 }}>{user.name}</p>

@@ -57,18 +57,18 @@ export default function SuperAdminStructurePage() {
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4 text-center" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <Building2 size={24} color="#7C3AED" className="mx-auto mb-2" />
+            <Building2 size={24} color="#C41E3A" className="mx-auto mb-2" />
             <p style={{ color: "#1E293B", fontSize: 28, fontWeight: 800, lineHeight: 1 }}>47</p>
             <p style={{ color: "#64748B", fontSize: 12 }}>Точек</p>
           </div>
           <div className="rounded-2xl p-4 text-center" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <Users size={24} color="#1A56DB" className="mx-auto mb-2" />
+            <Users size={24} color="#2E7D32" className="mx-auto mb-2" />
             <p style={{ color: "#1E293B", fontSize: 28, fontWeight: 800, lineHeight: 1 }}>5</p>
             <p style={{ color: "#64748B", fontSize: 12 }}>Блоков</p>
           </div>
         </div>
 
-        <button className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#7C3AED", color: "#fff", fontSize: 14, fontWeight: 600 }}>
+        <button className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#C41E3A", color: "#fff", fontSize: 14, fontWeight: 600 }}>
           <Plus size={18} />
           Добавить блок
         </button>
@@ -77,8 +77,8 @@ export default function SuperAdminStructurePage() {
           {blocks.map((block) => (
             <div key={block.id} className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
               <div className="flex items-center gap-3 px-4 py-4">
-                <button onClick={() => toggleBlock(block.id)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#F5F3FF" }}>
-                  <ChevronDown size={18} color="#7C3AED" className={block.expanded ? "rotate-180" : ""} style={{ transition: "transform 0.2s" }} />
+                <button onClick={() => toggleBlock(block.id)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#FCE4EC" }}>
+                  <ChevronDown size={18} color="#C41E3A" className={block.expanded ? "rotate-180" : ""} style={{ transition: "transform 0.2s" }} />
                 </button>
                 <div className="flex-1">
                   <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600 }}>{block.name}</p>
@@ -95,8 +95,8 @@ export default function SuperAdminStructurePage() {
                   <div className="rounded-xl overflow-hidden" style={{ background: "#F8FAFC" }}>
                     {block.storesList.map((store, i) => (
                       <div key={i} className="flex items-center gap-3 px-3 py-3" style={{ borderBottom: i < block.storesList!.length - 1 ? "1px solid #E2E8F0" : "none" }}>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#EFF6FF" }}>
-                          <Building2 size={14} color="#1A56DB" />
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#E8F5E9" }}>
+                          <Building2 size={14} color="#2E7D32" />
                         </div>
                         <div className="flex-1">
                           <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{store.name}</p>

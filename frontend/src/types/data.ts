@@ -1,11 +1,31 @@
 export interface Material {
   id: string;
-  sectionId: string;
+  sectionId?: string;
+  courseId?: string;
+  category?: string;
   title: string;
   type: "text" | "video" | "document";
   duration: string;
   status: "done" | "in-progress" | "not-started";
   progress: number;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  bg: string;
+  materialsCount: number;
+  testsCount: number;
+  categories: string[];
+  duration: string;
+  progress: number;
+  status: "not-started" | "in-progress" | "completed";
+  isRequired: boolean;
+  assignedAt?: string;
+  completedAt?: string;
 }
 
 export interface KnowledgeSection {
@@ -20,7 +40,8 @@ export interface KnowledgeSection {
 
 export interface Test {
   id: string;
-  sectionId: string;
+  sectionId?: string;
+  courseId?: string;
   title: string;
   questionsCount: number;
   status: "passed" | "assigned" | "repeat" | "not-assigned";

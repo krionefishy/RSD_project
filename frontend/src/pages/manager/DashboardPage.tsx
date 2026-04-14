@@ -13,12 +13,12 @@ export default function ManagerDashboardPage() {
   const totalPlan = managerStores.reduce((a, s) => a + s.plan, 0);
   const totalFact = managerStores.reduce((a, s) => a + s.fact, 0);
   const blockPercent = Math.round((totalFact / totalPlan) * 100);
-  const blockColor = blockPercent >= 90 ? "#22C55E" : blockPercent >= 70 ? "#1A56DB" : "#F59E0B";
+  const blockColor = blockPercent >= 90 ? "#22C55E" : blockPercent >= 70 ? "#2E7D32" : "#F59E0B";
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #1A56DB 0%, #1248BA 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <div className="flex items-center gap-3">
           <Avatar name={user.name} size={44} />
           <div>
@@ -60,12 +60,12 @@ export default function ManagerDashboardPage() {
                 <div key={store.id} className="mb-2">
                   <div className="flex justify-between mb-0.5">
                     <span style={{ color: "#374151", fontSize: 11 }} className="truncate max-w-[120px]">{store.name.split(",")[0]}</span>
-                    <span style={{ color: store.percent >= 90 ? "#22C55E" : store.percent >= 70 ? "#1A56DB" : "#F59E0B", fontSize: 11, fontWeight: 600 }}>
+                    <span style={{ color: store.percent >= 90 ? "#22C55E" : store.percent >= 70 ? "#2E7D32" : "#F59E0B", fontSize: 11, fontWeight: 600 }}>
                       {store.percent}%
                     </span>
                   </div>
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
-                    <div className="h-full rounded-full" style={{ width: `${Math.min(store.percent, 100)}%`, background: store.percent >= 90 ? "#22C55E" : store.percent >= 70 ? "#1A56DB" : "#F59E0B" }} />
+                    <div className="h-full rounded-full" style={{ width: `${Math.min(store.percent, 100)}%`, background: store.percent >= 90 ? "#22C55E" : store.percent >= 70 ? "#2E7D32" : "#F59E0B" }} />
                   </div>
                 </div>
               ))}
@@ -82,7 +82,7 @@ export default function ManagerDashboardPage() {
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} width={32} axisLine={false} tickLine={false} />
               <Tooltip formatter={(v: any) => [`${v}%`, "Выполнение"]} />
               <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={18}
-                fill="#1A56DB"
+                fill="#2E7D32"
               />
             </BarChart>
           </ResponsiveContainer>
@@ -107,7 +107,7 @@ export default function ManagerDashboardPage() {
         </div>
 
         {/* Block rating */}
-        <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg, #1A56DB, #1248BA)", boxShadow: "0 4px 12px rgba(26,86,219,0.3)" }}>
+        <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg, #2E7D32, #1B5E20)", boxShadow: "0 4px 12px rgba(26,86,219,0.3)" }}>
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.15)" }}>
               <BarChart3 size={22} color="#fff" />
