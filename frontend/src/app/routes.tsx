@@ -1,0 +1,212 @@
+import { createBrowserRouter, Navigate } from "react-router";
+import { useApp } from "../context/AppContext";
+import { UserRole } from "../types/user";
+
+// Templates
+import SellerTemplate from "../templates/SellerTemplate";
+import ManagerTemplate from "../templates/ManagerTemplate";
+import AdminEduTemplate from "../templates/AdminEduTemplate";
+import AdminSalesTemplate from "../templates/AdminSalesTemplate";
+import AdminPersonnelTemplate from "../templates/AdminPersonnelTemplate";
+import AdminPOTemplate from "../templates/AdminPOTemplate";
+import SuperAdminTemplate from "../templates/SuperAdminTemplate";
+
+// Pages - Auth
+import LoginPage from "../pages/auth/LoginPage";
+
+// Pages - Seller
+import SellerDashboardPage from "../pages/seller/DashboardPage";
+import KnowledgeBasePage from "../pages/seller/KnowledgeBasePage";
+import KnowledgeSectionPage from "../pages/seller/KnowledgeSectionPage";
+import MaterialPage from "../pages/seller/MaterialPage";
+import TestListPage from "../pages/seller/TestListPage";
+import TestQuestionPage from "../pages/seller/TestQuestionPage";
+import TestResultPage from "../pages/seller/TestResultPage";
+import SalesPage from "../pages/seller/SalesPage";
+import RatingPage from "../pages/seller/RatingPage";
+import SchedulePage from "../pages/seller/SchedulePage";
+import SellerProfilePage from "../pages/seller/ProfilePage";
+
+// Pages - Manager
+import ManagerDashboardPage from "../pages/manager/DashboardPage";
+import ManagerReportsPage from "../pages/manager/ReportsPage";
+import EmployeesPage from "../pages/manager/EmployeesPage";
+import EmployeeDetailPage from "../pages/manager/EmployeeDetailPage";
+import ManagerProfilePage from "../pages/manager/ProfilePage";
+
+// Pages - Admin Edu
+import AdminEduDashboardPage from "../pages/admin-edu/DashboardPage";
+import AdminEduManagePage from "../pages/admin-edu/ManagePage";
+import AdminEduAssignmentsPage from "../pages/admin-edu/AssignmentsPage";
+import AdminEduReportsPage from "../pages/admin-edu/ReportsPage";
+import CreateTestPage from "../pages/admin-edu/CreateTestPage";
+import EditMaterialPage from "../pages/admin-edu/EditMaterialPage";
+
+// Pages - Admin Sales
+import AdminSalesDashboardPage from "../pages/admin-sales/DashboardPage";
+
+// Pages - Admin Personnel
+import AdminPersonnelDashboardPage from "../pages/admin-personnel/DashboardPage";
+import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
+
+// Pages - Admin PO
+import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
+
+// Pages - SuperAdmin
+import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
+import SuperAdminStructurePage from "../pages/superadmin/StructurePage";
+import SuperAdminSettingsPage from "../pages/superadmin/SettingsPage";
+
+// Auth guard component
+function RequireAuth({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
+  const { user } = useApp();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+export const router = createBrowserRouter([
+  // Public routes
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+
+  // Seller routes
+  {
+    path: "/seller",
+    element: (
+      <RequireAuth allowedRoles={["seller"]}>
+        <SellerTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <SellerDashboardPage /> },
+      { path: "knowledge", element: <KnowledgeBasePage /> },
+      { path: "knowledge/:sectionId", element: <KnowledgeSectionPage /> },
+      { path: "knowledge/:sectionId/:materialId", element: <MaterialPage /> },
+      { path: "tests", element: <TestListPage /> },
+      { path: "tests/:testId", element: <TestQuestionPage /> },
+      { path: "tests/:testId/result", element: <TestResultPage /> },
+      { path: "sales", element: <SalesPage /> },
+      { path: "rating", element: <RatingPage /> },
+      { path: "schedule", element: <SchedulePage /> },
+      { path: "profile", element: <SellerProfilePage /> },
+    ],
+  },
+
+  // Manager routes
+  {
+    path: "/manager",
+    element: (
+      <RequireAuth allowedRoles={["manager"]}>
+        <ManagerTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <ManagerDashboardPage /> },
+      { path: "reports", element: <ManagerReportsPage /> },
+      { path: "employees", element: <EmployeesPage /> },
+      { path: "employees/:employeeId", element: <EmployeeDetailPage /> },
+      { path: "profile", element: <ManagerProfilePage /> },
+    ],
+  },
+
+  // Admin Edu routes
+  {
+    path: "/admin-edu",
+    element: (
+      <RequireAuth allowedRoles={["admin-edu"]}>
+        <AdminEduTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <AdminEduDashboardPage /> },
+      { path: "manage", element: <AdminEduManagePage /> },
+      { path: "manage/create-test", element: <CreateTestPage /> },
+      { path: "manage/edit-material/:materialId", element: <EditMaterialPage /> },
+      { path: "assignments", element: <AdminEduAssignmentsPage /> },
+      { path: "reports", element: <AdminEduReportsPage /> },
+    ],
+  },
+
+  // Admin Sales routes
+  {
+    path: "/admin-sales",
+    element: (
+      <RequireAuth allowedRoles={["admin-sales"]}>
+        <AdminSalesTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <AdminSalesDashboardPage /> },
+    ],
+  },
+
+  // Admin Personnel routes
+  {
+    path: "/admin-personnel",
+    element: (
+      <RequireAuth allowedRoles={["admin-personnel"]}>
+        <AdminPersonnelTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <AdminPersonnelDashboardPage /> },
+      { path: "manage", element: <AdminPersonnelDashboardPage /> },
+      { path: "timesheets", element: <TimesheetsPage /> },
+      { path: "profile", element: <AdminPersonnelDashboardPage /> },
+    ],
+  },
+
+  // Admin PO routes
+  {
+    path: "/admin-po",
+    element: (
+      <RequireAuth allowedRoles={["admin-po"]}>
+        <AdminPOTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <AdminPODashboardPage /> },
+      { path: "data", element: <AdminPODashboardPage /> },
+      { path: "reports", element: <AdminPODashboardPage /> },
+      { path: "profile", element: <AdminPODashboardPage /> },
+    ],
+  },
+
+  // SuperAdmin routes
+  {
+    path: "/superadmin",
+    element: (
+      <RequireAuth allowedRoles={["superadmin"]}>
+        <SuperAdminTemplate />
+      </RequireAuth>
+    ),
+    children: [
+      { index: true, element: <SuperAdminDashboardPage /> },
+      { path: "structure", element: <SuperAdminStructurePage /> },
+      { path: "settings", element: <SuperAdminSettingsPage /> },
+      { path: "profile", element: <SuperAdminDashboardPage /> },
+    ],
+  },
+
+  // Root redirect
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
+
+  // 404
+  {
+    path: "*",
+    element: <Navigate to="/login" replace />,
+  },
+]);

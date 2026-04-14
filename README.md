@@ -1,186 +1,473 @@
-# BOWSell Audit Trail — ОКК (Отделы контроля качества)
+# RSD — Retail Staff Development
 
-Сервис для автоматизации работы отделов контроля качества: ведение журналов аудитов, назначение проверок предприятиям, аналитика по объектам и др.
+Корпоративная платформа «Мобильный кабинет Продавца» для сети розничных точек: обучение персонала, отслеживание продаж, рейтинги и мотивация.
 
-Монорепозиторий: шаблон проекта по ТЗ «BOWSell Audit Trail» (журналы аудитов и отчётность ОКК).
+## Стек
 
-## Стек (по ТЗ)
-
-- **Frontend:** PWA на React
-- **Backend:** микросервисы на Python 3.12+, FastAPI, SQLAlchemy (async), единая БД PostgreSQL 15+
-- **Миграции:** Alembic (общие для всей БД)
-- **Взаимодействие:** API Gateway (единая точка входа), между сервисами — HTTP и при необходимости Apache Kafka
-- **Хранилище:** S3 (загрузка файлов через Kafka-подписчики, см. `backend/shared/kafka_streams/`)
-
-## Структура монорепо
-
-```
-Audit_trail_prj/
-├── backend/
-│   ├── shared/                 # Base, Database, kafka_streams (Kafka/S3)
-│   ├── users_service/          # config.yaml, config.example.yaml, config.test.yaml
-│   ├── checklists_service/
-│   ├── reports_service/
-│   ├── organizations_service/
-│   ├── admin_service/
-│   └── api_gateway/
-├── frontend/
-├── migrations/
-├── docker-compose.yml          # Полный стек (только API Gateway смотрит наружу)
-├── docker-compose.local.yml    # Локальная разработка: только db + kafka
-├── justfile                    # Сценарии: тесты, deps, db-recreate, run
-└── README.md
-```
-
-У каждого микросервиса: свой `config.yaml`, `config.example.yaml`, `config.test.yaml`, свой `requirements.txt`, тесты в `tests/`.
+| Слой | Технология |
+|------|-----------|
+| Frontend | React 19, Redux Toolkit, React Router 7, axios, CSS Modules (PWA) |
+| Backend | Python 3.12+, FastAPI, SQLAlchemy (async), микросервисная архитектура |
+| БД | PostgreSQL 15+ |
+| Миграции | Alembic (единые для всей БД) |
+| Очереди | Apache Kafka |
+| Кэш | Redis 7 |
+| Хранилище | S3 (через Kafka-подписчики) |
+| API Gateway | nginx (prod) / FastAPI gateway (dev) |
+| Reverse Proxy | Traefik (prod, SSL через Let's Encrypt) |
+| Контейнеризация | Docker, Docker Compose |
 
 ---
 
-## Настройка проекта
+## Структура репозитория
 
-### 1. Окружение
-
-- Python 3.12+
-- [just](https://github.com/casey/just) (опционально, для сценариев)
-- Docker и Docker Compose — для БД и полного стека
-
-### 2. Конфигурация
-
-Важные настройки хранятся в **config.yaml** каждого сервиса. Репозиторий содержит только шаблоны:
-
-- В каждом сервисе есть **config.example.yaml** — скопируйте его в **config.yaml** и подставьте свои значения (хост БД, пароли, при необходимости S3/Kafka).
-
-```bash
-# Пример для одного сервиса
-cp backend/users_service/config.example.yaml backend/users_service/config.yaml
-# Отредактируйте backend/users_service/config.yaml
+```
+RSD/
+├── backend/
+│   ├── shared/                    # Общие модули: DB, Kafka, S3, config
+│   │   ├── config/                #   config.yaml, config.example.yaml, default.yaml
+│   │   ├── kafka_streams/         #   producer, consumer, subscribers, topics
+│   │   └── storage/               #   s3_client
+│   ├── users_service/             # Сервис пользователей
+│   ├── admin_service/             # Сервис администрирования
+│   ├── knowledge_base_service/    # Сервис базы знаний
+│   └── api_gateway/               # API Gateway (FastAPI)
+├── frontend/                      # React PWA
+│   ├── public/                    #   manifest.json, service-worker, index.html
+│   ├── src/                       #   pages/, components/, api/, features/, etc.
+│   ├── Dockerfile                 #   Multi-stage: node build → nginx
+│   └── nginx.conf                 #   SPA-конфигурация
+├── migrations/                    # Alembic миграции (общие для всех сервисов)
+│   ├── env.py
+│   └── versions/
+├── docs/                          # Документация и ТЗ
+│   ├── ROLE_MODEL.md              #   Ролевая модель (8 ролей)
+│   ├── DESIGN_BRIEF.md            #   ТЗ на дизайн
+│   └── ТЗ блок базы знаний.docx
+├── docker-compose.yml             # Полный стек (все сервисы)
+├── docker-compose.local.yml       # Локальная разработка (только DB + Kafka)
+├── docker-compose.prod.yaml       # Production (Traefik + SSL)
+├── docker-compose.ci.yaml         # CI (только тестовая БД)
+├── Dockerfile                     # Общий Python-образ для бэкенд-сервисов
+├── nginx_gateway.conf             # Конфиг nginx gateway (prod)
+├── alembic.ini                    # Конфигурация Alembic
+├── justfile                       # Сценарии автоматизации
+├── .env.example                   # Шаблон переменных окружения
+└── .github/workflows/ci.yaml      # GitHub Actions CI
 ```
 
-Аналогично для `checklists_service`, `reports_service`, `organizations_service`, `admin_service`, `api_gateway`.
+### Структура бэкенд-сервиса (шаблон)
 
-- **config.test.yaml** — конфиг для тестов (уже в репо, без секретов). Используется при `just test <service>`.
+```
+backend/<service_name>/
+├── app/
+│   ├── api/                       # FastAPI: app.py, dependencies.py, endpoints/
+│   ├── repository/                # SQLAlchemy: models.py, base.py, accessors/
+│   ├── streams/                   # Kafka consumers
+│   └── utils/                     # config.py, store.py
+├── tests/
+├── main.py                        # Точка входа (uvicorn)
+├── Dockerfile
+├── requirements.txt
+├── config.yaml                    # Рабочий конфиг (не в git)
+├── config.example.yaml            # Шаблон конфига
+└── config.test.yaml               # Конфиг для тестов
+```
 
-### 3. Переменные окружения
+---
 
-В корне можно задать **.env** (по образцу **.env.example**):
+## Требования
 
-- `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT` — для сборки `DATABASE_URL` в docker-compose и для миграций.
+- **Docker** и **Docker Compose** — обязательно
+- **Python 3.12+** — для локальной разработки бэкенда
+- **Node.js 20+** и **npm** — для локальной разработки фронтенда
+- **[just](https://github.com/casey/just)** — опционально, для удобных сценариев
+
+### Установка just
+
+```bash
+# macOS
+brew install just
+
+# Linux (Ubuntu/Debian)
+sudo apt install just
+
+# Или через cargo
+cargo install just
+```
+
+---
+
+## Быстрый старт с нуля
+
+### 1. Клонирование репозитория
+
+```bash
+git clone <repo-url> RSD
+cd RSD
+```
+
+### 2. Настройка переменных окружения
 
 ```bash
 cp .env.example .env
-# Заполните .env при необходимости
 ```
 
-### 4. База данных
+Отредактируйте `.env` при необходимости. Значения по умолчанию работают для локальной разработки:
 
-- **Локально (Docker):** поднять только БД и Kafka:  
-  `docker compose -f docker-compose.local.yml up -d`  
-  БД будет доступна на `localhost:5432`, Kafka на `localhost:9092`.
+```env
+DB_HOST=db
+DB_PORT=5432
+DB_USER=app
+DB_PASSWORD=appsecret
+DB_NAME=rsd_db
 
-- **Создание БД:** при первом запуске создаётся контейнером PostgreSQL из переменных `POSTGRES_*`. Имя БД по умолчанию — `audit_trail_db`.
+KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+JWT_SECRET=change-me-in-production
+```
 
-- **Миграции:** после поднятия БД выполнить из корня репозитория:
+### 3. Конфигурация бэкенд-сервисов
+
+Каждому сервису нужен свой `config.yaml`. Создайте его из шаблона:
+
+```bash
+# Для каждого существующего сервиса
+cp backend/users_service/config.example.yaml backend/users_service/config.yaml
+cp backend/admin_service/config.example.yaml backend/admin_service/config.yaml
+cp backend/api_gateway/config.example.yaml backend/api_gateway/config.yaml
+```
+
+Также скопируйте shared-конфиг:
+
+```bash
+cp backend/shared/config/config.example.yaml backend/shared/config/config.yaml
+```
+
+### 4. Поднять инфраструктуру (DB + Kafka)
+
+```bash
+just local-up
+# или без just:
+docker compose -f docker-compose.local.yml up -d
+```
+
+Дождитесь готовности (обычно 10–15 секунд):
+- PostgreSQL: `localhost:5432`
+- Kafka: `localhost:9092`
+
+Проверка:
+
+```bash
+docker compose -f docker-compose.local.yml ps
+```
+
+### 5. Применить миграции БД
+
+```bash
+just migrate
+# или без just:
+DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db alembic upgrade head
+```
+
+### 6. Запуск бэкенда
+
+#### Вариант A: через just (рекомендуется)
+
+```bash
+# Создать виртуальные окружения и установить зависимости
+just venv users
+just venv admin
+just venv api_gateway
+
+# Запустить сервисы (каждый в отдельном терминале)
+just run users         # users_service → порт 8000
+just run admin         # admin_service → порт 8000
+just run-gateway       # api_gateway   → порт 8080
+```
+
+#### Вариант B: вручную
+
+```bash
+# Создать venv
+python3 -m venv backend/users_service/.venv
+backend/users_service/.venv/bin/pip install -r backend/users_service/requirements.txt
+
+# Запустить
+cd backend && \
+PYTHONPATH=.:users_service \
+CONFIG_PATH=users_service/config.yaml \
+DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db \
+users_service/.venv/bin/python users_service/main.py
+```
+
+### 7. Запуск фронтенда
+
+```bash
+cd frontend
+npm ci
+npm start
+```
+
+Фронтенд запустится на `http://localhost:3000`.
+
+---
+
+## Режимы запуска
+
+### Локальная разработка (рекомендуется)
+
+Инфраструктура в Docker, сервисы и фронтенд — на хосте.
+
+```bash
+# 1. Инфраструктура
+just local-up
+
+# 2. Миграции
+just migrate
+
+# 3. Бэкенд (отдельные терминалы)
+just run users
+just run admin
+just run-gateway
+
+# 4. Фронтенд (отдельный терминал)
+cd frontend && npm start
+```
+
+| Компонент | URL |
+|-----------|-----|
+| Frontend | http://localhost:3000 |
+| API Gateway | http://localhost:8080 |
+| PostgreSQL | localhost:5432 |
+| Kafka | localhost:9092 |
+
+### Полный Docker-стек
+
+Все сервисы в контейнерах. Наружу доступен только API Gateway.
+
+```bash
+# Поднять
+just up
+# или: docker compose up -d
+
+# Остановить
+just down
+# или: docker compose down
+```
+
+API Gateway: `http://localhost:8080`
+
+### Production (Traefik + SSL)
+
+```bash
+# Настроить домены в .env
+ACME_EMAIL=your-email@example.com
+FRONTEND_DOMAIN=app.yourdomain.com
+API_DOMAIN=api.yourdomain.com
+
+# Запустить
+docker compose -f docker-compose.prod.yaml up -d
+```
+
+Включает:
+- Traefik с автоматическим SSL (Let's Encrypt)
+- HTTP → HTTPS редирект
+- Frontend (React build → nginx)
+- API Gateway (nginx)
+- PostgreSQL, Kafka, Redis — во внутренней сети
+
+---
+
+## База данных и миграции
+
+### Применить миграции
+
+```bash
+just migrate
+```
+
+### Создать новую миграцию
+
+```bash
+just migrate-new "описание миграции"
+# или: alembic revision --autogenerate -m "описание"
+```
+
+### Пересоздать БД с нуля
+
+```bash
+just db-recreate
+```
+
+Это сделает: `docker compose down -v` → поднимет `db` → `alembic upgrade head`.
+
+### Прямое подключение к БД
+
+```bash
+docker exec -it $(docker compose -f docker-compose.local.yml ps -q db) \
+  psql -U app -d audit_trail_db
+```
+
+---
+
+## Фронтенд
+
+### Установка зависимостей
+
+```bash
+cd frontend
+npm ci
+```
+
+### Разработка
+
+```bash
+npm start           # Dev-сервер на :3000 с hot reload
+```
+
+### Сборка
+
+```bash
+npm run build       # Production-сборка в build/
+```
+
+### Docker-образ
+
+```bash
+docker build -t rsd-frontend ./frontend
+docker run -p 3000:80 rsd-frontend
+```
+
+### Стек фронтенда
+
+| Пакет | Версия |
+|-------|--------|
+| react | 19.1 |
+| react-router | 7.8 |
+| @reduxjs/toolkit | 2.8 |
+| axios | 1.12 |
+| classnames | 2.5 |
+
+---
+
+## Тестирование
+
+### Запуск тестов одного сервиса
+
+```bash
+just test users
+just test admin
+```
+
+Тесты используют `config.test.yaml` и `pytest`.
+
+### Запуск всех тестов
+
+```bash
+just test-all
+```
+
+### CI
+
+В репозитории настроен GitHub Actions (`.github/workflows/ci.yaml`), использующий `docker-compose.ci.yaml` для поднятия тестовой БД.
+
+---
+
+## Kafka и S3
+
+Модули для работы с Kafka и S3 находятся в `backend/shared/kafka_streams/` и `backend/shared/storage/`.
+
+### Kafka
+
+- Топики описаны в `kafka_streams/topics.py`
+- Consumer-декоратор: `@kafka_subscriber(topic)` в `consumer.py`
+- Producer: `kafka_streams/producer.py`
+- Запуск Kafka/consumers — через `start_kafka` / `stop_kafka` в lifespan приложения
+
+### S3
+
+- Клиент: `storage/s3_client.py`
+- Загрузка файлов через Kafka-подписчики (subscribers)
+
+Для подключения Kafka/S3 в сервисе добавьте секции `kafka` и `s3` в `config.yaml` (см. `config.example.yaml`).
+
+---
+
+## Справочник just-команд
+
+| Команда | Описание |
+|---------|----------|
+| `just local-up` | Поднять DB + Kafka (docker-compose.local.yml) |
+| `just local-down` | Остановить локальную инфраструктуру |
+| `just migrate` | Применить миграции Alembic |
+| `just migrate-new "msg"` | Создать новую миграцию (autogenerate) |
+| `just db-recreate` | Пересоздать БД с нуля |
+| `just venv <service>` | Создать .venv и установить зависимости для сервиса |
+| `just venv-all` | Создать .venv для всех сервисов |
+| `just deps <service>` | Установить зависимости в текущее окружение |
+| `just deps-all` | Установить зависимости всех сервисов |
+| `just run <service>` | Запустить сервис локально (ожидает DB) |
+| `just run-gateway` | Запустить API Gateway локально |
+| `just test <service>` | Запустить тесты одного сервиса |
+| `just test-all` | Запустить тесты всех сервисов |
+| `just up` | Поднять полный Docker-стек |
+| `just down` | Остановить полный Docker-стек |
+
+**Доступные сервисы для `just run` / `just venv` / `just test`:** `users`, `admin`, `api_gateway`
+
+---
+
+## Документация
+
+| Документ | Описание |
+|----------|----------|
+| [docs/ROLE_MODEL.md](docs/ROLE_MODEL.md) | Ролевая модель (8 ролей, матрица доступа) |
+| [docs/DESIGN_BRIEF.md](docs/DESIGN_BRIEF.md) | ТЗ на дизайн UI/UX |
+| [docs/ТЗ блок базы знаний.docx](docs/ТЗ%20блок%20базы%20знаний.docx) | ТЗ по модулю базы знаний |
+| [.cursor/rules/PROJECT.md](.cursor/rules/PROJECT.md) | Правила проекта и конвенции |
+| [.cursor/rules/frontend/TEMPLATE_ARCHITECTURE.md](.cursor/rules/frontend/TEMPLATE_ARCHITECTURE.md) | Архитектурный шаблон фронтенда |
+
+---
+
+## Troubleshooting
+
+### Порт 5432 занят
+
+Если на хосте уже запущен PostgreSQL:
+
+```bash
+# Остановить системный postgres (macOS)
+brew services stop postgresql
+
+# Или изменить порт в docker-compose.local.yml
+ports:
+  - "5433:5432"
+```
+
+### Kafka не стартует
+
+Kafka требует ~15 секунд на инициализацию. Проверьте healthcheck:
+
+```bash
+docker compose -f docker-compose.local.yml logs kafka
+```
+
+### Миграции падают с ошибкой подключения
+
+Убедитесь, что DB поднята и доступна:
+
+```bash
+docker compose -f docker-compose.local.yml ps db
+# Статус должен быть healthy
+```
+
+Проверьте `DATABASE_URL`:
 
 ```bash
 export DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db
 alembic upgrade head
 ```
 
-Для тестов можно использовать отдельную БД (например, `audit_trail_test`), создав её вручную и указав в `config.test.yaml`.
+### Frontend не видит API
 
-### 5. Зависимости
-
-Установка зависимостей одного сервиса или всех:
-
-```bash
-just deps users
-# или
-just deps-all
-```
-
-Либо вручную: `pip install -r backend/<service>_service/requirements.txt`.
-
----
-
-## Сценарии (just)
-
-Установите [just](https://github.com/casey/just), затем из корня репозитория:
-
-| Команда | Описание |
-|--------|----------|
-| `just venv <service>` | Создать `.venv` в каталоге сервиса и установить зависимости (users, checklists, reports, organizations, admin, api_gateway) |
-| `just venv-all` | Создать отдельный venv для каждого микросервиса и установить зависимости |
-| `just test <service>` | Тесты одного сервиса (при наличии `.venv` используется его pytest) |
-| `just test-all` | Тесты всех микросервисов |
-| `just deps <service>` | Установить зависимости одного сервиса в текущее окружение |
-| `just deps-all` | Установить зависимости всех сервисов в текущее окружение |
-| `just db-recreate` | Пересоздать БД (down -v, up db, alembic upgrade head) |
-| `just local-up` | Поднять только db + kafka (docker-compose.local.yml) |
-| `just local-down` | Остановить local compose |
-| `just run <service>` | Запустить один микросервис локально (ожидается поднятая БД; при наличии `.venv` сервиса используется он) |
-| `just run-gateway` | Запустить API Gateway локально (при наличии `api_gateway/.venv` используется он) |
-| `just up` | Поднять полный стек (docker-compose.yml) |
-| `just down` | Остановить полный стек |
-| `just migrate` | Применить миграции |
-| `just migrate-new "описание"` | Создать новую миграцию (autogenerate) |
-
-Для `just run` и тестов по умолчанию используется `DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db`. Переопределите через `export DATABASE_URL=...` при необходимости.
-
----
-
-## Запуск полного стека (Docker)
-
-Из корня:
-
-```bash
-docker compose up -d
-```
-
-Наружу смотрит только **API Gateway**: `http://localhost:8080`. БД и остальные сервисы доступны только внутри Docker-сети.
-
----
-
-## Локальная разработка
-
-1. Поднять БД (и при необходимости Kafka):  
-   `just local-up` или  
-   `docker compose -f docker-compose.local.yml up -d`
-
-2. Применить миграции:  
-   `just migrate` (или `DATABASE_URL=... alembic upgrade head`)
-
-3. Создать config.yaml из config.example.yaml для нужных сервисов.
-
-4. Запускать сервисы на хосте, например:  
-   `just run users`  
-   `just run checklists`  
-   В другом терминале: `just run-gateway` (порт 8080).
-
----
-
-## Миграции (Alembic)
-
-- Конфиг: **alembic.ini** в корне, `script_location = migrations`.
-- Применить:  
-  `DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db alembic upgrade head`
-- Новая миграция:  
-  `alembic revision --autogenerate -m "описание"`
-
----
-
-## Kafka и S3
-
-В **backend/shared/kafka_streams/** вынесены:
-
-- **topics.py** — топики для загрузки в S3 (отчёты, чек-листы и т.д.).
-- **consumer.py** — декоратор `@kafka_subscriber(topic)` для обработчиков сообщений (s3_client, payload).
-- **kafka.py** — `start_kafka` / `stop_kafka` (producer + список consumer-задач).
-- **subscribers/** — подписчики на топики (запись в S3). Список регистрируется при старте приложения.
-
-Сервисы, которые будут публиковать события или подписываться на топики, должны добавить в config.yaml секции **kafka** и при необходимости **s3** (см. config.example.yaml в users_service). Подключение Kafka/S3 в Application — по образцу Barista_KPI_project (start_kafka при lifespan, передача bootstrap_servers, consumer_group, s3_client).
-
----
-
-## CI/CD
-
-В репозитории Barista_KPI_project используется GitHub Actions (`.github/workflows/ci.yaml`, `docker-compose.ci.yaml`, тесты в контейнере). Для Audit Trail CI/CD планируется адаптировать под монорепо и несколько микросервисов: отдельные шаги тестов по сервисам, общие миграции, сборка образов. Заготовка под workflow и docker-compose для CI будет добавлена при настройке пайплайна.
+Убедитесь, что API Gateway запущен на `:8080` и в фронтенде настроен правильный `baseURL` (см. `frontend/src/api/APIClient.js`).

@@ -12,14 +12,14 @@ RUN npm run build
 # Stage 2: Production with Nginx
 FROM nginx:alpine
 
-# Copy built app
-COPY --from=builder /app/build /usr/share/nginx/html
+# Copy built app (Vite outputs to dist/, not build/)
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy MIME types
-COPY --from=builder /app/build/manifest.json /usr/share/nginx/html/manifest.json
+# Copy manifest.json explicitly
+COPY --from=builder /app/dist/manifest.json /usr/share/nginx/html/manifest.json
 
 EXPOSE 80
 
