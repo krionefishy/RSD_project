@@ -29,7 +29,7 @@ export default function AdminEduManagePage() {
       {/* Header */}
       <div
         className="px-4 pt-6 pb-5"
-        style={{ background: "linear-gradient(160deg, #C41E3A 0%, #A3152E 100%)" }}
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>
           Управление курсами

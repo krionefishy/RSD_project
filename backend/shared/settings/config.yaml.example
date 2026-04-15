@@ -1,0 +1,33 @@
+# Example configuration for RSD Backend
+# Copy to config.yaml and adjust for your environment
+
+# Logging
+log_level: INFO
+
+# Database
+database:
+  url: postgresql+asyncpg://app:appsecret@localhost:5432/rsd_db
+  echo: false
+
+# Kafka
+kafka:
+  bootstrap_servers: localhost:9092
+  client_id: rsd-backend
+  consumer_group: rsd-backend-group
+  max_request_size: 10485760  # 10MB
+
+# Redis
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+
+# S3 (MinIO for local development)
+s3:
+  endpoint_url: http://localhost:9000
+  tenant_id: ""  # Optional for MinIO
+  key_id: minioadmin
+  secret_key: minioadmin
+  bucket_name: rsd-bucket
+  region: us-east-1
+  verify: false

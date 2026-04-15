@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, CheckCircle, Clock, AlertTriangle, Search } from "lucide-react";
+import { Users, CheckCircle, Clock, Search } from "lucide-react";
 import { Avatar } from "../../components/Avatar";
 
 interface Assignment {
@@ -7,14 +7,14 @@ interface Assignment {
   employeeName: string;
   testTitle: string;
   deadline: string;
-  status: "completed" | "in-progress" | "overdue" | "pending";
+  status: "completed" | "in-progress" | "pending";
   score?: number;
 }
 
 const assignments: Assignment[] = [
   { id: "as1", employeeName: "Анна Иванова", testTitle: "Стандарты обслуживания", deadline: "20.04.2026", status: "completed", score: 90 },
   { id: "as2", employeeName: "Кирилл Захаров", testTitle: "Стандарты обслуживания", deadline: "20.04.2026", status: "in-progress" },
-  { id: "as3", employeeName: "Мария Федорова", testTitle: "Регламенты точки", deadline: "18.04.2026", status: "overdue" },
+  { id: "as3", employeeName: "Мария Федорова", testTitle: "Регламенты точки", deadline: "18.04.2026", status: "in-progress" },
   { id: "as4", employeeName: "Ольга Крылова", testTitle: "Техника допродаж", deadline: "25.04.2026", status: "completed", score: 95 },
   { id: "as5", employeeName: "Иван Волков", testTitle: "Стандарты обслуживания", deadline: "20.04.2026", status: "pending" },
   { id: "as6", employeeName: "Анна Иванова", testTitle: "Знание ассортимента", deadline: "25.04.2026", status: "in-progress" },
@@ -23,28 +23,27 @@ const assignments: Assignment[] = [
 const statusConfig = {
   completed: { label: "Сдан", color: "#22C55E", bg: "#F0FDF4", icon: CheckCircle },
   "in-progress": { label: "В процессе", color: "#2E7D32", bg: "#E8F5E9", icon: Clock },
-  overdue: { label: "Просрочен", color: "#EF4444", bg: "#FEF2F2", icon: AlertTriangle },
   pending: { label: "Ожидает", color: "#94A3B8", bg: "#F1F5F9", icon: Clock },
 };
 
 export default function AdminEduAssignmentsPage() {
-  const [filter, setFilter] = useState<"all" | "overdue" | "completed">("all");
+  const [filter, setFilter] = useState<"all" | "in-progress" | "completed">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = assignments.filter(a => {
-    if (filter === "overdue" && a.status !== "overdue") return false;
+    if (filter === "in-progress" && a.status !== "in-progress") return false;
     if (filter === "completed" && a.status !== "completed") return false;
     if (searchQuery && !a.employeeName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  const overdueCount = assignments.filter(a => a.status === "overdue").length;
   const completedCount = assignments.filter(a => a.status === "completed").length;
   const inProgressCount = assignments.filter(a => a.status === "in-progress").length;
+  const pendingCount = assignments.filter(a => a.status === "pending").length;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #C41E3A 0%, #A3152E 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Назначения</h1>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 2 }}>Контроль прохождения тестов и курсов</p>
       </div>
@@ -60,8 +59,8 @@ export default function AdminEduAssignmentsPage() {
             <p style={{ fontSize: 10, color: "#64748B" }}>Сдали</p>
           </div>
           <div className="rounded-xl p-3 text-center" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <p style={{ fontSize: 20, fontWeight: 700, color: "#EF4444" }}>{overdueCount}</p>
-            <p style={{ fontSize: 10, color: "#64748B" }}>Просрочено</p>
+            <p style={{ fontSize: 20, fontWeight: 700, color: "#94A3B8" }}>{pendingCount}</p>
+            <p style={{ fontSize: 10, color: "#64748B" }}>Ожидает</p>
           </div>
         </div>
 
@@ -71,7 +70,7 @@ export default function AdminEduAssignmentsPage() {
         </div>
 
         <div className="flex gap-2">
-          {[{ key: "all", label: "Все" }, { key: "overdue", label: "Просроченные" }, { key: "completed", label: "Сдавшие" }].map((f) => (
+          {[{ key: "all", label: "Все" }, { key: "in-progress", label: "В процессе" }, { key: "completed", label: "Сдавшие" }].map((f) => (
             <button key={f.key} onClick={() => setFilter(f.key as any)} className="px-3 py-1.5 rounded-lg" style={{ background: filter === f.key ? "#C41E3A" : "#F1F5F9", color: filter === f.key ? "#fff" : "#374151", fontSize: 12, fontWeight: filter === f.key ? 600 : 400 }}>
               {f.label}
             </button>

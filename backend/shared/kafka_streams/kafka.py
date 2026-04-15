@@ -18,8 +18,7 @@ async def start_kafka(
     consumer_group: str,
     max_request_size: int = 10 * 1024 * 1024,
     s3_client=None,
-    consumers: list = None,
-    domain_consumers: list = None,
+    consumers: list | None = None,
 ) -> None:
     try:
         raw = AIOKafkaProducer(
@@ -47,19 +46,6 @@ async def start_kafka(
         except Exception as e:
             logger.warning("Kafka subscriber %s not started: %s", getattr(run_consumer, "__name__", ""), e)
 
-    for run_consumer in domain_consumers or []:
-        try:
-            task = asyncio.create_task(
-                run_consumer(
-                    bootstrap_servers=bootstrap_servers,
-                    consumer_group=consumer_group,
-                    app=app,
-                ),
-            )
-            tasks.append(task)
-        except Exception as e:
-            logger.warning("Kafka domain subscriber %s not started: %s", getattr(run_consumer, "__name__", ""), e)
-
     app.state._kafka_consumer_tasks = tasks
     if tasks:
         logger.info("Kafka consumers started: %d tasks", len(tasks))
@@ -76,7 +62,7 @@ async def stop_kafka(app: "FastAPI") -> None:
         except asyncio.CancelledError:
             pass
     if tasks:
-        logger.info("Kafka S3 consumer tasks stopped: %d", len(tasks))
+        logger.info("Kafka consumer tasks stopped: %d", len(tasks))
 
     producer = getattr(app.state, "kafka_producer", None)
     if producer is not None:

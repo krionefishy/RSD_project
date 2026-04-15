@@ -1,11 +1,9 @@
 import json
-from typing import Any, Optional
-
-from fastapi import Request
+from typing import Any
 
 
 class KafkaProducerWrapper:
-    """Обёртка над AIOKafkaProducer. Получается через Depends(get_producer), отправка: await producer.send(topic, payload)."""
+    """Wrapper over AIOKafkaProducer. Send messages: await producer.send(topic, payload)."""
 
     def __init__(self, producer: Any = None):
         self._producer = producer
@@ -22,7 +20,3 @@ class KafkaProducerWrapper:
         if self._producer is not None:
             await self._producer.stop()
             self._producer = None
-
-
-def get_producer(request: Request) -> KafkaProducerWrapper:
-    return getattr(request.app.state, "kafka_producer", None) or KafkaProducerWrapper(None)

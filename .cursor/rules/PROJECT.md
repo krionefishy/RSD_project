@@ -1,240 +1,105 @@
 # RSD Project Rules
 
-> Основные правила и конвенции для работы с проектом RSD (Retail Staff Development).
-> Этот файл должен использоваться вместе с:
-> - [CODING_RULES.md](./frontend/CODING_RULES.md)
-> - [TEMPLATE_ARCHITECTURE.md](./frontend/TEMPLATE_ARCHITECTURE.md)
-
----
-
 ## 1. Общее описание проекта
 
-RSD — платформа для обучения сотрудников сети точек питания (рестораны, кофейни).
+RSD — платформа для обучения сотрудников сети точек питания.
 
 **Основные цели:**
 - Обучение персонала через структурированные курсы и тесты
 - Гибкая ролевая модель (сотрудник, администратор, супер-администратор)
 - Учет прогресса обучения и ежемесячные рейтинги
 
-**Функционал сотрудника:**
-- Профиль (личные данные, прогресс, уровень)
-- База знаний (курсы, материалы, тесты)
-- Продажи (учет продаж и KPI)
-
 ---
 
-## 2. Структура проекта
+## 2. Бэкенд (Монолит)
 
-### Документация
+**Модульный монолит** — единое приложение с четким разделением по доменам.
 
-Вся документация и технические задания хранятся в директории [`docs/`](../../docs/):
-
-- ТЗ по базе знаний: `docs/ТЗ блок базы знаний.docx`
-- Другие ТЗ и спецификации — добавлять в эту папку
-
-### Бэкенд
-
-Backend-сервисы живут в [`backend/`](../../backend/).
-
-**Единая конфигурация** (shared для всех сервисов):
 ```
-backend/shared/
-├── config/
-│   ├── config.yaml         # Общий конфиг (переменные окружения ${VAR:-default})
-│   └── config.example.yaml # Пример для локальной разработки
-└── # другие shared-модули (DB, Kafka, base classes)
-```
-
-Текущая структура сервиса (шаблон для новых сервисов):
-```
-backend/knowledge_base_service/
+backend/
 ├── app/
-│   ├── api/           # FastAPI endpoints, dependencies
-│   ├── repository/    # ORM models, accessors, base classes
-│   ├── streams/       # Kafka consumers
-│   └── utils/         # Config (использует shared/config/), store
-├── tests/
-└── main.py
+│   ├── main.py              # Точка входа FastAPI
+│   ├── application.py       # Application класс, lifespan
+│   ├── api/
+│   │   └── router.py        # Корневой роутер + health (/api/v1/health)
+│   ├── knowledge_base/      # Домен: База знаний
+│   │   ├── api/             #   Routes (DishkaRoute + FromDishka)
+│   │   ├── usecases/        #   Бизнес-логика (commit/rollback)
+│   │   ├── domain.py        #   Входные Pydantic модели
+│   │   ├── dto.py           #   Выходные Pydantic модели
+│   │   └── db_models.py     #   SQLAlchemy ORM
+│   ├── users/
+│   ├── sellings/
+│   └── admin/
+├── shared/
+│   ├── di/providers/        # dishka — централизованные провайдеры
+│   ├── kafka_streams/       # Kafka: producer, consumer, subscribers
+│   └── settings/            # Config (YAML + env)
+└── storage/
+    ├── pg/                  # PostgreSQL + Base
+    ├── redis/
+    ├── s3/
+    └── migrations/          # Alembic
 ```
 
-**Архитектурные паттерны** (см. также [TEMPLATE_ARCHITECTURE.md](./frontend/TEMPLATE_ARCHITECTURE.md)):
-- Application class с lifespan management
-- Store pattern для доступа к данным
-- Direct accessor calls из endpoints (без сервисного слоя)
-- SQLAlchemy async ORM
-- **Единый shared-конфиг** с поддержкой переменных окружения
-- **Единый Dockerfile** в корне проекта для всех сервисов
-- Shared модули для БД, Kafka, конфигурации
-
-**Dockerfile:** [`Dockerfile`](../../Dockerfile) (в корне проекта) — общий для всех Python-сервисов, запуск через разные команды в docker-compose.
-
-### Фронтенд
-
-**Справочник для разработки фронтенда:** [`frontend_example/`](../../frontend_example/)
-
-Включает:
-- Полный набор компонентов и стилизации
-- Примеры API-классов
-- Роутинг и шаблоны страниц
-- Redux структуру
-
-При разработке нового фронтенда **обязательно** сверяться с frontend_example.
+**Правила:**
+1. **API** — роуты, валидация, вызов usecase через dishka (`FromDishka`)
+2. **Usecases** — бизнес-логика, получают `AsyncSession` и другие зависимости через `__init__`, сами управляют `commit`/`rollback`
+3. **Domain** — входные Pydantic модели
+4. **DTO** — выходные Pydantic модели
+5. **DB Models** — SQLAlchemy ORM, `Base` из `storage.pg.database`
+6. **DI** — dishka, провайдеры в `shared/di/providers/`, usecase регистрируются через `provide_all`
+7. **Kafka** — только для фоновых S3 операций, единый список `s3_consumers`
+8. **Docker** — Traefik (без nginx), `proxy` + `internal` сети
 
 ---
 
-## 3. Фронтенд: обязательные правила
+## 3. Фронтенд
 
-### Стек технологий
+### Стек
 
 | Слой | Технология |
 |------|------------|
-| Язык | JavaScript (JSX) |
-| UI | React 19 (функциональные компоненты) |
-| Роутинг | react-router 7 (createBrowserRouter) |
-| Состояние | Redux Toolkit |
-| HTTP | axios |
-| Стили | CSS Modules + classnames |
-| Сборка | react-scripts (CRA) или Vite |
+| Язык | TypeScript (`strict: true`) |
+| UI | React 18 |
+| Роутинг | react-router 7 (`createBrowserRouter`) |
+| Состояние | jotai |
+| Данные | Mock-first (`src/mock/mockData.ts`) |
+| UI-kit | shadcn/Radix |
+| Стили | Tailwind CSS v4 |
+| Сборка | Vite 6 |
 
-### Архитектура (обязательно следовать)
+### Структура
 
-**Структура каталогов:**
 ```
 frontend/
-├── public/           # index.html, manifest.json (PWA), иконки
 ├── src/
-│   ├── api/          # Классы для работы с API
-│   ├── assets/       # Иконки, изображения
-│   ├── components/   # Переиспользуемые UI-компоненты
-│   ├── config/       # routerConfig.js, constants.js
-│   ├── features/     # Redux slices, thunks
-│   ├── hooks/        # Кастомные хуки
-│   ├── mock/         # Mock-данные для разработки без бэкенда
-│   ├── pages/        # Страницы по ролям (user/, admin/, auth/)
-│   ├── store/        # Конфигурация Redux store
-│   ├── templates/    # Layout-шаблоны (auth.jsx, user.jsx)
-│   └── utils/        # Утилиты (authStorage, date helpers и т.д.)
-├── Dockerfile        # Multi-stage: node -> nginx
-└── nginx.conf        # SPA configuration
+│   ├── app/          # App.tsx, routes.tsx
+│   ├── components/   # ui/ + общие компоненты
+│   ├── context/      # AppContext
+│   ├── mock/         # Mock-данные
+│   ├── pages/        # Экраны по ролям
+│   ├── store/        # Jotai atoms
+│   ├── styles/       # tailwind.css + theme.css
+│   ├── templates/    # Layout-шаблоны ролей
+│   └── types/        # TypeScript интерфейсы
+├── Dockerfile
+└── nginx.conf
 ```
-
-### PWA требования
-
-- `manifest.json` с полями: `short_name`, `name`, `icons` (16, 24, 32, 64, 192, 512), `start_url`, `display: standalone`, `theme_color`, `background_color`
-- Service Worker (можно использовать встроенный в react-scripts или настроить workbox)
-- Иконки разных размеров в `public/`
-
-### Роутинг
-
-Все маршруты объявляются **в одном файле**: `src/config/routerConfig.js`
-
-Используется объектная конфигурация `createBrowserRouter`.
-
-Шаблоны (templates):
-- `AuthTemplate` — страницы без авторизации (логин)
-- `UserTemplate` — страницы сотрудника (с нижним меню)
-
-Защита маршрутов реализуется в корневом компоненте `App` (`pages/app/app.jsx`) — проверка токена и ролей, редирект на `/auth/login`.
-
-### API слой
-
-Каждый домен — отдельный класс с методами:
-```javascript
-class AuthAPIClass {
-    async login(email, password) { ... }
-    async refresh(token) { ... }
-}
-export const AuthAPI = new AuthAPIClass();
-```
-
-Все API-классы используют общий axios instance из `APIClient.js` с interceptors для токенов.
-
-### Redux структура
-
-```
-features/
-├── user/              # user slice + thunks
-│   ├── slice.js
-│   ├── thunks.js
-│   ├── selectors.js
-│   ├── stateMappers.js
-│   └── constants.js
-└── statusReducer.js   # глобальный статус (isAdmin, isSuperAdmin)
-```
-
-### Компоненты
-
-Каждый компонент — отдельная папка в `components/`:
-```
-components/
-├── button/
-│   ├── button.jsx
-│   └── button.module.css
-└── header/
-    ├── header.jsx
-    └── header.module.css
-```
-
-**Naming convention:**
-- Папки и файлы — camelCase
-- Компоненты — PascalCase
-- CSS классы — camelCase через CSS Modules
 
 ---
 
-## 4. Работа с ТЗ
+## 4. Инфраструктура
 
-При реализации функционала из ТЗ:
-1. Прочитать соответствующий документ в `docs/`
-2. Вынести все модели данных из ТЗ в `src/mock/`
-3. Реализовать страницы согласно структуре из frontend_example
-4. Использовать mocked API для первой итерации (без реального бэкенда)
+- Production: `docker-compose.prod.yaml` (Traefik + SSL)
+- Local: `docker-compose.local.yml` (Postgres, Kafka, Redis, MinIO)
+- Сети: `proxy` (внешняя) / `internal` (изолированная)
 
 ---
 
-## 5. Инфраструктура
+## 5. Документация
 
-### Docker
-
-- Все сервисы запускаются через docker-compose
-- Production: `docker-compose.prod.yaml` с Traefik
-- Local: `docker-compose.local.yml`
-
-### Traefik (production)
-
-- Reverse proxy + SSL termination
-- Let's Encrypt автоматическая генерация сертификатов
-- Docker provider для service discovery
-- HTTP -> HTTPS redirect middleware
-
-### Сети
-
-- `proxy` — внешняя сеть для Traefik
-- `internal` — внутренняя изолированная сеть между сервисами
-
----
-
-## 6. Чек-лист при создании нового фронтенда
-
-- [ ] Создать структуру каталогов по шаблону
-- [ ] Установить зависимости (react, react-router, redux toolkit, axios, classnames)
-- [ ] Настроить PWA (manifest.json, иконки)
-- [ ] Создать базовые компоненты (Header, Button, Loader, Menu, MenuItem)
-- [ ] Настроить роутинг в `config/routerConfig.js`
-- [ ] Создать шаблоны (templates/auth.jsx, templates/user.jsx)
-- [ ] Реализовать auth guard в `pages/app/app.jsx`
-- [ ] Создать mock-данные для всех сущностей
-- [ ] Реализовать API-классы (mocked)
-- [ ] Реализовать Redux slices для состояния
-- [ ] Создать страницы согласно ТЗ
-- [ ] Настроить Dockerfile и nginx.conf
-- [ ] Добавить в docker-compose.prod.yaml
-
----
-
-## 7. Ссылки
-
-- [CODING_RULES.md](./frontend/CODING_RULES.md) — подробные правила кодирования
-- [TEMPLATE_ARCHITECTURE.md](./frontend/TEMPLATE_ARCHITECTURE.md) — архитектурный шаблон
-- [frontend_example](../../frontend_example/) — рабочий пример для справки
-- [docs](../../docs/) — технические задания
+- `docs/BACKEND_ARCHITECTURE.md` — архитектура бэкенда
+- `docs/ROLE_MODEL.md` — ролевая модель
+- `docs/AUTH.md` — аутентификация и авторизация
+- `docs/SETUP.md` — настройка окружения

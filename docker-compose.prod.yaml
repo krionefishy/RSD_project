@@ -120,84 +120,47 @@ services:
     depends_on:
       - traefik
 
-  # --- API Gateway (placeholder) ---
-  gateway:
-    image: nginx:alpine
+  # --- Backend (Monolith) ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
-    volumes:
-      - ./nginx_gateway.conf:/etc/nginx/nginx.conf:ro
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@db:5432/${DB_NAME:-rsd_db}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOG_LEVEL: INFO
     labels:
       - "traefik.enable=true"
       # HTTPS router
-      - "traefik.http.routers.gateway.rule=Host(`${API_DOMAIN:-api.example.com}`)"
-      - "traefik.http.routers.gateway.entrypoints=websecure"
-      - "traefik.http.routers.gateway.tls.certresolver=le"
-      - "traefik.http.routers.gateway.service=gateway"
+      - "traefik.http.routers.backend.rule=Host(`${API_DOMAIN:-api.example.com}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=le"
+      - "traefik.http.routers.backend.service=backend"
       # HTTP -> HTTPS redirect
-      - "traefik.http.routers.gateway-http.rule=Host(`${API_DOMAIN:-api.example.com}`)"
-      - "traefik.http.routers.gateway-http.entrypoints=web"
-      - "traefik.http.routers.gateway-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.backend-http.rule=Host(`${API_DOMAIN:-api.example.com}`)"
+      - "traefik.http.routers.backend-http.entrypoints=web"
+      - "traefik.http.routers.backend-http.middlewares=redirect-to-https"
       # Service
-      - "traefik.http.services.gateway.loadbalancer.server.port=80"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
     networks:
-      - proxy
-      - internal
+      - proxy      # Для доступа через Traefik
+      - internal   # Для БД, Redis, Kafka
     depends_on:
-      - traefik
-
-  # --- Backend Services (placeholders) ---
-  # Раскомментировать и настроить при добавлении реальных бэкенд-сервисов
-
-  # knowledge_base_service:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   restart: unless-stopped
-  #   environment:
-  #     SERVICE_NAME: knowledge_base_service
-  #     CONFIG_PATH: /app/backend/shared/config/config.yaml
-  #     DATABASE_URL: postgresql+asyncpg://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@db:5432/${DB_NAME:-rsd_db}
-  #     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  #     KAFKA_CLIENT_ID: knowledge_base_service
-  #     REDIS_HOST: redis
-  #     REDIS_PORT: 6379
-  #     LOG_LEVEL: INFO
-  #   command: ["uvicorn", "backend.knowledge_base_service.app.api.app:app.app", "--host", "0.0.0.0", "--port", "8000"]
-  #   healthcheck:
-  #     test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     kafka:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   networks:
-  #     - internal
-  #   # Внешний доступ через gateway только
-
-  # auth_service:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   restart: unless-stopped
-  #   environment:
-  #     SERVICE_NAME: auth_service
-  #     CONFIG_PATH: /app/backend/shared/config/config.yaml
-  #     DATABASE_URL: postgresql+asyncpg://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@db:5432/${DB_NAME:-rsd_db}
-  #     REDIS_HOST: redis
-  #     JWT_SECRET: ${JWT_SECRET}
-  #   command: ["uvicorn", "backend.auth_service.app.api.app:app.app", "--host", "0.0.0.0", "--port", "8000"]
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #   networks:
-  #     - internal
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_data:

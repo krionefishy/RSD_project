@@ -1,23 +1,27 @@
 # TEMPLATE ARCHITECTURE
 
+> **Backend архитектура:** см. [docs/BACKEND_ARCHITECTURE.md](../../docs/BACKEND_ARCHITECTURE.md) — модульный монолит с usecases, DI, Kafka.
+
 ---
 
 # Часть 1. Обобщённый шаблон архитектуры (для любого проекта)
 
-> Универсальный шаблон, выведенный из реального проекта.
-> Используй его при создании нового проекта или модуля с такой же архитектурой.
+> Универсальный шаблон, адаптированный под текущий проект RSD.
+> 
+> **Frontend:** Vite + React 18 + TypeScript + Tailwind + Jotai
+> **Backend:** Python + FastAPI + Модульный монолит (см. [BACKEND_ARCHITECTURE.md](../../docs/BACKEND_ARCHITECTURE.md))
 
 ## Стек и инструменты
 
 | Слой | Выбор |
 |------|-------|
-| Язык | JavaScript (JSX) |
-| UI-фреймворк | React (функциональные компоненты, хуки) |
-| Состояние | Redux Toolkit (`createSlice`, `createAsyncThunk`, `createSelector`) |
+| Язык | TypeScript (`strict`) |
+| UI-фреймворк | React 18 (функциональные компоненты, хуки) |
+| Состояние | Jotai atoms + локальный state (`useState`) |
 | Роутинг | react-router (`createBrowserRouter`, объектная конфигурация) |
-| HTTP | axios (класс-обёртка с interceptors) |
-| Стили | CSS Modules (`.module.css`) + глобальный CSS |
-| CSS-утилиты | `classnames` |
+| Данные | Mock-first (`src/mock/mockData.ts`) |
+| Стили | Tailwind CSS v4 + CSS tokens (`src/styles/theme.css`) |
+| UI-библиотеки | Radix/shadcn, lucide-react, sonner, recharts |
 
 ---
 
@@ -25,21 +29,17 @@
 
 ```
 frontend/
-├── public/                       # Статические файлы (manifest, favicon, index.html)
+├── public/                       # manifest, service-worker, иконки
 └── src/
-    ├── index.js                  # Точка входа: ReactDOM.createRoot
-    │                             #   Provider (Redux) → RouterProvider (react-router)
-    │
-    ├── api/                      # API-слой
-    ├── assets/                   # Статические ресурсы (иконки, изображения)
+    ├── app/                      # App.tsx, routes.tsx
     ├── components/               # Переиспользуемые UI-компоненты
-    ├── config/                   # Конфигурация (константы, роутер)
-    ├── features/                 # Redux: слайсы, thunks, селекторы
-    ├── hooks/                    # Глобальные кастомные хуки
+    ├── context/                  # AppContext и провайдеры
+    ├── mock/                     # Mock-данные для статики
     ├── pages/                    # Страницы (по ролям / разделам)
-    ├── store/                    # Конфигурация Redux store
+    ├── store/                    # Jotai atoms
+    ├── styles/                   # Tailwind + theme токены
     ├── templates/                # Layout-шаблоны (Outlet + меню)
-    └── utils/                    # Утилитарные чистые функции
+    └── types/                    # TypeScript интерфейсы домена
 ```
 
 ---
@@ -254,9 +254,9 @@ pages/app/
 ```
 
 **Принципы:**
-- Один файл `routerConfig.js` — единая точка конфигурации всех маршрутов.
+- Один файл `src/app/routes.tsx` — единая точка конфигурации всех маршрутов.
 - Layout-роуты (`<Template>`) оборачивают группу страниц через `children` + `<Outlet>`.
-- Auth guard — в корневом `App`, а не в отдельном компоненте `ProtectedRoute`.
+- Auth guard реализуется в `RequireAuth` внутри `routes.tsx`.
 - Навигация — только через `useAnimatedNavigate()`.
 
 ---
@@ -267,18 +267,18 @@ pages/app/
 |-----|----------|------|
 | 1 | Создать папку страницы | `src/pages/<role>/<pageName>/` |
 | 2 | Создать компонент + стили | `<pageName>.jsx` + `<pageName>.module.css` |
-| 3 | Зарегистрировать маршрут | `src/config/routerConfig.js` |
-| 4 | Создать API-класс (если новый домен) | `src/api/<Domain>API.js` |
-| 5 | Создать Redux-фичу (если нужен глобальный стейт) | `src/features/<name>/` |
-| 6 | Зарегистрировать reducer в store | `src/store/store.js` |
+| 3 | Зарегистрировать маршрут | `src/app/routes.tsx` |
+| 4 | Описать типы домена | `src/types/<domain>.ts` |
+| 5 | Добавить mock-данные | `src/mock/mockData.ts` |
+| 6 | Добавить atom при необходимости | `src/store/atoms.ts` |
 | 7 | Создать общий компонент (если переиспользуется) | `src/components/<name>/` |
 
 ---
 ---
 
-# Часть 2. Текущая архитектура проекта Barista (детальное дерево)
+# Часть 2. Исторический слепок Barista (legacy, только для справки)
 
-> Фактическая структура каталогов и файлов текущего фронтенда.
+> Ниже приведён архивный слепок старого проекта; для нового кода ориентируйся на Часть 1 и `PROJECT.md`.
 > Все пути, файлы и аннотации основаны на реальном содержимом проекта.
 
 ## Технический стек

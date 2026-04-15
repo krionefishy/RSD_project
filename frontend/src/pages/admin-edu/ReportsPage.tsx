@@ -7,8 +7,8 @@ export default function AdminEduReportsPage() {
   const stats = [
     { label: "Среднее прохождение", value: "72%", color: "#C41E3A" },
     { label: "Назначено тестов", value: "86", color: "#2E7D32" },
-    { label: "Сдали с 1 попытки", value: "64%", color: "#22C55E" },
-    { label: "Просроченных", value: "12", color: "#EF4444" },
+    { label: "Завершили курс", value: "58", color: "#22C55E" },
+    { label: "В процессе", value: "28", color: "#F59E0B" },
   ];
 
   const topSections = [
@@ -27,7 +27,7 @@ export default function AdminEduReportsPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #C41E3A 0%, #A3152E 100%)" }}>
+      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Отчёты</h1>

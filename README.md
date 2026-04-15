@@ -1,21 +1,33 @@
-# RSD — Retail Staff Development
+# Робин Сдобин — Мобильный кабинет продавца
 
-Корпоративная платформа «Мобильный кабинет Продавца» для сети розничных точек: обучение персонала, отслеживание продаж, рейтинги и мотивация.
+Корпоративная платформа для сети пекарен «Робин Сдобин»: обучение персонала, отслеживание продаж, рейтинги и мотивация.
+
+## Фирменный стиль
+
+Приложение выполнено в фирменных цветах бренда «Робин Сдобин»:
+
+| Цвет | HEX | Использование |
+|------|-----|---------------|
+| 🟢 Зелёный (лес) | `#2E7D32` | Основной, заголовки, кнопки |
+| 🟡 Золотой (выпечка) | `#F5A623` | Акценты, иконки, графики |
+| 🔴 Ягодный | `#C41E3A` | Вторичный акцент, важные действия |
+| 🟤 Кремовый фон | `#FFF8F0` | Фон приложения |
 
 ## Стек
 
 | Слой | Технология |
 |------|-----------|
-| Frontend | React 19, Redux Toolkit, React Router 7, axios, CSS Modules (PWA) |
-| Backend | Python 3.12+, FastAPI, SQLAlchemy (async), микросервисная архитектура |
+| Frontend | React 18, Vite, TypeScript, Tailwind CSS v4, Jotai (PWA) |
+| Backend | Python 3.12+, FastAPI, SQLAlchemy (async), **модульный монолит** |
 | БД | PostgreSQL 15+ |
 | Миграции | Alembic (единые для всей БД) |
-| Очереди | Apache Kafka |
+| Очереди | Apache Kafka (фоновые задачи) |
 | Кэш | Redis 7 |
 | Хранилище | S3 (через Kafka-подписчики) |
-| API Gateway | nginx (prod) / FastAPI gateway (dev) |
-| Reverse Proxy | Traefik (prod, SSL через Let's Encrypt) |
+| Reverse Proxy | **Traefik** (единый entrypoint, SSL через Let's Encrypt) |
 | Контейнеризация | Docker, Docker Compose |
+
+> **Архитектура Backend:** см. [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md) — модульный монолит с usecases, DI, Kafka для фоновых задач.
 
 ---
 
@@ -23,56 +35,90 @@
 
 ```
 RSD/
-├── backend/
-│   ├── shared/                    # Общие модули: DB, Kafka, S3, config
-│   │   ├── config/                #   config.yaml, config.example.yaml, default.yaml
-│   │   ├── kafka_streams/         #   producer, consumer, subscribers, topics
-│   │   └── storage/               #   s3_client
-│   ├── users_service/             # Сервис пользователей
-│   ├── admin_service/             # Сервис администрирования
-│   ├── knowledge_base_service/    # Сервис базы знаний
-│   └── api_gateway/               # API Gateway (FastAPI)
+├── backend/                       # Модульный монолит (FastAPI)
+│   ├── app/
+│   │   ├── main.py                #   Точка входа FastAPI
+│   │   ├── api/router.py          #   Корневой роутер API
+│   │   ├── shared/                #   Общие модули
+│   │   │   ├── settings/          #     Pydantic Settings + YAML
+│   │   │   ├── di/                #     DI контейнер
+│   │   │   ├── auth/              #     JWT, middleware
+│   │   │   ├── errors/            #     Исключения, обработчики
+│   │   │   └── db/                #     SQLAlchemy session
+│   │   ├── knowledge_base/        #   Домен: База знаний
+│   │   │   ├── api/               #     Routes (tests, materials, courses)
+│   │   │   ├── usecases/          #     Бизнес-логика + транзакции
+│   │   │   ├── domain.py          #     Pydantic входные модели
+│   │   │   ├── dto.py             #     Pydantic выходные модели
+│   │   │   └── db_models.py       #     SQLAlchemy ORM
+│   │   ├── users/                 #   Домен: Пользователи
+│   │   ├── sellings/              #   Домен: Продажи
+│   │   └── admin/                 #   Домен: Администрирование
+│   ├── storage/                   # Инфраструктурные адаптеры
+│   │   ├── pg/                    #   PostgreSQL base
+│   │   ├── migrations/            #   Alembic миграции
+│   │   ├── s3/                    #   S3 клиент
+│   │   └── redis/                 #   Redis клиент
+│   ├── streams/                   # Kafka инфраструктура
+│   │   ├── kafka/                 #   Producer, Consumer
+│   │   ├── subscribers/           #   Обработчики событий
+│   │   └── topics.py              #   Константы топиков
+│   ├── Dockerfile                 #   Backend Dockerfile
+│   └── requirements.txt           #   Python зависимости
 ├── frontend/                      # React PWA
 │   ├── public/                    #   manifest.json, service-worker, index.html
 │   ├── src/                       #   pages/, components/, api/, features/, etc.
 │   ├── Dockerfile                 #   Multi-stage: node build → nginx
 │   └── nginx.conf                 #   SPA-конфигурация
-├── migrations/                    # Alembic миграции (общие для всех сервисов)
-│   ├── env.py
-│   └── versions/
 ├── docs/                          # Документация и ТЗ
-│   ├── ROLE_MODEL.md              #   Ролевая модель (8 ролей)
+│   ├── ROLE_MODEL.md              #   Ролевая модель
 │   ├── DESIGN_BRIEF.md            #   ТЗ на дизайн
+│   ├── BACKEND_ARCHITECTURE.md    #   Архитектура backend (монолит)
 │   └── ТЗ блок базы знаний.docx
 ├── docker-compose.yml             # Полный стек (все сервисы)
 ├── docker-compose.local.yml       # Локальная разработка (только DB + Kafka)
 ├── docker-compose.prod.yaml       # Production (Traefik + SSL)
 ├── docker-compose.ci.yaml         # CI (только тестовая БД)
-├── Dockerfile                     # Общий Python-образ для бэкенд-сервисов
-├── nginx_gateway.conf             # Конфиг nginx gateway (prod)
 ├── alembic.ini                    # Конфигурация Alembic
 ├── justfile                       # Сценарии автоматизации
 ├── .env.example                   # Шаблон переменных окружения
 └── .github/workflows/ci.yaml      # GitHub Actions CI
 ```
 
-### Структура бэкенд-сервиса (шаблон)
+### Структура бэкенд-монолита (модульный)
 
 ```
-backend/<service_name>/
-├── app/
-│   ├── api/                       # FastAPI: app.py, dependencies.py, endpoints/
-│   ├── repository/                # SQLAlchemy: models.py, base.py, accessors/
-│   ├── streams/                   # Kafka consumers
-│   └── utils/                     # config.py, store.py
-├── tests/
-├── main.py                        # Точка входа (uvicorn)
-├── Dockerfile
-├── requirements.txt
-├── config.yaml                    # Рабочий конфиг (не в git)
-├── config.example.yaml            # Шаблон конфига
-└── config.test.yaml               # Конфиг для тестов
+backend/app/
+├── main.py                        # FastAPI app, lifespan, CORS
+├── api/router.py                  # Корневой роутер, include всех доменов
+├── shared/                        # Общие модули
+│   ├── settings/                  #   Pydantic Settings + YAML config
+│   ├── di/container.py            #   DI контейнер (зависимости)
+│   ├── auth/                      #   JWT, middleware
+│   ├── errors/                    #   Кастомные исключения
+│   └── db/session.py              #   SQLAlchemy engine + sessionmaker
+├── knowledge_base/                # Домен: База знаний
+│   ├── api/                       #   Routes (tests, materials, courses)
+│   ├── usecases/                  #   Бизнес-логика + транзакции
+│   ├── domain.py                  #   Входные Pydantic модели
+│   ├── dto.py                     #   Выходные Pydantic модели
+│   └── db_models.py               #   SQLAlchemy ORM модели
+├── users/                         # Домен: Пользователи
+├── sellings/                      # Домен: Продажи
+└── admin/                         # Домен: Администрирование
 ```
+
+**Правила слоев:**
+1. **API** (`api/routes.py`): принимает запрос, валидирует `domain`, вызывает usecase, возвращает `dto`
+2. **Usecases** (`usecases/`): бизнес-логика, работа с БД, **транзакции** (`commit`/`rollback`)
+3. **Domain** (`domain.py`): входные Pydantic модели (валидация)
+4. **DTO** (`dto.py`): выходные Pydantic модели (ответы API)
+5. **DB Models** (`db_models.py`): SQLAlchemy ORM
+
+**Транзакции:**
+- `commit()` — при успехе usecase
+- `rollback()` — при любой ошибке
+- Только чтение — без `commit`
 
 ---
 
@@ -126,21 +172,18 @@ KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 JWT_SECRET=change-me-in-production
 ```
 
-### 3. Конфигурация бэкенд-сервисов
+### 3. Конфигурация бэкенда
 
-Каждому сервису нужен свой `config.yaml`. Создайте его из шаблона:
-
-```bash
-# Для каждого существующего сервиса
-cp backend/users_service/config.example.yaml backend/users_service/config.yaml
-cp backend/admin_service/config.example.yaml backend/admin_service/config.yaml
-cp backend/api_gateway/config.example.yaml backend/api_gateway/config.yaml
-```
-
-Также скопируйте shared-конфиг:
+Бэкенд использует переменные окружения или YAML конфиг. Создайте `.env` или скопируйте конфиг:
 
 ```bash
-cp backend/shared/config/config.example.yaml backend/shared/config/config.yaml
+# Вариант 1: Переменные окружения
+export DATABASE_URL="postgresql+asyncpg://app:appsecret@localhost:5432/rsd_db"
+export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+export REDIS_HOST="localhost"
+
+# Вариант 2: YAML конфиг (опционально)
+cp backend/app/shared/settings/config.yaml.example backend/app/shared/settings/config.yaml
 ```
 
 ### 4. Поднять инфраструктуру (DB + Kafka)
@@ -174,30 +217,30 @@ DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db al
 #### Вариант A: через just (рекомендуется)
 
 ```bash
-# Создать виртуальные окружения и установить зависимости
-just venv users
-just venv admin
-just venv api_gateway
+# Установить зависимости
+cd backend && pip install -r requirements.txt
 
-# Запустить сервисы (каждый в отдельном терминале)
-just run users         # users_service → порт 8000
-just run admin         # admin_service → порт 8000
-just run-gateway       # api_gateway   → порт 8080
+# Запустить backend
+just run-backend       # или: uvicorn app.main:app --reload --port 8000
 ```
+
+Backend будет доступен на `http://localhost:8000`  
+Health check: `http://localhost:8000/health`
 
 #### Вариант B: вручную
 
 ```bash
-# Создать venv
-python3 -m venv backend/users_service/.venv
-backend/users_service/.venv/bin/pip install -r backend/users_service/requirements.txt
+# Установить зависимости
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 
 # Запустить
-cd backend && \
-PYTHONPATH=.:users_service \
-CONFIG_PATH=users_service/config.yaml \
-DATABASE_URL=postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db \
-users_service/.venv/bin/python users_service/main.py
+export DATABASE_URL="postgresql+asyncpg://app:appsecret@localhost:5432/rsd_db"
+export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+export REDIS_HOST="localhost"
+uvicorn app.main:app --reload --port 8000
 ```
 
 ### 7. Запуск фронтенда
@@ -216,7 +259,7 @@ npm start
 
 ### Локальная разработка (рекомендуется)
 
-Инфраструктура в Docker, сервисы и фронтенд — на хосте.
+Инфраструктура в Docker, backend и фронтенд — на хосте.
 
 ```bash
 # 1. Инфраструктура
@@ -225,10 +268,8 @@ just local-up
 # 2. Миграции
 just migrate
 
-# 3. Бэкенд (отдельные терминалы)
-just run users
-just run admin
-just run-gateway
+# 3. Бэкенд
+just run-backend
 
 # 4. Фронтенд (отдельный терминал)
 cd frontend && npm start
@@ -236,14 +277,14 @@ cd frontend && npm start
 
 | Компонент | URL |
 |-----------|-----|
-| Frontend | http://localhost:3000 |
-| API Gateway | http://localhost:8080 |
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
 | PostgreSQL | localhost:5432 |
 | Kafka | localhost:9092 |
 
 ### Полный Docker-стек
 
-Все сервисы в контейнерах. Наружу доступен только API Gateway.
+Все сервисы в контейнерах.
 
 ```bash
 # Поднять
@@ -255,7 +296,7 @@ just down
 # или: docker compose down
 ```
 
-API Gateway: `http://localhost:8080`
+Backend: `http://localhost:8000`
 
 ### Production (Traefik + SSL)
 
@@ -270,11 +311,11 @@ docker compose -f docker-compose.prod.yaml up -d
 ```
 
 Включает:
-- Traefik с автоматическим SSL (Let's Encrypt)
+- Traefik с автоматическим SSL (Let's Encrypt) — единственный внешний порт
 - HTTP → HTTPS редирект
 - Frontend (React build → nginx)
-- API Gateway (nginx)
-- PostgreSQL, Kafka, Redis — во внутренней сети
+- Backend (FastAPI)
+- PostgreSQL, Kafka, Redis — во **внутренней** сети (недоступны снаружи)
 
 ---
 
@@ -402,18 +443,10 @@ just test-all
 | `just migrate` | Применить миграции Alembic |
 | `just migrate-new "msg"` | Создать новую миграцию (autogenerate) |
 | `just db-recreate` | Пересоздать БД с нуля |
-| `just venv <service>` | Создать .venv и установить зависимости для сервиса |
-| `just venv-all` | Создать .venv для всех сервисов |
-| `just deps <service>` | Установить зависимости в текущее окружение |
-| `just deps-all` | Установить зависимости всех сервисов |
-| `just run <service>` | Запустить сервис локально (ожидает DB) |
-| `just run-gateway` | Запустить API Gateway локально |
-| `just test <service>` | Запустить тесты одного сервиса |
-| `just test-all` | Запустить тесты всех сервисов |
+| `just run-backend` | Запустить backend локально (ожидает DB) |
+| `just test` | Запустить тесты backend |
 | `just up` | Поднять полный Docker-стек |
 | `just down` | Остановить полный Docker-стек |
-
-**Доступные сервисы для `just run` / `just venv` / `just test`:** `users`, `admin`, `api_gateway`
 
 ---
 
@@ -421,7 +454,8 @@ just test-all
 
 | Документ | Описание |
 |----------|----------|
-| [docs/ROLE_MODEL.md](docs/ROLE_MODEL.md) | Ролевая модель (8 ролей, матрица доступа) |
+| [docs/ROLE_MODEL.md](docs/ROLE_MODEL.md) | Ролевая модель (7 ролей, матрица доступа) |
+| [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md) | Архитектура backend (модульный монолит) |
 | [docs/DESIGN_BRIEF.md](docs/DESIGN_BRIEF.md) | ТЗ на дизайн UI/UX |
 | [docs/ТЗ блок базы знаний.docx](docs/ТЗ%20блок%20базы%20знаний.docx) | ТЗ по модулю базы знаний |
 | [.cursor/rules/PROJECT.md](.cursor/rules/PROJECT.md) | Правила проекта и конвенции |
@@ -470,4 +504,9 @@ alembic upgrade head
 
 ### Frontend не видит API
 
-Убедитесь, что API Gateway запущен на `:8080` и в фронтенде настроен правильный `baseURL` (см. `frontend/src/api/APIClient.js`).
+Убедитесь, что backend запущен на `:8000` и в фронтенде настроен правильный `baseURL` (см. `frontend/src/api/APIClient.js`).
+
+Для локальной разработки настройте CORS в `backend/app/main.py`:
+```python
+allow_origins=["http://localhost:5173"]  # Vite dev server
+```
