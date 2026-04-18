@@ -1,4 +1,3 @@
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,31 +19,25 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual env
 .venv/
 venv/
 ENV/
 
-# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Env and secrets
 .env
 .env.local
 *.pem
 
-# DB
 *.db
 *.sqlite3
 
-# Logs
 *.log
 logs/
 
-# Node (frontend)
 node_modules/
 npm-debug.log*
 .npm
@@ -53,16 +46,13 @@ yarn-error.log
 .next/
 out/
 
-# OS
 .DS_Store
 Thumbs.db
 
-# Infrastructure
 letsencrypt/
 
 frontend_example/
 results/
 demo/
 
-# Documentation (internal)
 docs/

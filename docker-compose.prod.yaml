@@ -16,8 +16,6 @@ services:
       - "--certificatesresolvers.le.acme.email=${ACME_EMAIL:-admin@example.com}"
       - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
-      - "--api.dashboard=true"
-      - "--ping=true"
     ports:
       - "80:80"
       - "443:443"
@@ -28,20 +26,10 @@ services:
       - "traefik.enable=true"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.example.com`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.tls.certresolver=le"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik-http.rule=Host(`traefik.example.com`)"
-      - "traefik.http.routers.traefik-http.entrypoints=web"
-      - "traefik.http.routers.traefik-http.middlewares=redirect-to-https"
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
+      - "traefik.http.middlewares.rate-limit.ratelimit.burst=200"
+      - "traefik.http.middlewares.rate-limit.ratelimit.period=1s"
 
-  # --- Infrastructure ---
   db:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -96,7 +84,6 @@ services:
     networks:
       - internal
 
-  # --- Frontend ---
   frontend:
     build:
       context: ./frontend
@@ -104,23 +91,20 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      # HTTPS router
       - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN:-app.example.com}`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=le"
       - "traefik.http.routers.frontend.service=frontend"
-      # HTTP -> HTTPS redirect
       - "traefik.http.routers.frontend-http.rule=Host(`${FRONTEND_DOMAIN:-app.example.com}`)"
       - "traefik.http.routers.frontend-http.entrypoints=web"
       - "traefik.http.routers.frontend-http.middlewares=redirect-to-https"
-      # Service
+      - "traefik.http.routers.frontend.middlewares=rate-limit"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
     networks:
       - proxy
     depends_on:
       - traefik
 
-  # --- Backend (Monolith) ---
   backend:
     build:
       context: ./backend
@@ -135,20 +119,18 @@ services:
       LOG_LEVEL: INFO
     labels:
       - "traefik.enable=true"
-      # HTTPS router
       - "traefik.http.routers.backend.rule=Host(`${API_DOMAIN:-api.example.com}`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=le"
       - "traefik.http.routers.backend.service=backend"
-      # HTTP -> HTTPS redirect
       - "traefik.http.routers.backend-http.rule=Host(`${API_DOMAIN:-api.example.com}`)"
       - "traefik.http.routers.backend-http.entrypoints=web"
       - "traefik.http.routers.backend-http.middlewares=redirect-to-https"
-      # Service
+      - "traefik.http.routers.backend.middlewares=rate-limit"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
     networks:
-      - proxy      # Для доступа через Traefik
-      - internal   # Для БД, Redis, Kafka
+      - proxy
+      - internal
     depends_on:
       db:
         condition: service_healthy
@@ -165,7 +147,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  letsencrypt:
 
 networks:
   proxy:
