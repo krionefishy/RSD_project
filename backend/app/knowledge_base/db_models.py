@@ -1,18 +1,17 @@
 from datetime import datetime, timezone
-from uuid import uuid4
 
 from sqlalchemy import (
     Boolean,
-    Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     String,
     Text,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from storage.pg.database import Base
 
@@ -20,12 +19,17 @@ from storage.pg.database import Base
 class CourseModel(Base):
     __tablename__ = "courses"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    rating_points = Column(Integer, nullable=False, default=0)
-    mrp = Column(Integer, nullable=False, default=0)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    rating_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    mrp: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     course_materials = relationship("CourseMaterialModel", back_populates="course", cascade="all, delete-orphan")
     course_tests = relationship("CourseTestModel", back_populates="course", cascade="all, delete-orphan")
@@ -44,22 +48,34 @@ class CourseModel(Base):
 class CourseUserModel(Base):
     __tablename__ = "course_users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(
+    __table_args__ = (
+        Index("ix_course_users_user_course", "user_id", "course_id", unique=True),
+        Index("ix_course_users_course_user", "course_id", "user_id"),
+        Index("ix_course_users_user_completed", "user_id", "is_course_completed_successfully"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    course_id = Column(
-        UUID(as_uuid=True),
+    course_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    user_points_by_course = Column(Integer, nullable=False, default=0)
-    is_course_completed = Column(Boolean, nullable=False, default=False)
-    is_course_completed_successfully = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    user_points_by_course: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_course_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_course_completed_successfully: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
+    user = relationship("UserModel", back_populates="course_users")
     course = relationship("CourseModel")
 
     @property
@@ -76,18 +92,27 @@ class CourseUserModel(Base):
 class CourseMaterialModel(Base):
     __tablename__ = "course_materials"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    material_id = Column(
-        UUID(as_uuid=True),
+    __table_args__ = (
+        Index("ix_course_materials_course_material", "course_id", "material_id", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    material_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("materials.id", ondelete="CASCADE"),
         nullable=False,
     )
-    course_id = Column(
-        UUID(as_uuid=True),
+    course_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     course = relationship("CourseModel", back_populates="course_materials")
     material = relationship("MaterialModel", back_populates="course_materials")
@@ -96,18 +121,28 @@ class CourseMaterialModel(Base):
 class CourseTestModel(Base):
     __tablename__ = "course_tests"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    test_id = Column(
-        UUID(as_uuid=True),
+    __table_args__ = (
+        Index("ix_course_tests_course_test", "course_id", "test_id", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    test_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("tests.id", ondelete="CASCADE"),
         nullable=False,
     )
-    course_id = Column(
-        UUID(as_uuid=True),
+    course_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    is_final: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     course = relationship("CourseModel", back_populates="course_tests")
     test = relationship("TestModel", back_populates="course_tests")
@@ -116,50 +151,79 @@ class CourseTestModel(Base):
 class UserCourseMaterialModel(Base):
     __tablename__ = "user_course_materials"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(
+    __table_args__ = (
+        Index("ix_user_course_materials_material_id", "material_id"),
+        Index("ix_user_course_materials_user_completed", "user_id", "is_completed"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    course_id = Column(
-        UUID(as_uuid=True),
+    course_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    material_id = Column(
-        UUID(as_uuid=True),
+    material_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("materials.id", ondelete="CASCADE"),
         nullable=False,
     )
-    is_completed = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
+    user = relationship("UserModel", back_populates="user_course_materials")
     course = relationship("CourseModel", back_populates="user_course_materials")
-    material = relationship("MaterialModel")
+    material = relationship("MaterialModel", back_populates="user_course_materials")
 
 
 class UserCourseTestModel(Base):
     __tablename__ = "user_course_tests"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(
+    __table_args__ = (
+        Index("ix_user_course_tests_test_id", "test_id"),
+        Index("ix_user_course_tests_user_course_test", "user_id", "course_id", "test_id", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    test_id = Column(
-        UUID(as_uuid=True),
+    test_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("tests.id", ondelete="CASCADE"),
         nullable=False,
     )
-    course_id = Column(
-        UUID(as_uuid=True),
+    course_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    attempt_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    score: Mapped[int | None] = mapped_column(Integer, default=None)
+    max_score: Mapped[int | None] = mapped_column(Integer, default=None)
+    is_passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    answers: Mapped[dict | None] = mapped_column(JSON, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
+    user = relationship("UserModel", back_populates="user_course_tests")
     course = relationship("CourseModel", back_populates="user_course_tests")
     test = relationship("TestModel", back_populates="user_course_tests")
 
@@ -167,15 +231,25 @@ class UserCourseTestModel(Base):
 class MaterialModel(Base):
     __tablename__ = "materials"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name = Column(String(255), nullable=False)
-    category = Column(String(100), nullable=False)
-    description = Column(Text)
-    text = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (
+        Index("ix_materials_name_category", "name", "category"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     course_materials = relationship("CourseMaterialModel", back_populates="material", cascade="all, delete-orphan")
     attachments = relationship("MaterialAttachmentModel", back_populates="material", cascade="all, delete-orphan")
+    user_course_materials = relationship("UserCourseMaterialModel", back_populates="material", cascade="all, delete-orphan")
 
     @property
     def attachment_files(self):
@@ -187,16 +261,26 @@ class MaterialModel(Base):
 class MaterialAttachmentModel(Base):
     __tablename__ = "material_attachments"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    material_id = Column(
-        UUID(as_uuid=True),
+    __table_args__ = (
+        Index("ix_material_attachments_material_id", "material_id"),
+        Index("ix_material_attachments_s3_file_key", "s3_file_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    material_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("materials.id", ondelete="CASCADE"),
         nullable=False,
     )
-    name = Column(String(255), nullable=False)
-    format = Column(String(50), nullable=False)
-    s3_file_key = Column(String(500), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    format: Mapped[str] = mapped_column(String(50), nullable=False)
+    s3_file_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     material = relationship("MaterialModel", back_populates="attachments")
 
@@ -214,40 +298,93 @@ class MaterialAttachmentModel(Base):
 class TestModel(Base):
     __tablename__ = "tests"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name = Column(String(255), nullable=False)
-    category = Column(String(100), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (
+        Index("ix_tests_is_final", "is_final"),
+        Index("ix_tests_name_category", "name", "category"),
+    )
 
-    tasks = relationship("TestTaskModel", back_populates="test", cascade="all, delete-orphan", order_by="TestTaskModel.created_at")
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    is_final: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    time_limit_minutes: Mapped[int | None] = mapped_column(Integer)
+    pass_score_percent: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
+
+    task_assignments: Mapped[list["TestTaskAssignmentModel"]] = relationship(
+        "TestTaskAssignmentModel",
+        back_populates="test",
+        cascade="all, delete-orphan",
+        order_by="TestTaskAssignmentModel.order"
+    )
     course_tests = relationship("CourseTestModel", back_populates="test", cascade="all, delete-orphan")
     user_course_tests = relationship("UserCourseTestModel", back_populates="test", cascade="all, delete-orphan")
 
     @property
-    def tasks_count(self):
-        return len(self.tasks) if self.tasks else 0
+    def tasks_ordered(self) -> list["TestTaskModel"]:
+        return [ta.task for ta in self.task_assignments if ta.task]
 
     @property
-    def total_points(self):
-        if not self.tasks:
+    def tasks_count(self) -> int:
+        return len(self.task_assignments) if self.task_assignments else 0
+
+    @property
+    def total_points(self) -> int:
+        if not self.task_assignments:
             return 0
-        return sum(task.points for task in self.tasks)
+        return sum(ta.task.points for ta in self.task_assignments if ta.task)
 
 
 class TestTaskModel(Base):
     __tablename__ = "test_tasks"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    test_id = Column(
-        UUID(as_uuid=True),
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    points: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    answer_variants: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    correct_variant: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
+
+    test_assignments: Mapped[list["TestTaskAssignmentModel"]] = relationship(
+        "TestTaskAssignmentModel",
+        back_populates="task",
+        cascade="all, delete-orphan"
+    )
+
+
+class TestTaskAssignmentModel(Base):
+    __tablename__ = "test_task_assignments"
+
+    __table_args__ = (
+        Index("ix_test_task_assignments_test_order", "test_id", "order"),
+        Index("ix_test_task_assignments_task_id", "task_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    test_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("tests.id", ondelete="CASCADE"),
         nullable=False,
     )
-    name = Column(String(255), nullable=False)
-    description = Column(Text)
-    points = Column(Integer, nullable=False, default=1)
-    answer_variants = Column(JSON, nullable=False, default=list)
-    correct_variant = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    task_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("test_tasks.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    test = relationship("TestModel", back_populates="tasks")
+    test: Mapped["TestModel"] = relationship("TestModel", back_populates="task_assignments")
+    task: Mapped["TestTaskModel"] = relationship("TestTaskModel", back_populates="test_assignments")
