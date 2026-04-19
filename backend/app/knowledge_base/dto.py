@@ -44,19 +44,29 @@ class MaterialDTO(BaseModel):
 
 class CourseDTO(BaseModel):
     """Course response DTO."""
-    id: UUID
-    title: str
+    id: int
+    name: str
     description: Optional[str]
-    categories: List[str]
+    rating_points: int
+    mrp: int
     materials_count: int
     tests_count: int
     created_at: datetime
 
 
+class CourseListDTO(BaseModel):
+    """Course list item DTO."""
+    id: int
+    name: str
+    description: Optional[str]
+    materials_count: int
+    tests_count: int
+
+
 class EnrollmentDTO(BaseModel):
     """Course enrollment response DTO."""
-    enrollment_id: UUID
-    course_id: UUID
+    enrollment_id: int
+    course_id: int
     employee_id: UUID
     status: str  # "in_progress", "completed"
     progress_percent: int

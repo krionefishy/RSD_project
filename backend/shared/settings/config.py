@@ -42,11 +42,21 @@ class S3Config:
 
 
 @dataclass(frozen=True)
+class JWTConfig:
+    """JWT configuration."""
+    secret: str
+    algorithm: str = "HS256"
+    access_expire_seconds: int = 3600  # 1 hour
+    refresh_expire_seconds: int = 604800  # 7 days
+
+
+@dataclass(frozen=True)
 class Settings:
     """Application settings."""
     database: DatabaseConfig
     kafka: KafkaConfig
     redis: RedisConfig
+    jwt: JWTConfig
     s3: S3Config | None = None
     log_level: str = "INFO"
 
@@ -68,6 +78,13 @@ def load_settings(config_path: str) -> Settings:
             verify=os.getenv("S3_VERIFY", "true").lower() == "true",
         )
     
+    jwt_config = JWTConfig(
+        secret=os.getenv("JWT_SECRET", "your-secret-key-change-in-production"),
+        algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
+        access_expire_seconds=int(os.getenv("JWT_ACCESS_EXPIRE_SECONDS", "3600")),
+        refresh_expire_seconds=int(os.getenv("JWT_REFRESH_EXPIRE_SECONDS", "604800")),
+    )
+
     if not path.exists():
         # Fallback to environment variables
         return Settings(
@@ -86,21 +103,26 @@ def load_settings(config_path: str) -> Settings:
                 port=int(os.getenv("REDIS_PORT", "6379")),
                 db=int(os.getenv("REDIS_DB", "0")),
             ),
+            jwt=jwt_config,
             s3=s3_config,
             log_level=os.getenv("LOG_LEVEL", "INFO"),
         )
     
     with open(path, "r") as f:
         data = yaml.safe_load(f)
-    
+
     s3_data = data.get("s3")
     if s3_data:
         s3_config = S3Config(**s3_data)
-    
+
+    jwt_data = data.get("jwt", {})
+    jwt_config = JWTConfig(**jwt_data)
+
     return Settings(
         database=DatabaseConfig(**data.get("database", {})),
         kafka=KafkaConfig(**data.get("kafka", {})),
         redis=RedisConfig(**data.get("redis", {})),
+        jwt=jwt_config,
         s3=s3_config,
         log_level=data.get("log_level", "INFO"),
     )

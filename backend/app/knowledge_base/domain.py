@@ -45,14 +45,13 @@ class GetMaterialRequest(BaseModel):
 
 class CreateCourseRequest(BaseModel):
     """Request to create course."""
-    title: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=255)
     description: Optional[str] = None
-    category_ids: List[str] = []
-    material_ids: List[UUID] = []
-    test_ids: List[UUID] = []
+    rating_points: int = Field(ge=0, default=0)
+    mrp: int = Field(ge=0, default=0)
 
 
 class EnrollCourseRequest(BaseModel):
     """Request to enroll employee to course."""
-    course_id: UUID
+    course_id: int
     employee_id: UUID
