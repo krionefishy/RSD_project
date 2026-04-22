@@ -2,18 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { useApp, mockUsers } from "../../context/AppContext";
-import { UserRole } from "../../types/user";
-
-const roleRoutes: Record<UserRole, string> = {
-  seller: "/seller",
-  manager: "/manager",
-  "admin-edu": "/admin-edu",
-  "admin-sales": "/admin-sales",
-  "admin-personnel": "/admin-personnel",
-  "admin-po": "/admin-po",
-  superadmin: "/superadmin",
-};
+import { APIError } from "../../api/APIClient";
+import { AuthAPI } from "../../api/AuthAPI";
+import { UserAPI } from "../../api/UserAPI";
+import { useApp } from "../../context/AppContext";
+import { roleRoutes } from "../../utils/roleMap";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -23,43 +16,36 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const resolveUserByEmail = (rawEmail: string) => {
-    const normalized = rawEmail.trim().toLowerCase();
-    const emailAliases: Record<string, string> = {
-      "anna.ivanova@rsd.ru": "a.ivanova@rsd.ru",
-      "maria.fedorova@rsd.ru": "d.petrov@rsd.ru",
-      "elena.morozova@rsd.ru": "e.smirnova@rsd.ru",
-      "dmitry.volkov@rsd.ru": "n.novikova@rsd.ru",
-      "sergey.lebedev@rsd.ru": "a.kozlov@rsd.ru",
-      "alexey.smirnov@rsd.ru": "s.morozov@rsd.ru",
-      "irina.kozlova@rsd.ru": "m.sokolov@rsd.ru",
-    };
-
-    const candidates = [normalized, emailAliases[normalized]].filter(Boolean);
-    return Object.values(mockUsers).find((u) =>
-      candidates.includes(u.email.toLowerCase()),
-    );
-  };
-
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       toast.error("Введите email и пароль");
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      const user = resolveUserByEmail(email);
-
-      if (user) {
-        setUser(user);
-        navigate(roleRoutes[user.role]);
-        toast.success(`Добро пожаловать, ${user.firstName}!`);
-      } else {
-        toast.error("Пользователь не найден. Проверьте email.");
+    try {
+      await AuthAPI.login(email, password);
+      const user = await UserAPI.fetchMe();
+      setUser(user);
+      toast.success(`Добро пожаловать, ${user.firstName}!`);
+      navigate(roleRoutes[user.role] ?? "/");
+    } catch (err) {
+      let message = "Не удалось войти. Попробуйте ещё раз.";
+      if (err instanceof APIError) {
+        if (err.code === "INVALID_CREDENTIALS") {
+          message = "Неверный email или пароль";
+        } else if (err.code === "DECRYPT_FAILED") {
+          message = "Ошибка шифрования пароля. Обновите страницу.";
+        } else if (err.message) {
+          message = err.message;
+        }
+      } else if (err instanceof Error && err.message) {
+        message = err.message;
       }
+      toast.error(message);
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -87,46 +73,6 @@ export default function LoginPage() {
           Войдите в свой аккаунт
         </p>
 
-        {/* Test Credentials */}
-        <div className="mb-5 rounded-xl p-3" style={{ background: "#F1F5F9" }}>
-          <p style={{ color: "#64748B", fontSize: 11, fontWeight: 600, marginBottom: 8, textTransform: "uppercase" }}>
-            Тестовые данные для входа
-          </p>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>Продавец:</span>
-            <span style={{ color: "#2E7D32", fontWeight: 500 }}>a.ivanova@rsd.ru</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>Менеджер:</span>
-              <span style={{ color: "#2E7D32", fontWeight: 500 }}>d.petrov@rsd.ru</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>Админ Обучения:</span>
-              <span style={{ color: "#2E7D32", fontWeight: 500 }}>e.smirnova@rsd.ru</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>Админ Персонала:</span>
-              <span style={{ color: "#2E7D32", fontWeight: 500 }}>n.novikova@rsd.ru</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>Админ Продаж:</span>
-              <span style={{ color: "#2E7D32", fontWeight: 500 }}>a.kozlov@rsd.ru</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>Админ ПО:</span>
-              <span style={{ color: "#2E7D32", fontWeight: 500 }}>s.morozov@rsd.ru</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span style={{ color: "#374151" }}>СуперАдмин:</span>
-              <span style={{ color: "#2E7D32", fontWeight: 500 }}>m.sokolov@rsd.ru</span>
-            </div>
-          </div>
-          <p style={{ color: "#94A3B8", fontSize: 10, marginTop: 6 }}>
-            Пароль любой (обязателен для кнопки входа)
-          </p>
-        </div>
-
         <div className="mb-4">
           <label style={{ display: "block", color: "#374151", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
             Email
@@ -147,6 +93,7 @@ export default function LoginPage() {
                 fontSize: 15,
               }}
               placeholder="Введите email"
+              autoComplete="email"
             />
           </div>
         </div>
@@ -163,6 +110,12 @@ export default function LoginPage() {
               type={showPass ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !loading) {
+                  e.preventDefault();
+                  void handleLogin();
+                }
+              }}
               className="w-full h-12 pl-10 pr-10 rounded-[10px] border outline-none"
               style={{
                 border: "1.5px solid #E2E8F0",
@@ -171,8 +124,10 @@ export default function LoginPage() {
                 fontSize: 15,
               }}
               placeholder="Введите пароль"
+              autoComplete="current-password"
             />
             <button
+              type="button"
               onClick={() => setShowPass(!showPass)}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
@@ -182,7 +137,7 @@ export default function LoginPage() {
         </div>
 
         <button
-          onClick={handleLogin}
+          onClick={() => void handleLogin()}
           disabled={loading}
           className="w-full h-12 rounded-[10px] flex items-center justify-center"
           style={{

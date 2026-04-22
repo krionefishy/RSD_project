@@ -11,12 +11,13 @@ export interface AppUser {
   id: string;
   name: string;
   firstName: string;
+  lastName?: string;
   role: UserRole;
-  position: string;
-  store: string;
-  block: string;
   email: string;
-  phone: string;
+  phone?: string;
   avatar?: string;
-  joinDate: string;
+  position?: string;
+  store?: string;
+  block?: string;
+  joinDate?: string;
 }

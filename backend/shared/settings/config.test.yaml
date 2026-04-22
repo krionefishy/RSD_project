@@ -1,16 +1,30 @@
-log_level: DEBUG
+# Test configuration
+# Used by pytest
 
 database:
-  url: postgresql+asyncpg://app:appsecret@localhost:5432/rsd_test_db
-  echo: false
-
-kafka:
-  bootstrap_servers: localhost:9092
-  client_id: rsd-backend-test
-  consumer_group: rsd-backend-test-group
-  max_request_size: 10485760
-
-redis:
   host: localhost
-  port: 6379
-  db: 1
+  port: 5432
+  user: app
+  password: appsecret
+  database: rsd_test_db
+
+backend:
+  logging:
+    level: DEBUG
+  env:
+    mode: testing
+  jwt:
+    secret: test-secret-not-for-production
+    algorithm: HS256
+    access_expire_seconds: 3600       # 1 hour for easier testing
+    refresh_expire_seconds: 86400   # 1 day for tests
+    rsa_private_key_pem: null       # Auto-generate ephemeral key
+    rsa_key_size: 2048
+  redis:
+    host: localhost
+    port: 6379
+    db: 1  # Use separate DB for tests
+  kafka:
+    bootstrap_servers: localhost:9092
+    consumer_group: rsd-backend-test-group
+    max_request_size: 10485760

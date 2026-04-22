@@ -1,158 +1,218 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
-import { Play, CheckCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import { CheckCircle, Paperclip } from "lucide-react";
+import { toast } from "sonner";
 import { AppHeader } from "../../components/AppHeader";
-import { sectionMaterials, materialContent } from "../../mock/mockData";
+import { PageLoader } from "../../components/PageLoader";
+import { APIError } from "../../api/APIClient";
+import { KnowledgeAPI } from "../../api/KnowledgeAPI";
+import { Material } from "../../types/knowledge";
+
+function renderMarkdownLine(line: string, index: number) {
+  if (line.startsWith("## ")) {
+    return (
+      <h2
+        key={index}
+        style={{
+          color: "#1E293B",
+          fontSize: 18,
+          fontWeight: 700,
+          marginBottom: 10,
+          marginTop: index > 0 ? 16 : 0,
+        }}
+      >
+        {line.replace("## ", "")}
+      </h2>
+    );
+  }
+  if (line.startsWith("### ")) {
+    return (
+      <h3
+        key={index}
+        style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 8, marginTop: 14 }}
+      >
+        {line.replace("### ", "")}
+      </h3>
+    );
+  }
+  if (line.startsWith("- **")) {
+    const parts = line.replace("- **", "").split("** — ");
+    return (
+      <div key={index} className="flex gap-2 mb-2 ml-2">
+        <span style={{ color: "#2E7D32", fontSize: 14 }}>•</span>
+        <p style={{ color: "#374151", fontSize: 14 }}>
+          <span style={{ fontWeight: 600 }}>{parts[0]}</span>
+          {parts[1] ? ` — ${parts[1]}` : ""}
+        </p>
+      </div>
+    );
+  }
+  if (line.match(/^\d+\./)) {
+    return (
+      <div key={index} className="flex gap-2 mb-2 ml-2">
+        <span style={{ color: "#2E7D32", fontSize: 14, fontWeight: 600, minWidth: 20 }}>
+          {line.split(".")[0]}.
+        </span>
+        <p style={{ color: "#374151", fontSize: 14 }}>{line.replace(/^\d+\.\s/, "")}</p>
+      </div>
+    );
+  }
+  if (line.trim() === "") {
+    return <div key={index} style={{ height: 8 }} />;
+  }
+  return (
+    <p key={index} style={{ color: "#374151", fontSize: 14, lineHeight: 1.6, marginBottom: 8 }}>
+      {line}
+    </p>
+  );
+}
 
 export default function MaterialPage() {
-  const { materialId } = useParams<{ sectionId: string; materialId: string }>();
+  const { sectionId, materialId } = useParams<{ sectionId: string; materialId: string }>();
   const navigate = useNavigate();
+  const courseId = Number(sectionId);
+  const materialIdNum = Number(materialId);
+
+  const [material, setMaterial] = useState<Material | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
 
-  const allMaterials = Object.values(sectionMaterials).flat();
-  const material = allMaterials.find((m) => m.id === materialId);
-  const content = materialContent[materialId as keyof typeof materialContent];
+  useEffect(() => {
+    if (!Number.isFinite(courseId) || !Number.isFinite(materialIdNum)) {
+      setError("Некорректный идентификатор материала");
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    KnowledgeAPI.getMaterial(materialIdNum, courseId)
+      .then((result) => {
+        if (!cancelled) {
+          setMaterial(result);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message = err instanceof APIError ? err.message : "Не удалось загрузить материал";
+        setError(message);
+        setLoading(false);
+        toast.error(message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, materialIdNum]);
 
-  if (!material) return null;
+  const lines = useMemo(() => (material?.text ?? "").split("\n"), [material]);
 
-  const markDone = () => {
-    setDone(true);
-    setTimeout(() => navigate(-1), 1000);
+  const markDone = async () => {
+    if (!material || submitting) return;
+    setSubmitting(true);
+    try {
+      await KnowledgeAPI.completeMaterial(courseId, material.id);
+      setDone(true);
+      toast.success("Материал отмечен как пройденный");
+      setTimeout(() => navigate(-1), 800);
+    } catch (err) {
+      const message = err instanceof APIError ? err.message : "Не удалось отметить материал";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return <PageLoader fullScreen message="Загрузка материала..." />;
+  }
+
+  if (error || !material) {
+    return (
+      <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
+        <AppHeader title="Материал" showBack white />
+        <div className="px-4 py-8 text-center">
+          <p style={{ color: "#DC2626", fontSize: 14 }}>{error ?? "Материал не найден"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <AppHeader title={material.title} showBack white />
+      <AppHeader title={material.name} showBack white />
 
-      <div className="flex-1 overflow-auto" style={{ paddingBottom: 80 }}>
-        {/* Meta */}
-        <div className="px-4 py-3 flex items-center gap-3" style={{ background: "#fff", borderBottom: "1px solid #F1F5F9" }}>
+      <div className="flex-1 overflow-auto" style={{ paddingBottom: 100 }}>
+        <div
+          className="px-4 py-3 flex items-center gap-3"
+          style={{ background: "#fff", borderBottom: "1px solid #F1F5F9" }}
+        >
           <span
             className="px-2 py-1 rounded-md"
             style={{
-              background: material.type === "video" ? "#FCE4EC" : material.type === "document" ? "#ECFEFF" : "#F0FDF4",
-              color: material.type === "video" ? "#C41E3A" : material.type === "document" ? "#F5A623" : "#059669",
+              background: "#F0FDF4",
+              color: "#059669",
               fontSize: 11,
               fontWeight: 600,
             }}
           >
-            {material.type === "video" ? "Видео" : material.type === "document" ? "Документ" : "Статья"}
+            {material.category || "Материал"}
           </span>
-          <span style={{ color: "#94A3B8", fontSize: 12 }}>{material.duration}</span>
-          {material.status === "done" && (
-            <span className="ml-auto flex items-center gap-1" style={{ color: "#22C55E", fontSize: 12, fontWeight: 500 }}>
-              <CheckCircle size={13} /> Пройден
+          {material.description && (
+            <span style={{ color: "#64748B", fontSize: 12 }} className="truncate">
+              {material.description}
             </span>
           )}
         </div>
 
-        {/* Video placeholder */}
-        {material.type === "video" && (
-          <div className="mx-4 mt-4 rounded-2xl overflow-hidden">
-            {showVideo ? (
-              <div
-                className="w-full flex items-center justify-center"
-                style={{ background: "#1E293B", height: 200 }}
-              >
-                <div className="text-center">
-                  <Play size={40} color="#fff" />
-                  <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 8 }}>
-                    Видеоплеер (демо)
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowVideo(true)}
-                className="w-full flex flex-col items-center justify-center gap-2"
-                style={{ background: "#1E293B", height: 200 }}
-              >
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(255,255,255,0.2)" }}
-                >
-                  <Play size={24} color="#fff" fill="#fff" />
-                </div>
-                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}>
-                  {content?.videoTitle || "Нажмите для просмотра"}
-                </p>
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Content */}
         <div className="px-4 py-4">
-          {content ? (
-            <div>
-              {content.content.split("\n").map((line, i) => {
-                if (line.startsWith("## ")) {
-                  return (
-                    <h2 key={i} style={{ color: "#1E293B", fontSize: 18, fontWeight: 700, marginBottom: 10, marginTop: i > 0 ? 16 : 0 }}>
-                      {line.replace("## ", "")}
-                    </h2>
-                  );
-                }
-                if (line.startsWith("### ")) {
-                  return (
-                    <h3 key={i} style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 8, marginTop: 14 }}>
-                      {line.replace("### ", "")}
-                    </h3>
-                  );
-                }
-                if (line.startsWith("- **")) {
-                  const parts = line.replace("- **", "").split("** — ");
-                  return (
-                    <div key={i} className="flex gap-2 mb-2 ml-2">
-                      <span style={{ color: "#2E7D32", fontSize: 14 }}>•</span>
-                      <p style={{ color: "#374151", fontSize: 14 }}>
-                        <span style={{ fontWeight: 600 }}>{parts[0]}</span>
-                        {parts[1] ? ` — ${parts[1]}` : ""}
-                      </p>
-                    </div>
-                  );
-                }
-                if (line.match(/^\d+\./)) {
-                  return (
-                    <div key={i} className="flex gap-2 mb-2 ml-2">
-                      <span style={{ color: "#2E7D32", fontSize: 14, fontWeight: 600, minWidth: 20 }}>
-                        {line.split(".")[0]}.
-                      </span>
-                      <p style={{ color: "#374151", fontSize: 14 }}>{line.replace(/^\d+\.\s/, "")}</p>
-                    </div>
-                  );
-                }
-                if (line.trim() === "") return <div key={i} style={{ height: 8 }} />;
-                return (
-                  <p key={i} style={{ color: "#374151", fontSize: 14, lineHeight: 1.6, marginBottom: 8 }}>
-                    {line}
-                  </p>
-                );
-              })}
-            </div>
+          {lines.length > 0 && lines.some((l) => l.trim()) ? (
+            <div>{lines.map((line, i) => renderMarkdownLine(line, i))}</div>
           ) : (
-            <div>
-              <p style={{ color: "#374151", fontSize: 14, lineHeight: 1.7 }}>
-                Добро пожаловать в раздел «{material.title}». Этот материал поможет вам освоить ключевые навыки работы в торговой точке.
-              </p>
-              <div className="mt-4 p-4 rounded-xl" style={{ background: "#E8F5E9" }}>
-                <p style={{ color: "#2E7D32", fontSize: 13, fontWeight: 600 }}>💡 Ключевые моменты</p>
-                <ul className="mt-2 flex flex-col gap-1.5">
-                  {["Изучите теоретическую часть", "Посмотрите примеры из практики", "Выполните практические задания", "Пройдите проверочный тест"].map((item, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span style={{ color: "#2E7D32" }}>•</span>
-                      <span style={{ color: "#374151", fontSize: 13 }}>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <p style={{ color: "#64748B", fontSize: 14 }}>
+              Контент для этого материала появится позже.
+            </p>
           )}
         </div>
+
+        {material.attachments.length > 0 && (
+          <div className="px-4 pb-4">
+            <p style={{ color: "#64748B", fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
+              Вложения
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+            >
+              {material.attachments.map((a, i) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 px-4 py-3"
+                  style={{
+                    borderBottom: i < material.attachments.length - 1 ? "1px solid #F1F5F9" : "none",
+                  }}
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: "#F1F5F9" }}
+                  >
+                    <Paperclip size={16} color="#64748B" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }} className="truncate">
+                      {a.name}
+                    </p>
+                    <p style={{ color: "#94A3B8", fontSize: 11 }}>{a.format.toUpperCase()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Fixed bottom button */}
       <div
         className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-4 pb-4 pt-3"
         style={{ background: "#F8FAFC", borderTop: "1px solid #E2E8F0" }}
@@ -167,11 +227,17 @@ export default function MaterialPage() {
           </div>
         ) : (
           <button
-            onClick={markDone}
+            onClick={() => void markDone()}
+            disabled={submitting}
             className="w-full h-12 rounded-[10px] flex items-center justify-center"
-            style={{ background: "#22C55E", color: "#fff", fontSize: 15, fontWeight: 600 }}
+            style={{
+              background: submitting ? "#A5D6A7" : "#22C55E",
+              color: "#fff",
+              fontSize: 15,
+              fontWeight: 600,
+            }}
           >
-            Отметить как пройденное ✓
+            {submitting ? "Сохранение..." : "Отметить как пройденное ✓"}
           </button>
         )}
       </div>

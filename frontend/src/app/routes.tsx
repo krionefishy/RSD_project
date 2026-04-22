@@ -1,5 +1,12 @@
+import { useEffect } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
+import { useAtom } from "jotai";
+import { UserAPI } from "../api/UserAPI";
 import { useApp } from "../context/AppContext";
+import { authStatusAtom } from "../store/atoms";
+import { PageLoader } from "../components/PageLoader";
+import { authStorage } from "../utils/authStorage";
+import { roleRoutes } from "../utils/roleMap";
 import { UserRole } from "../types/user";
 
 // Templates
@@ -57,29 +64,51 @@ import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
 import SuperAdminStructurePage from "../pages/superadmin/StructurePage";
 import SuperAdminSettingsPage from "../pages/superadmin/SettingsPage";
 
-// Auth guard component
 function RequireAuth({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
-  const { user } = useApp();
+  const { user, setUser } = useApp();
+  const [status, setStatus] = useAtom(authStatusAtom);
+
+  useEffect(() => {
+    if (user) return;
+    if (status === "loading") return;
+    if (!authStorage.hasTokens()) {
+      if (status !== "unauthenticated") setStatus("unauthenticated");
+      return;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    UserAPI.fetchMe()
+      .then((me) => {
+        if (!cancelled) setUser(me);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        authStorage.clear();
+        setStatus("unauthenticated");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, status, setStatus, setUser]);
+
+  if (status === "loading") {
+    return <PageLoader fullScreen message="Загрузка профиля..." />;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={roleRoutes[user.role] ?? "/login"} replace />;
   }
 
   return <>{children}</>;
 }
 
 export const router = createBrowserRouter([
-  // Public routes
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
+  { path: "/login", element: <LoginPage /> },
 
-  // Seller routes
   {
     path: "/seller",
     element: (
@@ -102,7 +131,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Manager routes
   {
     path: "/manager",
     element: (
@@ -119,7 +147,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Admin Edu routes
   {
     path: "/admin-edu",
     element: (
@@ -130,6 +157,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminEduDashboardPage /> },
       { path: "manage", element: <AdminEduManagePage /> },
+      { path: "manage/:courseId", element: <AdminEduManagePage /> },
       { path: "manage/create-test", element: <CreateTestPage /> },
       { path: "manage/edit-material/:materialId", element: <EditMaterialPage /> },
       { path: "assignments", element: <AdminEduAssignmentsPage /> },
@@ -137,7 +165,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Admin Sales routes
   {
     path: "/admin-sales",
     element: (
@@ -145,12 +172,9 @@ export const router = createBrowserRouter([
         <AdminSalesTemplate />
       </RequireAuth>
     ),
-    children: [
-      { index: true, element: <AdminSalesDashboardPage /> },
-    ],
+    children: [{ index: true, element: <AdminSalesDashboardPage /> }],
   },
 
-  // Admin Personnel routes
   {
     path: "/admin-personnel",
     element: (
@@ -166,7 +190,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Admin PO routes
   {
     path: "/admin-po",
     element: (
@@ -182,7 +205,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // SuperAdmin routes
   {
     path: "/superadmin",
     element: (
@@ -198,15 +220,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Root redirect
-  {
-    path: "/",
-    element: <Navigate to="/login" replace />,
-  },
-
-  // 404
-  {
-    path: "*",
-    element: <Navigate to="/login" replace />,
-  },
+  { path: "/", element: <Navigate to="/login" replace /> },
+  { path: "*", element: <Navigate to="/login" replace /> },
 ]);

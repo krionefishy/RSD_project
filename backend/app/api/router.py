@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.admin.api import routes as admin_routes
+from app.auth.api import auth_router
 from app.knowledge_base.api import knowledge_base_router
 from app.sellings.api import routes as sellings_routes
 from app.users.api import routes as users_routes
@@ -11,6 +12,11 @@ api_router.get("/health", tags=["health"])(
     lambda: {"status": "ok", "service": "rsd-backend"}
 )
 
+api_router.include_router(
+    auth_router,
+    prefix="/auth",
+    tags=["auth"],
+)
 api_router.include_router(
     knowledge_base_router,
     prefix="/kb",

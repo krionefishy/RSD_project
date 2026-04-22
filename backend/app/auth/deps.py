@@ -1,149 +1,47 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, ExpiredSignatureError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import Request
 from sqlalchemy import select
-from dishka.integrations.fastapi import FromDishka
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.errors import TokenInvalidError, TokenMissingError
+from app.auth.tokens import TokenError, decode_token
 from app.users.db_models import UserModel
 from shared.settings.config import Settings
 
 
-security = HTTPBearer()
-
-
 @dataclass
 class AuthContext:
-    """Authentication context extracted from JWT token."""
-    valid: bool
-    user_id: Optional[str] = None
-    role: Optional[str] = None
+    user_id: str
+    role: str
 
 
-def _verify_jwt_token(
-    token: str,
+async def build_auth_context(
+    request: Request,
+    session: AsyncSession,
     settings: Settings,
-) -> Optional[dict]:
-    """
-    Verify JWT token signature and extract payload.
-
-    Args:
-        token: JWT token string (without "Bearer " prefix)
-        settings: Application settings with JWT config
-
-    Returns:
-        Token payload dict if valid, None if invalid
-
-    Raises:
-        ExpiredSignatureError: If token is expired (handled by caller)
-    """
-    try:
-        payload = jwt.decode(
-            token,
-            settings.jwt.secret,
-            algorithms=[settings.jwt.algorithm],
-        )
-        if payload.get("type") != "access":
-            return None
-        return payload
-    except ExpiredSignatureError:
-        raise
-    except JWTError:
-        return None
-
-
-async def validate_jwt_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    session: AsyncSession = FromDishka[AsyncSession],
-    settings: Settings = FromDishka[Settings],
 ) -> AuthContext:
-    """
-    Validate JWT token and return authentication context.
+    auth_header: Optional[str] = request.headers.get("Authorization")
+    if not auth_header or not auth_header.lower().startswith("bearer "):
+        raise TokenMissingError()
 
-    Token format: Authorization: Bearer <jwt_token>
+    token = auth_header.split(" ", 1)[1].strip()
+    if not token:
+        raise TokenMissingError()
 
-    Error handling:
-    - 403: Token invalid (bad signature, malformed, missing Bearer, wrong type)
-    - 401: Token expired or user not found in database
-
-    Args:
-        credentials: HTTP Bearer token
-        session: Database session
-        settings: Application settings
-
-    Returns:
-        AuthContext with user_id and role if valid
-
-    Raises:
-        HTTPException: 401 or 403 with appropriate detail
-    """
-    token = credentials.credentials
-
-    # Decode and validate JWT
     try:
-        payload = _verify_jwt_token(token, settings)
-    except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired",
-        )
+        payload = decode_token(settings, token, expected_type="access")
+    except TokenError as exc:
+        if exc.code == "TOKEN_EXPIRED":
+            from app.auth.errors import TokenExpiredError
+            raise TokenExpiredError(exc.message) from exc
+        raise TokenInvalidError(exc.message) from exc
 
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid token",
-        )
-
-    # Extract user_id from sub claim
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid token: missing user_id",
-        )
-
-    # Verify user exists in database
-    query = select(UserModel).where(UserModel.id == user_id)
-    result = await session.execute(query)
+    user_id = payload["sub"]
+    result = await session.execute(select(UserModel).where(UserModel.id == user_id))
     user = result.scalar_one_or_none()
-
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
+        raise TokenInvalidError("User not found")
 
-    return AuthContext(
-        valid=True,
-        user_id=str(user.id),
-        role=user.role.value,
-    )
-
-
-async def require_auth(
-    auth_context: AuthContext = Depends(validate_jwt_token),
-) -> AuthContext:
-    """
-    Require valid authentication.
-
-    This is a wrapper around validate_jwt_token that ensures
-    the token was successfully validated.
-
-    Args:
-        auth_context: Authentication context from validate_jwt_token
-
-    Returns:
-        AuthContext with user_id and role
-
-    Raises:
-        HTTPException: 401 if authentication is missing/invalid
-    """
-    if not auth_context.valid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-        )
-    return auth_context
+    return AuthContext(user_id=str(user.id), role=user.role.value)
