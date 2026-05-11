@@ -103,6 +103,7 @@ class Application:
                 Database: self.db,
                 RedisClient: self.redis_client,
                 KafkaProducerWrapper: kafka_producer,
+                S3Client: self.s3_client,
             },
         )
         setup_dishka(container, self.app)

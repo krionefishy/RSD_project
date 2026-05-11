@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { APIError } from "../../api/APIClient";
 import { AuthAPI } from "../../api/AuthAPI";
@@ -11,20 +11,20 @@ import { roleRoutes } from "../../utils/roleMap";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setUser } = useApp();
-  const [email, setEmail] = useState("");
+  const [externalSystemId, setExternalSystemId] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      toast.error("Введите email и пароль");
+    if (!externalSystemId || !password) {
+      toast.error("Введите ID сотрудника и пароль");
       return;
     }
 
     setLoading(true);
     try {
-      await AuthAPI.login(email, password);
+      await AuthAPI.login(externalSystemId, password);
       const user = await UserAPI.fetchMe();
       setUser(user);
       toast.success(`Добро пожаловать, ${user.firstName}!`);
@@ -33,7 +33,7 @@ export default function LoginPage() {
       let message = "Не удалось войти. Попробуйте ещё раз.";
       if (err instanceof APIError) {
         if (err.code === "INVALID_CREDENTIALS") {
-          message = "Неверный email или пароль";
+          message = "Неверный ID сотрудника или пароль";
         } else if (err.code === "DECRYPT_FAILED") {
           message = "Ошибка шифрования пароля. Обновите страницу.";
         } else if (err.message) {
@@ -75,16 +75,16 @@ export default function LoginPage() {
 
         <div className="mb-4">
           <label style={{ display: "block", color: "#374151", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-            Email
+            ID сотрудника
           </label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2">
-              <Mail size={18} color="#94A3B8" />
+              <User size={18} color="#94A3B8" />
             </div>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={externalSystemId}
+              onChange={(e) => setExternalSystemId(e.target.value)}
               className="w-full h-12 pl-10 pr-4 rounded-[10px] border outline-none text-[15px]"
               style={{
                 border: "1.5px solid #E2E8F0",
@@ -92,8 +92,8 @@ export default function LoginPage() {
                 background: "#fff",
                 fontSize: 15,
               }}
-              placeholder="Введите email"
-              autoComplete="email"
+              placeholder="Введите ID сотрудника"
+              autoComplete="username"
             />
           </div>
         </div>

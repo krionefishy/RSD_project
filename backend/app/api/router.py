@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.admin.api import routes as admin_routes
+from app.admin.api import router as admin_router
 from app.auth.api import auth_router
 from app.knowledge_base.api import knowledge_base_router
 from app.sellings.api import routes as sellings_routes
@@ -33,7 +33,7 @@ api_router.include_router(
     tags=["sellings"],
 )
 api_router.include_router(
-    admin_routes.router,
+    admin_router,
     prefix="/admin",
     tags=["admin"],
 )

@@ -51,7 +51,7 @@ export default function ProfilePage() {
           style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
         >
           {[
-            { label: "Email", value: user.email },
+            { label: "ID сотрудника", value: user.externalSystemId },
             { label: "Телефон", value: user.phone },
             { label: "Блок", value: user.block },
           ].map((item, i) => (

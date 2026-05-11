@@ -61,3 +61,25 @@ class EnrollmentDTO(BaseModel):
     status: str  # "in_progress", "completed"
     progress_percent: int
     enrolled_at: datetime
+
+
+class BlockDTO(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    primary_seller_count: int
+    reserve_seller_count: int
+
+
+class BlockMemberDTO(BaseModel):
+    id: int
+    user_id: UUID
+    block_id: int
+    status: str  # "primary" or "reserve"
+    assigned_at: datetime
+
+
+class BlockMemberBriefDTO(BaseModel):
+    user_id: UUID
+    full_name: str
+    status: str

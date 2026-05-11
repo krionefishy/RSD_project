@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from dishka.integrations.fastapi import FromDishka
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
 
 from app.auth.deps import AuthContext
 from app.knowledge_base.domain import CompleteMaterialRequest, UserContext
@@ -13,7 +13,7 @@ from app.knowledge_base.usecases.materials.complete_material_usecase import (
 )
 from app.users.db_models import UserRole
 
-router = APIRouter()
+router = APIRouter(route_class=DishkaRoute)
 
 
 @router.get(
@@ -25,8 +25,8 @@ router = APIRouter()
 async def get_material_by_id(
     material_id: int,
     course_id: int,
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: GetMaterialByIdUseCase = FromDishka[GetMaterialByIdUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[GetMaterialByIdUseCase],
 ) -> MaterialDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
     material = await usecase.execute(
@@ -52,8 +52,8 @@ async def get_material_by_id(
 )
 async def complete_material(
     request: CompleteMaterialRequest,
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: CompleteMaterialUseCase = FromDishka[CompleteMaterialUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[CompleteMaterialUseCase],
 ) -> CompleteMaterialResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
     result = await usecase.execute(

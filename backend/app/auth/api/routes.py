@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Response, status
-from dishka.integrations.fastapi import FromDishka
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
 
 from app.auth.deps import AuthContext
 from app.auth.domain import LoginRequest, LogoutRequest, RefreshRequest
@@ -9,7 +9,7 @@ from app.auth.usecases.login_user_usecase import LoginUserUseCase
 from app.auth.usecases.logout_user_usecase import LogoutUserUseCase
 from app.auth.usecases.refresh_tokens_usecase import RefreshTokensUseCase
 
-router = APIRouter()
+router = APIRouter(route_class=DishkaRoute)
 
 
 @router.get(
@@ -18,7 +18,7 @@ router = APIRouter()
     summary="Публичный ключ RSA для шифрования пароля",
 )
 async def get_public_key(
-    rsa_keys: RsaKeyProvider = FromDishka[RsaKeyProvider],
+    rsa_keys: FromDishka[RsaKeyProvider],
 ) -> PublicKeyDTO:
     return PublicKeyDTO(public_key_pem=rsa_keys.get_public_key_pem())
 
@@ -26,11 +26,11 @@ async def get_public_key(
 @router.post(
     "/login",
     response_model=TokenPairDTO,
-    summary="Логин по email+RSA-OAEP",
+    summary="Логин по external_system_id+RSA-OAEP",
 )
 async def login(
     request: LoginRequest,
-    usecase: LoginUserUseCase = FromDishka[LoginUserUseCase],
+    usecase: FromDishka[LoginUserUseCase],
 ) -> TokenPairDTO:
     return await usecase.execute(request)
 
@@ -42,7 +42,7 @@ async def login(
 )
 async def refresh(
     request: RefreshRequest,
-    usecase: RefreshTokensUseCase = FromDishka[RefreshTokensUseCase],
+    usecase: FromDishka[RefreshTokensUseCase],
 ) -> TokenPairDTO:
     return await usecase.execute(request)
 
@@ -54,8 +54,8 @@ async def refresh(
 )
 async def logout(
     request: LogoutRequest,
-    _: AuthContext = FromDishka[AuthContext],
-    usecase: LogoutUserUseCase = FromDishka[LogoutUserUseCase],
+    _: FromDishka[AuthContext],
+    usecase: FromDishka[LogoutUserUseCase],
 ) -> Response:
     await usecase.execute(request)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,7 +1,7 @@
 """Seed users for local development.
 
-Creates one user per UserRole with a deterministic email and a common password.
-Safe to re-run: upserts by email.
+Creates one user per UserRole with a deterministic external_system_id and a common password.
+Safe to re-run: upserts by external_system_id.
 
 Usage:
     python -m backend.scripts.seed_users
@@ -26,39 +26,41 @@ logger = logging.getLogger("seed_users")
 DEFAULT_PASSWORD = "Password123!"
 
 SEED_USERS = [
-    (UserRole.SUPER_ADMIN, "superadmin@rsd.local", "Super", "Admin"),
-    (UserRole.ROOT_ADMIN, "rootadmin@rsd.local", "Root", "Admin"),
-    (UserRole.ADMIN_STAFF, "staff@rsd.local", "Staff", "Admin"),
-    (UserRole.ADMIN_EDUCATION, "education@rsd.local", "Education", "Admin"),
-    (UserRole.ADMIN_SALES, "sales@rsd.local", "Sales", "Admin"),
-    (UserRole.MANAGER, "manager@rsd.local", "Manager", "User"),
-    (UserRole.SELLER, "seller@rsd.local", "Seller", "User"),
+    (UserRole.SUPER_ADMIN, "superadmin_001", "Super", "Admin"),
+    (UserRole.ROOT_ADMIN, "rootadmin_001", "Root", "Admin"),
+    (UserRole.ADMIN_STAFF, "staff_admin_001", "Staff", "Admin"),
+    (UserRole.ADMIN_EDUCATION, "education_admin_001", "Education", "Admin"),
+    (UserRole.ADMIN_SALES, "sales_admin_001", "Sales", "Admin"),
+    (UserRole.MANAGER, "manager_001", "Manager", "User"),
+    (UserRole.SELLER, "seller_001", "Seller", "User"),
 ]
 
 
 async def seed(session: AsyncSession) -> None:
     hashed = PasswordService.hash(DEFAULT_PASSWORD)
 
-    for role, email, first, last in SEED_USERS:
-        existing = await session.execute(select(UserModel).where(UserModel.email == email))
+    for role, external_system_id, first, last in SEED_USERS:
+        existing = await session.execute(
+            select(UserModel).where(UserModel.external_system_id == external_system_id)
+        )
         user = existing.scalar_one_or_none()
         if user:
             user.role = role
             user.hashed_password = hashed
             user.first_name = first
             user.last_name = last
-            logger.info("Updated seed user %s (%s)", email, role.value)
+            logger.info("Updated seed user %s (%s)", external_system_id, role.value)
         else:
             session.add(
                 UserModel(
-                    email=email,
+                    external_system_id=external_system_id,
                     hashed_password=hashed,
                     role=role,
                     first_name=first,
                     last_name=last,
                 )
             )
-            logger.info("Created seed user %s (%s)", email, role.value)
+            logger.info("Created seed user %s (%s)", external_system_id, role.value)
 
     await session.commit()
 

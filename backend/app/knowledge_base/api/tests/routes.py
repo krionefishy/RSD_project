@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from dishka.integrations.fastapi import FromDishka
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
 
 from app.auth.deps import AuthContext
 from app.knowledge_base.domain import StartTestRequest, SubmitAnswerRequest, UserContext
@@ -15,7 +15,7 @@ from app.knowledge_base.usecases.tests.submit_answer_usecase import SubmitAnswer
 from app.knowledge_base.usecases.tests.get_test_result_usecase import GetTestResultUseCase
 from app.users.db_models import UserRole
 
-router = APIRouter()
+router = APIRouter(route_class=DishkaRoute)
 
 
 @router.get(
@@ -27,8 +27,8 @@ router = APIRouter()
 async def get_test_by_id(
     test_id: int,
     course_id: int,
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: GetTestByIdUseCase = FromDishka[GetTestByIdUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[GetTestByIdUseCase],
 ) -> TestDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
     test = await usecase.execute(
@@ -54,8 +54,8 @@ async def get_test_by_id(
 )
 async def start_test(
     request: StartTestRequest,
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: StartTestUseCase = FromDishka[StartTestUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[StartTestUseCase],
 ) -> StartTestResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
     result = await usecase.execute(
@@ -80,8 +80,8 @@ async def start_test(
 )
 async def submit_answer(
     request: SubmitAnswerRequest,
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: SubmitAnswerUseCase = FromDishka[SubmitAnswerUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[SubmitAnswerUseCase],
 ) -> SubmitAnswerResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
     result = await usecase.execute(
@@ -107,8 +107,8 @@ async def submit_answer(
 async def get_test_result(
     test_id: int,
     course_id: int,
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: GetTestResultUseCase = FromDishka[GetTestResultUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[GetTestResultUseCase],
 ) -> TestResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
     result = await usecase.execute(

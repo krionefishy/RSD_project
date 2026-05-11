@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
 import { Avatar } from "../../components/Avatar";
 import { ratingData } from "../../mock/mockData";
 
@@ -58,25 +57,6 @@ export default function RatingPage() {
               #{data.myPosition}
             </span>
             <div>
-              <div className="flex items-center gap-1 mb-1">
-                {data.change > 0 ? (
-                  <>
-                    <TrendingUp size={16} color="#86EFAC" />
-                    <span style={{ color: "#86EFAC", fontSize: 14, fontWeight: 600 }}>
-                      ↑{data.change} позиция
-                    </span>
-                  </>
-                ) : data.change < 0 ? (
-                  <>
-                    <TrendingDown size={16} color="#FCA5A5" />
-                    <span style={{ color: "#FCA5A5", fontSize: 14, fontWeight: 600 }}>
-                      ↓{Math.abs(data.change)} позиция
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 14 }}>Без изменений</span>
-                )}
-              </div>
               <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>
                 Среди {data.total} {tab === "sales" ? "продавцов блока" : "сотрудников"}
               </p>

@@ -1,19 +1,19 @@
 from uuid import UUID
 
-from dishka.integrations.fastapi import FromDishka
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, status
 
 from app.auth.deps import AuthContext
 from app.users.dto import UserDTO
 from app.users.usecases.get_user_usecase import GetUserUseCase
 
-router = APIRouter()
+router = APIRouter(route_class=DishkaRoute)
 
 
 @router.get("/me", response_model=UserDTO, summary="Текущий пользователь")
 async def get_current_user(
-    auth: AuthContext = FromDishka[AuthContext],
-    usecase: GetUserUseCase = FromDishka[GetUserUseCase],
+    auth: FromDishka[AuthContext],
+    usecase: FromDishka[GetUserUseCase],
 ) -> UserDTO:
     user = await usecase.execute(UUID(auth.user_id))
     if user is None:
@@ -24,8 +24,8 @@ async def get_current_user(
 @router.get("/{user_id}", response_model=UserDTO, summary="Пользователь по id")
 async def get_user(
     user_id: UUID,
-    _: AuthContext = FromDishka[AuthContext],
-    usecase: GetUserUseCase = FromDishka[GetUserUseCase],
+    _: FromDishka[AuthContext],
+    usecase: FromDishka[GetUserUseCase],
 ) -> UserDTO:
     user = await usecase.execute(user_id)
     if user is None:

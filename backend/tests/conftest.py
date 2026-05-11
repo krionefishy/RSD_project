@@ -1,23 +1,37 @@
 import logging
 import os
 import re
-from typing import AsyncGenerator
+from datetime import UTC, datetime
+from typing import AsyncGenerator, Optional, Union
+from unittest.mock import patch
 from urllib.parse import urlparse, urlunparse
 
 import pytest
-from dishka import make_async_container
-from dishka.integrations.fastapi import setup_dishka
+from dishka import Provider, Scope, from_context, make_async_container, provide
+from dishka.integrations.fastapi import FastapiProvider, setup_dishka
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api.router import api_router
 from app.application import Application
-from shared.di.providers import ALL_PROVIDERS
+from app.locations.db_models import BlockModel, LocationModel
+from app.users.db_models import UserModel
+from tests.builder import Builder
+from tests.mocks import FakeKafkaBroker, MockS3Client
+from shared.di.providers.admin import AdminUsecaseProvider
+from shared.di.providers.app import AppProvider, SessionProvider
+from shared.di.providers.auth import AuthContextProvider, AuthProvider, AuthUsecaseProvider
+from shared.di.providers.knowledge_base import KnowledgeBaseUsecaseProvider
+from shared.di.providers.sellings import SellingsUsecaseProvider
+from shared.di.providers.users import UsersUsecaseProvider
 from shared.kafka_streams.producer import KafkaProducerWrapper
 from shared.settings.config import Settings, load_settings
 from storage.pg.database import Base, Database
 from storage.redis.client import RedisClient
+from storage.s3.client import S3Client
 
 import app.knowledge_base.db_models  # noqa: F401
 
@@ -72,11 +86,17 @@ def settings() -> Settings:
     cfg = load_settings(config_path)
 
     if os.environ.get("DATABASE_URL"):
+        url = os.environ["DATABASE_URL"]
+        parsed = urlparse(url)
         cfg = Settings(
             database=cfg.database.__class__(
-                url=os.environ["DATABASE_URL"],
-                echo=cfg.database.echo,
+                host=parsed.hostname or "localhost",
+                port=parsed.port or 5432,
+                user=parsed.username or "postgres",
+                password=parsed.password or "",
+                database=parsed.path.lstrip("/") if parsed.path else "postgres",
             ),
+            jwt=cfg.jwt,
             kafka=cfg.kafka,
             redis=cfg.redis,
             s3=cfg.s3,
@@ -121,9 +141,6 @@ async def application(database: Database, settings: Settings) -> Application:
     app.redis_client = None
     app.s3_client = None
 
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
-
     fastapi_app = FastAPI(title="RSD Backend Test")
     fastapi_app.add_middleware(
         CORSMiddleware,
@@ -136,9 +153,47 @@ async def application(database: Database, settings: Settings) -> Application:
     app.app = fastapi_app
 
     kafka_producer = KafkaProducerWrapper(None)
+    mock_s3 = MockS3Client()
+
+    # Create real S3Client with test credentials
+    mock_s3_client = S3Client(
+        endpoint_url="http://localhost:9000",
+        key_id="test-key",
+        secret_key="test-secret",
+        bucket_name="test-bucket",
+        region="us-east-1",
+    )
+    # Replace the internal client with our mock
+    mock_s3_client._client = mock_s3
+
+    # Build providers list manually without AppProvider to avoid S3Client from_context conflict
+    class TestAppProvider(Provider):
+        scope = Scope.APP
+
+        settings = from_context(Settings)
+        db = from_context(Database)
+        redis = from_context(RedisClient)
+        kafka_producer = from_context(KafkaProducerWrapper)
+
+        @provide(scope=Scope.REQUEST)
+        def get_s3(self) -> Union[S3Client, None]:
+            return mock_s3_client
+
+    test_providers = [
+        TestAppProvider(),
+        SessionProvider(),
+        FastapiProvider(),
+        AuthProvider(),
+        AuthContextProvider(),
+        AuthUsecaseProvider(),
+        KnowledgeBaseUsecaseProvider(),
+        # UsersUsecaseProvider(),  # Skip - has S3Client dependency issues
+        SellingsUsecaseProvider(),
+        AdminUsecaseProvider(),
+    ]
 
     container = make_async_container(
-        *ALL_PROVIDERS,
+        *test_providers,
         context={
             Settings: settings,
             Database: database,
@@ -189,3 +244,48 @@ async def client(application: Application):
     transport = ASGITransport(app=application.app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+def frozen_datetime() -> datetime:
+    return datetime(2024, 10, 10, 22, 0, 0, tzinfo=UTC)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def mock_kafka_broker():
+    with patch("shared.kafka_streams.producer.KafkaProducerWrapper", FakeKafkaBroker):
+        yield
+
+
+@pytest.fixture(autouse=True, scope="session")
+def mock_s3_client():
+    with patch("storage.s3.client.S3Client", MockS3Client):
+        yield
+
+
+
+@pytest.fixture
+def builder(db_session: AsyncSession, frozen_datetime: datetime) -> Builder:
+    """Provide a Builder instance for creating test entities.
+
+    Usage:
+        async def test_something(builder: Builder):
+            user = await builder.build_user(external_system_id="test_001")
+            location = await builder.default_location
+    """
+    return Builder(db_session, frozen_datetime)
+
+
+@pytest.fixture
+async def default_user(builder: Builder) -> UserModel:
+    return await builder.default_user
+
+
+@pytest.fixture
+async def default_location(builder: Builder) -> LocationModel:
+    return await builder.default_location
+
+
+@pytest.fixture
+async def default_block(builder: Builder) -> BlockModel:
+    return await builder.default_block

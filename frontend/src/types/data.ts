@@ -126,7 +126,7 @@ export interface NetworkBlock {
 export interface Account {
   id: string;
   name: string;
-  email: string;
+  externalSystemId: string;
   role: string;
   roleLabel: string;
   status: "active" | "blocked";

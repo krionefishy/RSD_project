@@ -44,7 +44,6 @@ export const salesData = {
 export const ratingData = {
   sales: {
     myPosition: 7,
-    change: -2,
     myValue: "387 420 ₽",
     total: 48,
     list: [
@@ -59,7 +58,6 @@ export const ratingData = {
   },
   learning: {
     myPosition: 3,
-    change: 1,
     myValue: "85%",
     total: 48,
     list: [
@@ -120,9 +118,9 @@ export const networkBlocks: NetworkBlock[] = [
 ];
 
 export const accounts: Account[] = [
-  { id: "1", name: "Ирина Козлова", email: "irina.kozlova@rsd.ru", role: "superadmin", roleLabel: "СуперАдмин", status: "active" },
-  { id: "2", name: "Алексей Смирнов", email: "alexey.smirnov@rsd.ru", role: "admin-po", roleLabel: "Админ ПО", status: "active" },
-  { id: "3", name: "Сергей Лебедев", email: "sergey.lebedev@rsd.ru", role: "admin-sales", roleLabel: "Админ Продаж", status: "active" },
+  { id: "1", name: "Ирина Козлова", externalSystemId: "superadmin_001", role: "superadmin", roleLabel: "СуперАдмин", status: "active" },
+  { id: "2", name: "Алексей Смирнов", externalSystemId: "admin_po_001", role: "admin-po", roleLabel: "Админ ПО", status: "active" },
+  { id: "3", name: "Сергей Лебедев", externalSystemId: "admin_sales_001", role: "admin-sales", roleLabel: "Админ Продаж", status: "active" },
 ];
 
 // ────────────────────────────────────────────────

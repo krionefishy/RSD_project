@@ -36,7 +36,7 @@ class LoginUserUseCase:
             raise DecryptFailedError() from exc
 
         result = await self.session.execute(
-            select(UserModel).where(UserModel.email == request.email)
+            select(UserModel).where(UserModel.external_system_id == request.external_system_id)
         )
         user = result.scalar_one_or_none()
 

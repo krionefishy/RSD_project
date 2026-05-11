@@ -1,5 +1,5 @@
 // React import not needed in React 18+
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, BarChart3 } from "lucide-react";
+import { DollarSign, ShoppingCart, BarChart3 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 
@@ -8,9 +8,9 @@ export default function AdminSalesDashboardPage() {
   if (!user) return null;
 
   const stats = [
-    { label: "Выручка сети", value: "12.4M ₽", change: "+8.2%", icon: DollarSign, color: "#2E7D32" },
-    { label: "Количество продаж", value: "8,420", change: "+12.1%", icon: ShoppingCart, color: "#22C55E" },
-    { label: "Средний чек", value: "1,475 ₽", change: "-2.4%", icon: BarChart3, color: "#F59E0B" },
+    { label: "Выручка сети", value: "12.4M ₽", icon: DollarSign, color: "#2E7D32" },
+    { label: "Количество продаж", value: "8,420", icon: ShoppingCart, color: "#22C55E" },
+    { label: "Средний чек", value: "1,475 ₽", icon: BarChart3, color: "#F59E0B" },
   ];
 
   const topBlocks = [
@@ -38,10 +38,6 @@ export default function AdminSalesDashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: s.color + "15" }}>
                 <s.icon size={20} color={s.color} />
-              </div>
-              <div className="flex items-center gap-1" style={{ color: s.change.startsWith("+") ? "#22C55E" : "#EF4444", fontSize: 13, fontWeight: 600 }}>
-                {s.change.startsWith("+") ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                {s.change}
               </div>
             </div>
             <p style={{ color: "#1E293B", fontSize: 24, fontWeight: 800, lineHeight: 1 }}>{s.value}</p>

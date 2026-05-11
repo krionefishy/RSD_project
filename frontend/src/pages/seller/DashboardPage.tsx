@@ -1,6 +1,6 @@
 // React import not needed in React 18+
 import { useNavigate } from "react-router";
-import { TrendingUp, ChevronRight, BookOpen, Trophy } from "lucide-react";
+import { ChevronRight, BookOpen, Trophy } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { ProgressCircle } from "../../components/ProgressCircle";
 import { Avatar } from "../../components/Avatar";
@@ -144,12 +144,6 @@ export default function DashboardPage() {
               </span>
             </div>
             <div>
-              <div className="flex items-center gap-1 mb-1">
-                <TrendingUp size={14} color="#22C55E" />
-                <span style={{ color: "#22C55E", fontSize: 13, fontWeight: 600 }}>
-                  ↑{ratingData.sales.change} позиция
-                </span>
-              </div>
               <p style={{ color: "#64748B", fontSize: 12 }}>
                 Среди {ratingData.sales.total} продавцов блока
               </p>

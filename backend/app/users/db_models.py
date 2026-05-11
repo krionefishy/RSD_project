@@ -4,14 +4,14 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone
 
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy import String, DateTime, Index
+from sqlalchemy import Boolean, String, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from storage.pg.database import Base
 
 if TYPE_CHECKING:
     from app.knowledge_base.db_models import CourseUserModel, UserCourseMaterialModel, UserCourseTestModel, CourseModel, MaterialModel
-    from app.locations.db_models import UserLocationModel, LocationModel, ManagerBlockModel, BlockModel
+    from app.locations.db_models import UserLocationModel, LocationModel, ManagerBlockModel, BlockModel, BlockMemberModel
 
 
 class UserRole(str, Enum):
@@ -32,16 +32,20 @@ class UserModel(Base):
     __tablename__ = "users"
 
     __table_args__ = (
-        Index("ix_users_email", "email"),
+        Index("ix_users_external_system_id", "external_system_id"),
     )
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
-    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    external_system_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(String(50), nullable=False, default=UserRole.SELLER)
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     phone: Mapped[str | None] = mapped_column(String(50))
+    position: Mapped[str | None] = mapped_column(String(100))
+    avatar_url: Mapped[str | None] = mapped_column(String(500))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_temp_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -77,6 +81,11 @@ class UserModel(Base):
         "ManagerBlockModel",
         back_populates="manager",
         cascade="all, delete-orphan"
+    )
+    block_memberships: Mapped[list["BlockMemberModel"]] = relationship(
+        "BlockMemberModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
 
     @property
@@ -117,4 +126,4 @@ class UserModel(Base):
     @property
     def full_name(self) -> str:
         parts = [p for p in [self.first_name, self.last_name] if p]
-        return " ".join(parts) if parts else self.email
+        return " ".join(parts) if parts else self.external_system_id

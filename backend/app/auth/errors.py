@@ -12,7 +12,7 @@ class AuthError(HTTPException):
 
 
 class InvalidCredentialsError(AuthError):
-    def __init__(self, message: str = "Invalid email or password"):
+    def __init__(self, message: str = "Invalid external_system_id or password"):
         super().__init__("INVALID_CREDENTIALS", message, status.HTTP_401_UNAUTHORIZED)
 
 

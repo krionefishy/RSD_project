@@ -1,5 +1,7 @@
+from enum import Enum
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
@@ -11,12 +13,18 @@ from sqlalchemy import (
     Index,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from storage.pg.database import Base
 
 if TYPE_CHECKING:
     from app.users.db_models import UserModel
+
+
+class BlockMemberStatus(str, Enum):
+    PRIMARY = "primary"
+    RESERVE = "reserve"
 
 
 class BlockModel(Base):
@@ -46,22 +54,31 @@ class BlockModel(Base):
         back_populates="block",
         cascade="all, delete-orphan"
     )
+    member_assignments: Mapped[list["BlockMemberModel"]] = relationship(
+        "BlockMemberModel",
+        back_populates="block",
+        cascade="all, delete-orphan"
+    )
 
     @property
     def locations(self) -> list["LocationModel"]:
         return [la.location for la in self.location_assignments if la.location]
+
+    @property
+    def members(self) -> list["BlockMemberModel"]:
+        return self.member_assignments
 
 
 class ManagerBlockModel(Base):
     __tablename__ = "manager_blocks"
 
     __table_args__ = (
-        UniqueConstraint("manager_id", "block_id", name="uq_manager_blocks_manager_block"),
+        UniqueConstraint("manager_id", name="uq_manager_blocks_manager"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    manager_id: Mapped[int] = mapped_column(
-        Integer,
+    manager_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -78,6 +95,38 @@ class ManagerBlockModel(Base):
     @property
     def block_name(self) -> str | None:
         return self.block.name if self.block else None
+
+
+class BlockMemberModel(Base):
+    __tablename__ = "block_members"
+
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_block_members_user"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    block_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("blocks.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=BlockMemberStatus.PRIMARY.value,
+    )
+    assigned_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="block_memberships")
+    block: Mapped["BlockModel"] = relationship("BlockModel", back_populates="member_assignments")
 
 
 class BlockLocationModel(Base):
@@ -155,8 +204,8 @@ class UserLocationModel(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer,
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )

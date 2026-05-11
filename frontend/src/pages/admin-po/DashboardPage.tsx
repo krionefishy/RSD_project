@@ -49,7 +49,7 @@ export default function AdminPODashboardPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{acc.name}</p>
-                  <p style={{ color: "#94A3B8", fontSize: 11 }}>{acc.email}</p>
+                  <p style={{ color: "#94A3B8", fontSize: 11 }}>{acc.externalSystemId}</p>
                 </div>
                 <span className="px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: acc.status === "active" ? "#F0FDF4" : "#FEF2F2", color: acc.status === "active" ? "#16A34A" : "#DC2626", fontSize: 10, fontWeight: 600 }}>
                   {acc.roleLabel}
