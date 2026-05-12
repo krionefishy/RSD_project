@@ -8,6 +8,19 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.knowledge_base.db_models import (
+    CourseMaterialModel,
+    CourseModel,
+    CourseTestModel,
+    CourseUserModel,
+    MaterialAttachmentModel,
+    MaterialModel,
+    TestModel,
+    TestTaskAssignmentModel,
+    TestTaskModel,
+    UserCourseMaterialModel,
+    UserCourseTestModel,
+)
 from app.locations.db_models import (
     BlockLocationModel,
     BlockModel,
@@ -236,3 +249,303 @@ class Builder:
         location = await self.build_location(**(location_kwargs or {}))
         assignment = await self.build_user_location(user=user, location=location)
         return user, location, assignment
+
+    async def build_course(
+        self,
+        *,
+        course_id: int | None = None,
+        name: str = "Test Course",
+        description: str | None = "Test course description",
+        rating_points: int = 100,
+        mrp: int = 80,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> CourseModel:
+        values = {
+            "name": name,
+            "description": description,
+            "rating_points": rating_points,
+            "mrp": mrp,
+            "created_at": created_at or self._default_datetime,
+            "updated_at": updated_at or self._default_datetime,
+        }
+        if course_id is not None:
+            values["id"] = course_id
+        statement = insert(CourseModel).values(**values).returning(CourseModel)
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_material(
+        self,
+        *,
+        material_id: int | None = None,
+        name: str = "Test Material",
+        category: str = "general",
+        description: str | None = "Test material description",
+        text: str = "Material content text",
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> MaterialModel:
+        values = {
+            "name": name,
+            "category": category,
+            "description": description,
+            "text": text,
+            "created_at": created_at or self._default_datetime,
+            "updated_at": updated_at or self._default_datetime,
+        }
+        if material_id is not None:
+            values["id"] = material_id
+        statement = insert(MaterialModel).values(**values).returning(MaterialModel)
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_test(
+        self,
+        *,
+        test_id: int | None = None,
+        name: str = "Test Quiz",
+        category: str = "general",
+        description: str | None = "Test quiz description",
+        is_final: bool = False,
+        pass_score_percent: int = 70,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> TestModel:
+        values = {
+            "name": name,
+            "category": category,
+            "description": description,
+            "is_final": is_final,
+            "pass_score_percent": pass_score_percent,
+            "created_at": created_at or self._default_datetime,
+            "updated_at": updated_at or self._default_datetime,
+        }
+        if test_id is not None:
+            values["id"] = test_id
+        statement = insert(TestModel).values(**values).returning(TestModel)
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_test_task(
+        self,
+        *,
+        task_id: int | None = None,
+        name: str = "Test Task",
+        description: str | None = "Test task description",
+        points: int = 10,
+        answer_variants: list | None = None,
+        correct_variant: int = 0,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> TestTaskModel:
+        values = {
+            "name": name,
+            "description": description,
+            "points": points,
+            "answer_variants": answer_variants or ["Option A", "Option B", "Option C"],
+            "correct_variant": correct_variant,
+            "created_at": created_at or self._default_datetime,
+            "updated_at": updated_at or self._default_datetime,
+        }
+        if task_id is not None:
+            values["id"] = task_id
+        statement = insert(TestTaskModel).values(**values).returning(TestTaskModel)
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_course_material(
+        self,
+        *,
+        course: CourseModel | None = None,
+        material: MaterialModel | None = None,
+        created_at: datetime | None = None,
+    ) -> CourseMaterialModel:
+        course_obj = course or await self.build_course()
+        material_obj = material or await self.build_material()
+        statement = (
+            insert(CourseMaterialModel)
+            .values(
+                course_id=course_obj.id,
+                material_id=material_obj.id,
+                created_at=created_at or self._default_datetime,
+                updated_at=created_at or self._default_datetime,
+            )
+            .returning(CourseMaterialModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_course_test(
+        self,
+        *,
+        course: CourseModel | None = None,
+        test: TestModel | None = None,
+        is_final: bool = False,
+        created_at: datetime | None = None,
+    ) -> CourseTestModel:
+        course_obj = course or await self.build_course()
+        test_obj = test or await self.build_test()
+        statement = (
+            insert(CourseTestModel)
+            .values(
+                course_id=course_obj.id,
+                test_id=test_obj.id,
+                is_final=is_final,
+                created_at=created_at or self._default_datetime,
+                updated_at=created_at or self._default_datetime,
+            )
+            .returning(CourseTestModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_course_user(
+        self,
+        *,
+        user: UserModel | None = None,
+        course: CourseModel | None = None,
+        user_points_by_course: int = 0,
+        is_course_completed: bool = False,
+        is_course_completed_successfully: bool = False,
+        created_at: datetime | None = None,
+    ) -> CourseUserModel:
+        user_obj = user or await self.build_user()
+        course_obj = course or await self.build_course()
+        statement = (
+            insert(CourseUserModel)
+            .values(
+                user_id=user_obj.id,
+                course_id=course_obj.id,
+                user_points_by_course=user_points_by_course,
+                is_course_completed=is_course_completed,
+                is_course_completed_successfully=is_course_completed_successfully,
+                created_at=created_at or self._default_datetime,
+                updated_at=created_at or self._default_datetime,
+            )
+            .returning(CourseUserModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_user_course_material(
+        self,
+        *,
+        user: UserModel | None = None,
+        course: CourseModel | None = None,
+        material: MaterialModel | None = None,
+        is_completed: bool = True,
+        created_at: datetime | None = None,
+    ) -> UserCourseMaterialModel:
+        user_obj = user or await self.build_user()
+        course_obj = course or await self.build_course()
+        material_obj = material or await self.build_material()
+        statement = (
+            insert(UserCourseMaterialModel)
+            .values(
+                user_id=user_obj.id,
+                course_id=course_obj.id,
+                material_id=material_obj.id,
+                is_completed=is_completed,
+                completed_at=created_at or self._default_datetime if is_completed else None,
+                created_at=created_at or self._default_datetime,
+                updated_at=created_at or self._default_datetime,
+            )
+            .returning(UserCourseMaterialModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_user_course_test(
+        self,
+        *,
+        user: UserModel | None = None,
+        course: CourseModel | None = None,
+        test: TestModel | None = None,
+        score: int = 0,
+        max_score: int = 100,
+        is_passed: bool = False,
+        answers: dict | None = None,
+        created_at: datetime | None = None,
+    ) -> UserCourseTestModel:
+        user_obj = user or await self.build_user()
+        course_obj = course or await self.build_course()
+        test_obj = test or await self.build_test()
+        statement = (
+            insert(UserCourseTestModel)
+            .values(
+                user_id=user_obj.id,
+                course_id=course_obj.id,
+                test_id=test_obj.id,
+                score=score,
+                max_score=max_score,
+                is_passed=is_passed,
+                answers=answers or {},
+                created_at=created_at or self._default_datetime,
+                updated_at=created_at or self._default_datetime,
+            )
+            .returning(UserCourseTestModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_test_task_assignment(
+        self,
+        *,
+        test: TestModel | None = None,
+        task: TestTaskModel | None = None,
+        order: int = 0,
+        created_at: datetime | None = None,
+    ) -> TestTaskAssignmentModel:
+        test_obj = test or await self.build_test()
+        task_obj = task or await self.build_test_task()
+        statement = (
+            insert(TestTaskAssignmentModel)
+            .values(
+                test_id=test_obj.id,
+                task_id=task_obj.id,
+                order=order,
+                created_at=created_at or self._default_datetime,
+            )
+            .returning(TestTaskAssignmentModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_course_with_materials(
+        self,
+        *,
+        course_kwargs: dict[str, Any] | None = None,
+        material_count: int = 2,
+    ) -> tuple[CourseModel, list[MaterialModel], list[CourseMaterialModel]]:
+        course = await self.build_course(**(course_kwargs or {}))
+        materials = []
+        assignments = []
+        for i in range(material_count):
+            material = await self.build_material(name=f"Material {i+1}")
+            assignment = await self.build_course_material(course=course, material=material)
+            materials.append(material)
+            assignments.append(assignment)
+        return course, materials, assignments
+
+    async def build_course_with_test(
+        self,
+        *,
+        course_kwargs: dict[str, Any] | None = None,
+        test_kwargs: dict[str, Any] | None = None,
+        task_count: int = 3,
+        is_final: bool = False,
+    ) -> tuple[CourseModel, TestModel, list[TestTaskModel], CourseTestModel]:
+        course = await self.build_course(**(course_kwargs or {}))
+        test = await self.build_test(**(test_kwargs or {}))
+        tasks = []
+        for i in range(task_count):
+            task = await self.build_test_task(
+                name=f"Task {i+1}",
+                points=10,
+                correct_variant=0,
+            )
+            await self.build_test_task_assignment(test=test, task=task, order=i)
+            tasks.append(task)
+        course_test = await self.build_course_test(course=course, test=test, is_final=is_final)
+        return course, test, tasks, course_test
