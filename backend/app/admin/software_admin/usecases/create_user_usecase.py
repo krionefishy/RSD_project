@@ -63,7 +63,7 @@ class CreateUserUseCase:
             user=UserDTO(
                 id=user.id,
                 external_system_id=user.external_system_id,
-                role=user.role.value,
+                role=user.role,
                 first_name=user.first_name,
                 last_name=user.last_name,
                 phone=user.phone,

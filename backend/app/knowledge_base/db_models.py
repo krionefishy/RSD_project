@@ -24,11 +24,11 @@ class CourseModel(Base):
     description: Mapped[str | None] = mapped_column(Text)
     rating_points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     mrp: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     course_materials = relationship("CourseMaterialModel", back_populates="course", cascade="all, delete-orphan")
@@ -68,11 +68,11 @@ class CourseUserModel(Base):
     user_points_by_course: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_course_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_course_completed_successfully: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     user = relationship("UserModel", back_populates="course_users")
@@ -107,11 +107,11 @@ class CourseMaterialModel(Base):
         ForeignKey("courses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     course = relationship("CourseModel", back_populates="course_materials")
@@ -137,11 +137,11 @@ class CourseTestModel(Base):
         nullable=False,
     )
     is_final: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     course = relationship("CourseModel", back_populates="course_tests")
@@ -174,11 +174,11 @@ class UserCourseMaterialModel(Base):
     )
     is_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     user = relationship("UserModel", back_populates="user_course_materials")
@@ -215,11 +215,11 @@ class UserCourseTestModel(Base):
     max_score: Mapped[int | None] = mapped_column(Integer, default=None)
     is_passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     answers: Mapped[dict | None] = mapped_column(JSON, default=None)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
@@ -240,11 +240,11 @@ class MaterialModel(Base):
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     course_materials = relationship("CourseMaterialModel", back_populates="material", cascade="all, delete-orphan")
@@ -275,11 +275,11 @@ class MaterialAttachmentModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     format: Mapped[str] = mapped_column(String(50), nullable=False)
     s3_file_key: Mapped[str] = mapped_column(String(500), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     material = relationship("MaterialModel", back_populates="attachments")
@@ -290,7 +290,7 @@ class MaterialAttachmentModel(Base):
 
     @staticmethod
     def generate_s3_key(material_id, filename, file_format):
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_ext = file_format.lower() if file_format else "bin"
         return f"materials/{material_id}/{timestamp}_{filename}.{file_ext}"
 
@@ -310,11 +310,11 @@ class TestModel(Base):
     is_final: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     time_limit_minutes: Mapped[int | None] = mapped_column(Integer)
     pass_score_percent: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     task_assignments: Mapped[list["TestTaskAssignmentModel"]] = relationship(
@@ -350,11 +350,11 @@ class TestTaskModel(Base):
     points: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     answer_variants: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     correct_variant: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     test_assignments: Mapped[list["TestTaskAssignmentModel"]] = relationship(
@@ -384,7 +384,7 @@ class TestTaskAssignmentModel(Base):
         nullable=False,
     )
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
 
     test: Mapped["TestModel"] = relationship("TestModel", back_populates="task_assignments")
     task: Mapped["TestTaskModel"] = relationship("TestTaskModel", back_populates="test_assignments")

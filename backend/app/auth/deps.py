@@ -44,4 +44,4 @@ async def build_auth_context(
     if user is None:
         raise TokenInvalidError("User not found")
 
-    return AuthContext(user_id=str(user.id), role=user.role.value)
+    return AuthContext(user_id=str(user.id), role=user.role)

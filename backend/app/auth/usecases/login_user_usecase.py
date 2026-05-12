@@ -43,8 +43,8 @@ class LoginUserUseCase:
         if user is None or not self.password_service.verify(raw_password, user.hashed_password):
             raise InvalidCredentialsError()
 
-        access_token, expires_in = create_access_token(self.settings, user.id, user.role.value)
-        refresh_token, refresh_jti, _ = create_refresh_token(self.settings, user.id, user.role.value)
+        access_token, expires_in = create_access_token(self.settings, user.id, user.role)
+        refresh_token, refresh_jti, _ = create_refresh_token(self.settings, user.id, user.role)
         await self.refresh_store.save(user.id, refresh_jti)
 
         return TokenPairDTO(
@@ -53,5 +53,5 @@ class LoginUserUseCase:
             token_type="bearer",
             expires_in=expires_in,
             user_id=user.id,
-            role=user.role.value,
+            role=user.role,
         )

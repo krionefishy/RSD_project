@@ -35,7 +35,7 @@ class AssignManagerBlockUseCase:
         assignment = ManagerBlockModel(
             manager_id=manager_id,
             block_id=block_id,
-            assigned_at=datetime.now(timezone.utc),
+            assigned_at=datetime.now(),
         )
         self.session.add(assignment)
         await self.session.commit()

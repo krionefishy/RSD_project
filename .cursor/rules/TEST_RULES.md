@@ -99,3 +99,101 @@ Examples:
 - Use specific assertions, not `assert True`
 - Test one thing per test method
 - Use helper methods for complex assertions
+
+## Test Isolation Rules
+
+### Unit Tests (Usecase Tests)
+
+**Usecase tests must be PURE unit tests - NO external service calls:**
+
+1. **Never instantiate real external clients in usecase tests**
+   - S3Client must be mocked (use MockS3Client)
+   - Kafka must be mocked (use FakeKafkaBroker)
+   - HTTP clients must be mocked
+   - Database is the only real dependency allowed
+
+2. **Usecase tests should only test:**
+   - Business logic inside the usecase
+   - Database queries via SQLAlchemy
+   - Pure transformations and calculations
+
+3. **Forbidden in usecase tests:**
+   ```python
+   # NO: Creating real S3Client
+   s3 = S3Client(endpoint_url="...", ...)  # This hits real S3!
+   
+   # NO: Full application startup
+   app = create_app()  # This starts all services!
+   
+   # NO: Real HTTP calls
+   requests.get("http://external-api.com/...")
+   ```
+
+4. **Allowed in usecase tests:**
+   ```python
+   # YES: Mock S3Client
+   mock_s3 = MockS3Client()
+   usecase = UploadAvatarUseCase(session, mock_s3)
+   
+   # YES: Direct usecase instantiation with minimal deps
+   usecase = GetUserUseCase(db_session)
+   result = await usecase.execute(user_id)
+   ```
+
+### Integration Tests (API Tests)
+
+API tests in `tests/<entity>/api/` can use full application context but must:
+- Mock external HTTP calls (aioresponses)
+- Use testcontainers or local test databases
+- Not hit production services
+
+## Service Mocking
+
+### S3 (MinIO/AWS)
+```python
+from tests.mocks import MockS3Client
+
+mock_s3 = MockS3Client()
+mock_s3._uploads["test-key"] = b"test data"
+```
+
+### Kafka
+```python
+from tests.mocks import FakeKafkaBroker
+
+broker = FakeKafkaBroker()
+await broker.publish({"event": "test"}, "topic")
+assert len(broker.published) == 1
+```
+
+### HTTP APIs
+```python
+from aioresponses import aioresponses
+
+with aioresponses() as m:
+    m.get("http://external-api.com/user/1", payload={"id": 1})
+    result = await client.get_user(1)
+```
+
+## Database Rules
+
+1. **Use transactional rollback** - never commit in tests
+2. **Use Builder** for test data creation
+3. **Don't use production database** - use rsd_test
+4. **Reset state between tests** via fixtures
+
+## Running Tests
+
+```bash
+# Run all tests
+just test
+
+# Run specific test file
+just test-file tests/usecases/test_get_user_usecase.py
+
+# Run with pattern
+just test-pattern test_returns_user
+
+# Reset test DB and run
+just test-full-reset
+```

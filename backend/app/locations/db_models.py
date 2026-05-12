@@ -37,11 +37,11 @@ class BlockModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     manager_assignments: Mapped[list["ManagerBlockModel"]] = relationship(
@@ -87,7 +87,7 @@ class ManagerBlockModel(Base):
         ForeignKey("blocks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
 
     manager: Mapped["UserModel"] = relationship("UserModel", back_populates="block_assignments")
     block: Mapped["BlockModel"] = relationship("BlockModel", back_populates="manager_assignments")
@@ -122,7 +122,7 @@ class BlockMemberModel(Base):
     )
     assigned_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(),
     )
 
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="block_memberships")
@@ -148,7 +148,7 @@ class BlockLocationModel(Base):
         ForeignKey("locations.id", ondelete="CASCADE"),
         nullable=False,
     )
-    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
 
     block: Mapped["BlockModel"] = relationship("BlockModel", back_populates="location_assignments")
     location: Mapped["LocationModel"] = relationship("LocationModel", back_populates="block_assignments")
@@ -168,11 +168,11 @@ class LocationModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[str] = mapped_column(String(500), nullable=False)
     city: Mapped[str | None] = mapped_column(String(100))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(),
+        onupdate=lambda: datetime.now()
     )
 
     block_assignments: Mapped[list["BlockLocationModel"]] = relationship(
@@ -214,7 +214,7 @@ class UserLocationModel(Base):
         ForeignKey("locations.id", ondelete="CASCADE"),
         nullable=False,
     )
-    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
 
     user: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[user_id], back_populates="location_assignments")
     location: Mapped["LocationModel"] = relationship("LocationModel", back_populates="user_assignments")

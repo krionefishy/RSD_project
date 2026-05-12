@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import AsyncGenerator, Optional, Union
 from unittest.mock import patch
 from urllib.parse import urlparse, urlunparse
@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.api.router import api_router
 from app.application import Application
@@ -105,14 +106,14 @@ def settings() -> Settings:
     return cfg
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def db_engine(settings: Settings):
-    engine = create_async_engine(url=settings.database.url, echo=False)
+    engine = create_async_engine(url=settings.database.url, echo=False, poolclass=NullPool)
     yield engine
     await engine.dispose()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def database(settings: Settings, db_engine) -> Database:
     db = Database()
     db.engine = db_engine
@@ -123,13 +124,15 @@ async def database(settings: Settings, db_engine) -> Database:
     )
     db.Base = Base
     db.metadata = Base.metadata
-
-    async with db.engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f'DROP TABLE IF EXISTS "{table.name}" CASCADE'))
-        await conn.run_sync(db.metadata.create_all)
-
     return db
+
+
+@pytest.fixture(autouse=True)
+async def clean_tables(database: Database):
+    async with database.engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(text(f'TRUNCATE TABLE "{table.name}" CASCADE'))
+    yield
 
 
 @pytest.fixture
@@ -153,18 +156,18 @@ async def application(database: Database, settings: Settings) -> Application:
     app.app = fastapi_app
 
     kafka_producer = KafkaProducerWrapper(None)
-    mock_s3 = MockS3Client()
 
-    # Create real S3Client with test credentials
+    # Create S3Client without verification to avoid real connection
     mock_s3_client = S3Client(
         endpoint_url="http://localhost:9000",
         key_id="test-key",
         secret_key="test-secret",
         bucket_name="test-bucket",
         region="us-east-1",
+        verify=False,  # Don't verify connection - use mock
     )
-    # Replace the internal client with our mock
-    mock_s3_client._client = mock_s3
+    # Replace the internal boto3 client with our mock
+    mock_s3_client._client = MockS3Client()
 
     # Build providers list manually without AppProvider to avoid S3Client from_context conflict
     class TestAppProvider(Provider):
@@ -210,33 +213,8 @@ async def application(database: Database, settings: Settings) -> Application:
 
 @pytest.fixture
 async def db_session(application: Application) -> AsyncGenerator[AsyncSession, None]:
-    session = application.db.session()
-    try:
+    async with application.db.session_factory() as session:
         yield session
-    finally:
-        await session.close()
-
-
-@pytest.fixture(autouse=True)
-async def transactional_db(application: Application):
-    engine = application.db.engine
-    async with engine.connect() as conn:
-        trans = await conn.begin()
-        original_factory = application.db.session_factory
-
-        def _session_factory(_conn=conn):
-            return AsyncSession(
-                bind=_conn,
-                expire_on_commit=False,
-                join_transaction_mode="create_savepoint",
-            )
-
-        application.db.session_factory = _session_factory
-        try:
-            yield
-        finally:
-            await trans.rollback()
-            application.db.session_factory = original_factory
 
 
 @pytest.fixture
@@ -248,7 +226,7 @@ async def client(application: Application):
 
 @pytest.fixture
 def frozen_datetime() -> datetime:
-    return datetime(2024, 10, 10, 22, 0, 0, tzinfo=UTC)
+    return datetime(2024, 10, 10, 22, 0, 0)
 
 
 @pytest.fixture(autouse=True, scope="session")

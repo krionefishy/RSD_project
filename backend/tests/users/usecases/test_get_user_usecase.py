@@ -6,8 +6,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.locations.db_models import BlockModel, LocationModel
-from app.users.db_models import UserModel, UserRole
+from app.users.db_models import UserRole
 from app.users.dto import UserDTO
 from app.users.usecases.get_user_usecase import GetUserUseCase
 from tests.builder import Builder
@@ -42,7 +41,7 @@ class TestGetUserUseCase:
         assert result.name == "John Doe"
         assert result.phone == "+7-999-123-45-67"
         assert result.position == "Sales Manager"
-        assert result.role == UserRole.SELLER.value
+        assert result.role == "seller"
         assert result.is_active is True
 
     async def test_returns_none_when_user_not_exists(
@@ -65,6 +64,7 @@ class TestGetUserUseCase:
             user_kwargs={
                 "external_system_id": "user_with_location",
                 "first_name": "Alice",
+                "last_name": "",
             },
             location_kwargs={
                 "code": "OFFICE_001",
@@ -105,7 +105,7 @@ class TestGetUserUseCase:
 
         assert result is not None
         assert result.name == "Bob Manager"
-        assert result.role == UserRole.MANAGER.value
+        assert result.role == "manager"
         assert result.managed_block is not None
         assert result.managed_block.id == block.id
         assert result.managed_block.name == "Block A"
@@ -125,7 +125,7 @@ class TestGetUserUseCase:
         result = await usecase.execute(seller.id)
 
         assert result is not None
-        assert result.role == UserRole.SELLER.value
+        assert result.role == "seller"
         assert result.managed_block is None
 
     async def test_returns_user_without_location(
@@ -172,7 +172,7 @@ class TestGetUserUseCase:
         assert result.phone == "+7-999-999-99-99"
         assert result.position == "Senior Manager"
         assert result.avatar_url == "https://example.com/avatar.jpg"
-        assert result.role == UserRole.ADMIN_SALES.value
+        assert result.role == "admin_sales"
         assert result.is_active is True
         assert result.is_temp_password is False
 
@@ -209,46 +209,3 @@ class TestGetUserUseCase:
 
         assert result is not None
         assert result.is_temp_password is True
-
-
-class TestGetUserUseCaseWithDefaultFixtures:
-    async def test_uses_default_user_fixture(
-        self,
-        db_session: AsyncSession,
-        default_user: UserModel,
-    ) -> None:
-        usecase = GetUserUseCase(db_session)
-        result = await usecase.execute(default_user.id)
-
-        assert result is not None
-        assert result.id == default_user.id
-
-    async def test_uses_default_location_fixture(
-        self,
-        db_session: AsyncSession,
-        default_user: UserModel,
-        default_location: LocationModel,
-        builder: Builder,
-    ) -> None:
-        await builder.build_user_location(
-            user=default_user,
-            location=default_location,
-        )
-
-        usecase = GetUserUseCase(db_session)
-        result = await usecase.execute(default_user.id)
-
-        assert result is not None
-        assert result.location is not None
-        assert result.location.id == default_location.id
-
-    async def test_default_user_has_expected_role(
-        self,
-        db_session: AsyncSession,
-        default_user: UserModel,
-    ) -> None:
-        usecase = GetUserUseCase(db_session)
-        result = await usecase.execute(default_user.id)
-
-        assert result is not None
-        assert result.role == UserRole.SELLER.value

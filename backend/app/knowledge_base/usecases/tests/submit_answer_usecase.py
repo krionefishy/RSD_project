@@ -97,7 +97,7 @@ class SubmitAnswerUseCase:
             user_test.is_passed = user_test.score >= (
                 test.pass_score_percent * test.total_points / 100
             )
-            user_test.completed_at = datetime.now(timezone.utc)
+            user_test.completed_at = datetime.now()
 
             enrollment_result = await self.session.execute(
                 select(CourseUserModel).where(
@@ -110,7 +110,7 @@ class SubmitAnswerUseCase:
                 enrollment.user_points_by_course = (
                     enrollment.user_points_by_course or 0
                 ) + (user_test.score or 0)
-                enrollment.updated_at = datetime.now(timezone.utc)
+                enrollment.updated_at = datetime.now()
 
             await self.session.commit()
 

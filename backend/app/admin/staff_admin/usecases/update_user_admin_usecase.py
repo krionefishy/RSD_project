@@ -67,12 +67,12 @@ class UpdateUserAdminUseCase:
                 assignment = UserLocationModel(
                     user_id=user_id,
                     location_id=request.location_id,
-                    assigned_at=datetime.now(timezone.utc),
+                    assigned_at=datetime.now(),
                 )
                 self.session.add(assignment)
             else:
                 assignment.location_id = request.location_id
-                assignment.assigned_at = datetime.now(timezone.utc)
+                assignment.assigned_at = datetime.now()
 
         await self.session.commit()
         await self.session.refresh(user)
@@ -80,7 +80,7 @@ class UpdateUserAdminUseCase:
         return UserDTO(
             id=user.id,
             external_system_id=user.external_system_id,
-            role=user.role.value,
+            role=user.role,
             first_name=user.first_name,
             last_name=user.last_name,
             phone=user.phone,

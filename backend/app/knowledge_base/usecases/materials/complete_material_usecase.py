@@ -41,7 +41,7 @@ class CompleteMaterialUseCase:
         if access_result.scalar_one_or_none() is None:
             return None
 
-        completed_at = datetime.now(timezone.utc)
+        completed_at = datetime.now()
         self.session.add(
             UserCourseMaterialModel(
                 user_id=ctx.user_id,

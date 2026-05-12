@@ -37,13 +37,13 @@ class AssignUserBlockUseCase:
                 user_id=user_id,
                 block_id=block_id,
                 status=BlockMemberStatus.PRIMARY.value,
-                assigned_at=datetime.now(timezone.utc),
+                assigned_at=datetime.now(),
             )
             self.session.add(membership)
         else:
             membership.block_id = block_id
             membership.status = BlockMemberStatus.PRIMARY.value
-            membership.assigned_at = datetime.now(timezone.utc)
+            membership.assigned_at = datetime.now()
 
         await self.session.commit()
         await self.session.refresh(membership)

@@ -34,12 +34,12 @@ class AssignUserLocationUseCase:
             assignment = UserLocationModel(
                 user_id=user_id,
                 location_id=location_id,
-                assigned_at=datetime.now(timezone.utc),
+                assigned_at=datetime.now(),
             )
             self.session.add(assignment)
         else:
             assignment.location_id = location_id
-            assignment.assigned_at = datetime.now(timezone.utc)
+            assignment.assigned_at = datetime.now()
 
         await self.session.commit()
         await self.session.refresh(assignment)

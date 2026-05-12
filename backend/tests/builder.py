@@ -111,19 +111,17 @@ class Builder:
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> LocationModel:
-        statement = (
-            insert(LocationModel)
-            .values(
-                id=location_id,
-                code=code,
-                name=name,
-                address=address,
-                city=city,
-                created_at=created_at or self._default_datetime,
-                updated_at=updated_at or self._default_datetime,
-            )
-            .returning(LocationModel)
-        )
+        values = {
+            "code": code,
+            "name": name,
+            "address": address,
+            "city": city,
+            "created_at": created_at or self._default_datetime,
+            "updated_at": updated_at or self._default_datetime,
+        }
+        if location_id is not None:
+            values["id"] = location_id
+        statement = insert(LocationModel).values(**values).returning(LocationModel)
         result = await self._session.execute(statement)
         return result.scalar_one()
 
@@ -136,17 +134,15 @@ class Builder:
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> BlockModel:
-        statement = (
-            insert(BlockModel)
-            .values(
-                id=block_id,
-                name=name,
-                description=description,
-                created_at=created_at or self._default_datetime,
-                updated_at=updated_at or self._default_datetime,
-            )
-            .returning(BlockModel)
-        )
+        values = {
+            "name": name,
+            "description": description,
+            "created_at": created_at or self._default_datetime,
+            "updated_at": updated_at or self._default_datetime,
+        }
+        if block_id is not None:
+            values["id"] = block_id
+        statement = insert(BlockModel).values(**values).returning(BlockModel)
         result = await self._session.execute(statement)
         return result.scalar_one()
 
@@ -222,10 +218,10 @@ class Builder:
         user_kwargs: dict[str, Any] | None = None,
         block_kwargs: dict[str, Any] | None = None,
     ) -> tuple[UserModel, BlockModel, ManagerBlockModel]:
-        user = await self.build_user(
-            role=UserRole.MANAGER,
-            **(user_kwargs or {}),
-        )
+        merged_kwargs = {"role": UserRole.MANAGER}
+        if user_kwargs:
+            merged_kwargs.update(user_kwargs)
+        user = await self.build_user(**merged_kwargs)
         block = await self.build_block(**(block_kwargs or {}))
         assignment = await self.build_manager_block(manager=user, block=block)
         return user, block, assignment

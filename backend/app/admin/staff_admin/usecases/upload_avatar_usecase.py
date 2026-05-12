@@ -44,7 +44,7 @@ class UploadAvatarUseCase:
         )
 
         user.avatar_url = key
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.now()
         await self.session.commit()
 
         return key

@@ -1,16 +1,20 @@
 import asyncio
 import os
+import sys
 from logging.config import fileConfig
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from backend.storage.pg.database import Base
+from storage.pg.database import Base
 
-import backend.app.knowledge_base.db_models  # noqa: F401 - register tables with Base.metadata
-import backend.app.locations.db_models  # noqa: F401 - register tables with Base.metadata
-import backend.app.users.db_models  # noqa: F401 - register tables with Base.metadata
+import app.knowledge_base.db_models  # noqa: F401 - register tables with Base.metadata
+import app.locations.db_models  # noqa: F401 - register tables with Base.metadata
+import app.users.db_models  # noqa: F401 - register tables with Base.metadata
 
 try:
     from dotenv import load_dotenv
