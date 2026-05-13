@@ -9,6 +9,7 @@ import {
   MaterialAttachment,
   StartTestResult,
   SubmitAnswerResult,
+  Test,
   TestResult,
   TestTask,
 } from "../types/knowledge";
@@ -507,21 +508,21 @@ function getMockCourse(courseId: number): CourseDTO | null {
 }
 
 class KnowledgeAPIImpl {
-  async listCourses(): Promise<CourseListItem[]> {
+  async listCourses(signal?: AbortSignal): Promise<CourseListItem[]> {
     if (isMockKB()) {
       return MOCK_COURSES_LIST;
     }
-    const response = await apiClient.get<CoursesListDTO>("/kb/courses/");
+    const response = await apiClient.get<CoursesListDTO>("/kb/courses/", { signal });
     return response.items.map(mapCourseItem);
   }
 
-  async getCourse(courseId: number): Promise<Course> {
+  async getCourse(courseId: number, signal?: AbortSignal): Promise<Course> {
     if (isMockKB()) {
       const course = getMockCourse(courseId);
       if (!course) throw new Error("Course not found");
       return mapCourse(course);
     }
-    const response = await apiClient.get<CourseDTO>(`/kb/courses/${courseId}`);
+    const response = await apiClient.get<CourseDTO>(`/kb/courses/${courseId}`, { signal });
     return mapCourse(response);
   }
 
@@ -687,6 +688,246 @@ class KnowledgeAPIImpl {
       course_id: courseId,
     });
     return mapCompleteCourseResult(response);
+  }
+
+  // ============ COURSE CRUD ============
+
+  async createCourse(data: { name: string; description?: string; ratingPoints?: number; mrp?: number }): Promise<CourseListItem> {
+    const response = await apiClient.post<CourseListItemDTO>("/kb/courses", {
+      name: data.name,
+      description: data.description,
+      rating_points: data.ratingPoints,
+      mrp: data.mrp,
+    });
+    return mapCourseItem(response);
+  }
+
+  async updateCourse(courseId: number, data: { name?: string; description?: string; ratingPoints?: number; mrp?: number }): Promise<CourseListItem> {
+    const response = await apiClient.put<CourseListItemDTO>(`/kb/courses/${courseId}`, {
+      name: data.name,
+      description: data.description,
+      rating_points: data.ratingPoints,
+      mrp: data.mrp,
+    });
+    return mapCourseItem(response);
+  }
+
+  async deleteCourse(courseId: number): Promise<void> {
+    await apiClient.delete(`/kb/courses/${courseId}`);
+  }
+
+  // ============ ENROLLMENTS ============
+
+  async getEnrollments(courseId: number): Promise<Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> {
+    const response = await apiClient.get<{
+      items: Array<{ user_id: string; name: string; progress: number; is_completed: boolean }>;
+    }>(`/kb/courses/${courseId}/enrollments`);
+    return response.items.map(item => ({
+      userId: item.user_id,
+      name: item.name,
+      progress: item.progress,
+      isCompleted: item.is_completed,
+    }));
+  }
+
+  async assignCourse(courseId: number, userId: string): Promise<void> {
+    await apiClient.post(`/kb/courses/${courseId}/enrollments`, { user_id: userId });
+  }
+
+  async unassignCourse(courseId: number, userId: string): Promise<void> {
+    await apiClient.delete(`/kb/courses/${courseId}/enrollments/${userId}`);
+  }
+
+  async resetProgress(courseId: number, userId: string): Promise<void> {
+    await apiClient.post(`/kb/courses/${courseId}/enrollments/${userId}/reset`);
+  }
+
+  async resetTestProgress(courseId: number, userId: string, testId: number): Promise<void> {
+    await apiClient.post(`/kb/courses/${courseId}/enrollments/${userId}/reset-test/${testId}`);
+  }
+
+  // ============ MATERIAL CRUD ============
+
+  async listMaterials(): Promise<Material[]> {
+    const response = await apiClient.get<{ items: MaterialDTO[] }>("/kb/materials");
+    return response.items.map(mapMaterial);
+  }
+
+  async createMaterial(data: { name: string; category: string; description?: string; text: string }): Promise<Material> {
+    const response = await apiClient.post<MaterialDTO>("/kb/materials", {
+      name: data.name,
+      category: data.category,
+      description: data.description,
+      text: data.text,
+    });
+    return mapMaterial(response);
+  }
+
+  async updateMaterial(materialId: number, data: { name?: string; category?: string; description?: string; text?: string }): Promise<Material> {
+    const response = await apiClient.put<MaterialDTO>(`/kb/materials/${materialId}`, {
+      name: data.name,
+      category: data.category,
+      description: data.description,
+      text: data.text,
+    });
+    return mapMaterial(response);
+  }
+
+  async deleteMaterial(materialId: number): Promise<void> {
+    await apiClient.delete(`/kb/materials/${materialId}`);
+  }
+
+  // ============ ATTACHMENTS ============
+
+  async uploadAttachment(materialId: number, file: File): Promise<MaterialAttachment> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiClient.post<MaterialAttachmentDTO>(`/kb/materials/${materialId}/attachments`, formData);
+    return mapAttachment(response);
+  }
+
+  async deleteAttachment(materialId: number, attachmentId: number): Promise<void> {
+    await apiClient.delete(`/kb/materials/${materialId}/attachments/${attachmentId}`);
+  }
+
+  // ============ TEST CRUD ============
+
+  async listTests(): Promise<Test[]> {
+    const response = await apiClient.get<{
+      items: Array<{
+        id: number;
+        name: string;
+        category: string;
+        description: string | null;
+        is_final: boolean;
+        pass_score_percent: number;
+        tasks_count: number;
+        total_points: number;
+        course_id: number;
+        created_at: string;
+      }>;
+    }>("/kb/tests");
+    return response.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      description: item.description,
+      isFinal: item.is_final,
+      passScorePercent: item.pass_score_percent,
+      tasksCount: item.tasks_count,
+      totalPoints: item.total_points,
+      courseId: item.course_id,
+      createdAt: item.created_at,
+    }));
+  }
+
+  async createTest(data: { name: string; category: string; description?: string; isFinal?: boolean; passScorePercent?: number }): Promise<Test> {
+    const response = await apiClient.post<{
+      id: number;
+      name: string;
+      category: string;
+      description: string | null;
+      is_final: boolean;
+      pass_score_percent: number;
+      tasks_count: number;
+      total_points: number;
+      course_id: number;
+      created_at: string;
+    }>("/kb/tests", {
+      name: data.name,
+      category: data.category,
+      description: data.description,
+      is_final: data.isFinal,
+      pass_score_percent: data.passScorePercent,
+    });
+    return {
+      id: response.id,
+      name: response.name,
+      category: response.category,
+      description: response.description,
+      isFinal: response.is_final,
+      passScorePercent: response.pass_score_percent,
+      tasksCount: response.tasks_count,
+      totalPoints: response.total_points,
+      courseId: response.course_id,
+      createdAt: response.created_at,
+    };
+  }
+
+  async updateTest(testId: number, data: { name?: string; category?: string; description?: string; isFinal?: boolean; passScorePercent?: number }): Promise<Test> {
+    const response = await apiClient.put<{
+      id: number;
+      name: string;
+      category: string;
+      description: string | null;
+      is_final: boolean;
+      pass_score_percent: number;
+      tasks_count: number;
+      total_points: number;
+      course_id: number;
+      created_at: string;
+    }>(`/kb/tests/${testId}`, {
+      name: data.name,
+      category: data.category,
+      description: data.description,
+      is_final: data.isFinal,
+      pass_score_percent: data.passScorePercent,
+    });
+    return {
+      id: response.id,
+      name: response.name,
+      category: response.category,
+      description: response.description,
+      isFinal: response.is_final,
+      passScorePercent: response.pass_score_percent,
+      tasksCount: response.tasks_count,
+      totalPoints: response.total_points,
+      courseId: response.course_id,
+      createdAt: response.created_at,
+    };
+  }
+
+  async deleteTest(testId: number): Promise<void> {
+    await apiClient.delete(`/kb/tests/${testId}`);
+  }
+
+  // ============ TEST TASKS ============
+
+  async createTask(data: { name: string; description?: string; points?: number; answerVariants: string[]; correctVariant: number }): Promise<TestTask> {
+    const response = await apiClient.post<TestTaskDTO>("/kb/test-tasks", {
+      name: data.name,
+      description: data.description,
+      points: data.points,
+      answer_variants: data.answerVariants,
+      correct_variant: data.correctVariant,
+    });
+    return mapTask(response);
+  }
+
+  async updateTask(taskId: number, data: { name?: string; description?: string; points?: number; answerVariants?: string[]; correctVariant?: number }): Promise<TestTask> {
+    const response = await apiClient.put<TestTaskDTO>(`/kb/test-tasks/${taskId}`, {
+      name: data.name,
+      description: data.description,
+      points: data.points,
+      answer_variants: data.answerVariants,
+      correct_variant: data.correctVariant,
+    });
+    return mapTask(response);
+  }
+
+  async deleteTask(taskId: number): Promise<void> {
+    await apiClient.delete(`/kb/test-tasks/${taskId}`);
+  }
+
+  async attachTaskToTest(testId: number, taskId: number, order: number): Promise<void> {
+    await apiClient.post(`/kb/tests/${testId}/tasks`, null, {
+      query: { task_id: taskId, order },
+    });
+  }
+
+  async detachTaskFromTest(testId: number, taskId: number): Promise<void> {
+    await apiClient.delete(`/kb/tests/${testId}/tasks/${taskId}`);
   }
 }
 

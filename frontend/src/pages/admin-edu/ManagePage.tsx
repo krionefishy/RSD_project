@@ -10,8 +10,8 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { APIError } from "../../api/APIClient";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
+import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { PageLoader } from "../../components/PageLoader";
 import { Course, CourseListItem } from "../../types/knowledge";
 
@@ -39,25 +39,23 @@ export default function AdminEduManagePage() {
   const [loadingIds, setLoadingIds] = useState<number[]>([]);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
-    KnowledgeAPI.listCourses()
+    KnowledgeAPI.listCourses(controller.signal)
       .then((items) => {
-        if (!cancelled) {
-          setCourses(items);
-          setLoading(false);
-        }
+        setCourses(items);
+        setLoading(false);
       })
       .catch((err) => {
-        if (cancelled) return;
-        const message = err instanceof APIError ? err.message : "Не удалось загрузить курсы";
+        if (isAbortError(err)) return;
+        const message = getErrorMessage(err, "Не удалось загрузить курсы");
         setError(message);
         setLoading(false);
         toast.error(message);
       });
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, []);
 
@@ -70,11 +68,13 @@ export default function AdminEduManagePage() {
     setOpenCourses((prev) => [...prev, id]);
     if (details[id] || loadingIds.includes(id)) return;
     setLoadingIds((prev) => [...prev, id]);
+    const controller = new AbortController();
     try {
-      const course = await KnowledgeAPI.getCourse(id);
+      const course = await KnowledgeAPI.getCourse(id, controller.signal);
       setDetails((prev) => ({ ...prev, [id]: course }));
     } catch (err) {
-      const message = err instanceof APIError ? err.message : "Не удалось загрузить курс";
+      if (isAbortError(err)) return;
+      const message = getErrorMessage(err, "Не удалось загрузить курс");
       toast.error(message);
     } finally {
       setLoadingIds((prev) => prev.filter((x) => x !== id));
@@ -83,6 +83,15 @@ export default function AdminEduManagePage() {
 
   const totalMaterials = courses.reduce((sum, c) => sum + c.materialsCount, 0);
   const totalTests = courses.reduce((sum, c) => sum + c.testsCount, 0);
+
+  const reloadCourses = async () => {
+    try {
+      const items = await KnowledgeAPI.listCourses();
+      setCourses(items);
+    } catch (err) {
+      toast.error("Не удалось обновить список курсов");
+    }
+  };
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -94,15 +103,6 @@ export default function AdminEduManagePage() {
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
           {courses.length} курсов · {totalMaterials} материалов · {totalTests} тестов
         </p>
-        <div
-          className="mt-3 px-3 py-2 rounded-lg flex items-center gap-2"
-          style={{ background: "rgba(255,255,255,0.12)" }}
-        >
-          <Lock size={14} color="#fff" />
-          <span style={{ color: "#fff", fontSize: 12 }}>
-            Режим только для чтения · создание и редактирование скоро
-          </span>
-        </div>
       </div>
 
       <div
@@ -139,15 +139,7 @@ export default function AdminEduManagePage() {
 
       {!loading && !error && tab === "content" && (
         <div className="px-4 py-4 flex flex-col gap-3">
-          <button
-            disabled
-            title="Создание курсов будет доступно позже"
-            className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
-            style={{ background: "#C41E3A", color: "#fff", fontSize: 14, fontWeight: 600 }}
-          >
-            <Plus size={18} />
-            Создать курс
-          </button>
+          <CreateCourseButton onCreated={() => void reloadCourses()} />
 
           {courses.length === 0 && (
             <div className="rounded-2xl p-6 text-center" style={{ background: "#fff" }}>
@@ -250,25 +242,18 @@ export default function AdminEduManagePage() {
                             </div>
                             <div className="flex gap-1 flex-shrink-0">
                               <button
-                                disabled
-                                className="w-8 h-8 rounded-lg flex items-center justify-center opacity-40 cursor-not-allowed"
+                                onClick={() => toast.info("Редактирование материалов скоро будет доступно")}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center"
                                 style={{ background: "#F1F5F9" }}
                               >
                                 <Edit2 size={14} color="#64748B" />
-                              </button>
-                              <button
-                                disabled
-                                className="w-8 h-8 rounded-lg flex items-center justify-center opacity-40 cursor-not-allowed"
-                                style={{ background: "#FEF2F2" }}
-                              >
-                                <Trash2 size={14} color="#EF4444" />
                               </button>
                             </div>
                           </div>
                         ))}
                         <button
-                          disabled
-                          className="w-full flex items-center justify-center gap-2 px-4 py-3 opacity-50 cursor-not-allowed"
+                          onClick={() => toast.info("Добавление материалов скоро будет доступно")}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3"
                           style={{
                             borderTop: "1px solid #F1F5F9",
                             color: "#C41E3A",
@@ -292,8 +277,8 @@ export default function AdminEduManagePage() {
       {!loading && !error && tab === "tests" && (
         <div className="px-4 py-4 flex flex-col gap-3">
           <button
-            disabled
-            className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+            onClick={() => toast.info("Создание тестов скоро будет доступно")}
+            className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2"
             style={{ background: "#C41E3A", color: "#fff", fontSize: 14, fontWeight: 600 }}
           >
             <Plus size={18} />
@@ -386,8 +371,8 @@ export default function AdminEduManagePage() {
                           </div>
                         </div>
                         <button
-                          disabled
-                          className="w-8 h-8 rounded-lg flex items-center justify-center opacity-40 cursor-not-allowed"
+                          onClick={() => toast.info("Редактирование тестов скоро будет доступно")}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
                           style={{ background: "#F1F5F9" }}
                         >
                           <Edit2 size={14} color="#64748B" />
@@ -402,5 +387,117 @@ export default function AdminEduManagePage() {
         </div>
       )}
     </div>
+  );
+}
+
+function CreateCourseButton({ onCreated }: { onCreated: () => void }) {
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [ratingPoints, setRatingPoints] = useState(100);
+  const [mrp, setMrp] = useState(60);
+  const [saving, setSaving] = useState(false);
+
+  const handleCreate = async () => {
+    if (!name.trim()) {
+      toast.error("Введите название курса");
+      return;
+    }
+    setSaving(true);
+    try {
+      await KnowledgeAPI.createCourse({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        ratingPoints,
+        mrp,
+      });
+      toast.success("Курс создан");
+      setShowModal(false);
+      setName("");
+      setDescription("");
+      onCreated();
+    } catch (err) {
+      toast.error("Не удалось создать курс");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2"
+        style={{ background: "#C41E3A", color: "#fff", fontSize: 14, fontWeight: 600 }}
+      >
+        <Plus size={18} />
+        Создать курс
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-4" style={{ background: "#fff" }}>
+            <h3 style={{ color: "#1E293B", fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Создание курса</h3>
+            <div className="flex flex-col gap-3">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Название курса *"
+                className="w-full h-10 px-3 rounded-lg border"
+                style={{ borderColor: "#E2E8F0", fontSize: 14 }}
+              />
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Описание"
+                rows={3}
+                className="w-full px-3 py-2 rounded-lg border resize-none"
+                style={{ borderColor: "#E2E8F0", fontSize: 14 }}
+              />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <p style={{ color: "#64748B", fontSize: 12, marginBottom: 4 }}>Рейтинговые баллы</p>
+                  <input
+                    type="number"
+                    value={ratingPoints}
+                    onChange={(e) => setRatingPoints(parseInt(e.target.value) || 0)}
+                    className="w-full h-10 px-3 rounded-lg border"
+                    style={{ borderColor: "#E2E8F0", fontSize: 14 }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <p style={{ color: "#64748B", fontSize: 12, marginBottom: 4 }}>МРП (мин. баллы)</p>
+                  <input
+                    type="number"
+                    value={mrp}
+                    onChange={(e) => setMrp(parseInt(e.target.value) || 0)}
+                    className="w-full h-10 px-3 rounded-lg border"
+                    style={{ borderColor: "#E2E8F0", fontSize: 14 }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setShowModal(false)}
+                disabled={saving}
+                className="flex-1 h-10 rounded-lg"
+                style={{ background: "#F1F5F9", color: "#64748B", fontSize: 14, fontWeight: 500 }}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={saving}
+                className="flex-1 h-10 rounded-lg"
+                style={{ background: "#C41E3A", color: "#fff", fontSize: 14, fontWeight: 500 }}
+              >
+                {saving ? "Создание..." : "Создать"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

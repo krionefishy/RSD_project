@@ -54,6 +54,8 @@ import AdminSalesDashboardPage from "../pages/admin-sales/DashboardPage";
 
 // Pages - Admin Personnel
 import AdminPersonnelDashboardPage from "../pages/admin-personnel/DashboardPage";
+import ManageUsersPage from "../pages/admin-personnel/ManageUsersPage";
+import AdminPersonnelProfilePage from "../pages/admin-personnel/ProfilePage";
 import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
 // Pages - Admin PO
@@ -184,9 +186,9 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminPersonnelDashboardPage /> },
-      { path: "manage", element: <AdminPersonnelDashboardPage /> },
+      { path: "manage", element: <ManageUsersPage /> },
       { path: "timesheets", element: <TimesheetsPage /> },
-      { path: "profile", element: <AdminPersonnelDashboardPage /> },
+      { path: "profile", element: <AdminPersonnelProfilePage /> },
     ],
   },
 
