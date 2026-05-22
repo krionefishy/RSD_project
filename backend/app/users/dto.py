@@ -14,6 +14,33 @@ class BlockBriefDTO(BaseModel):
     name: str
 
 
+class UserProfileDTO(BaseModel):
+    id: UUID
+    external_system_id: str
+    role: str
+    first_name: str | None = None
+    middle_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    birth_date: date | None = None
+    position: str | None = None
+    avatar_url: str | None = None
+    is_active: bool
+    is_temp_password: bool
+    location: LocationBriefDTO | None = None
+    block: BlockBriefDTO | None = None
+    block_member_status: str | None = None
+    seller_role: str | None = None
+
+
+class UserBriefDTO(BaseModel):
+    id: UUID
+    external_system_id: str
+    first_name: str | None = None
+    last_name: str | None = None
+    role: str
+
+
 class UserDTO(BaseModel):
     id: UUID
     external_system_id: str

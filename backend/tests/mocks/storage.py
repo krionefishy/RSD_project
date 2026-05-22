@@ -11,6 +11,29 @@ class MockS3Client:
         self._endpoint_url = kwargs.get("endpoint_url", "https://test-s3.example.com")
         self._bucket = kwargs.get("bucket", "test-bucket")
 
+    @staticmethod
+    def sanitize_key_segment(value: str | None, fallback: str) -> str:
+        if not value:
+            return fallback
+        cleaned = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in value)
+        return cleaned or fallback
+
+    async def put_object(
+        self,
+        key: str,
+        body: bytes,
+        content_type: str = "application/octet-stream",
+        metadata: dict[str, str] | None = None,
+    ) -> None:
+        self.operations.append({
+            "operation": "put_object",
+            "key": key,
+            "content_type": content_type,
+            "size": len(body),
+            "metadata": metadata or {},
+        })
+        self._uploads[key] = body
+
     async def upload_file(
         self,
         file_data: bytes,

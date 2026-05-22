@@ -48,6 +48,7 @@ class UserModel(Base):
     phone: Mapped[str | None] = mapped_column(String(50))
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     position: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    seller_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_temp_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

@@ -38,7 +38,7 @@ class TestGetUserUseCase:
         assert result.external_system_id == "test_user_123"
         assert result.first_name == "John"
         assert result.last_name == "Doe"
-        assert result.name == "John Doe"
+        assert result.name == "Doe John"
         assert result.phone == "+7-999-123-45-67"
         assert result.position == "Sales Manager"
         assert result.role == "seller"
@@ -104,7 +104,7 @@ class TestGetUserUseCase:
         result = await usecase.execute(manager.id)
 
         assert result is not None
-        assert result.name == "Bob Manager"
+        assert result.name == "Manager Bob"
         assert result.role == "manager"
         assert result.managed_block is not None
         assert result.managed_block.id == block.id
@@ -168,7 +168,7 @@ class TestGetUserUseCase:
         assert result.external_system_id == "full_profile_user"
         assert result.first_name == "Eve"
         assert result.last_name == "Complete"
-        assert result.name == "Eve Complete"
+        assert result.name == "Complete Eve"
         assert result.phone == "+7-999-999-99-99"
         assert result.position == "Senior Manager"
         assert result.avatar_url == "https://example.com/avatar.jpg"

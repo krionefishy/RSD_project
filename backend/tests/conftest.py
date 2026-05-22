@@ -12,7 +12,6 @@ from dishka.integrations.fastapi import FastapiProvider, setup_dishka
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -64,7 +63,7 @@ def pytest_configure(config):
 @pytest.fixture(scope="session", autouse=True)
 def configure_logging():
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.WARNING,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
@@ -106,14 +105,14 @@ def settings() -> Settings:
     return cfg
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def db_engine(settings: Settings):
     engine = create_async_engine(url=settings.database.url, echo=False, poolclass=NullPool)
     yield engine
     await engine.dispose()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def database(settings: Settings, db_engine) -> Database:
     db = Database()
     db.engine = db_engine
@@ -125,14 +124,6 @@ async def database(settings: Settings, db_engine) -> Database:
     db.Base = Base
     db.metadata = Base.metadata
     return db
-
-
-@pytest.fixture(autouse=True)
-async def clean_tables(database: Database):
-    async with database.engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f'TRUNCATE TABLE "{table.name}" CASCADE'))
-    yield
 
 
 @pytest.fixture
@@ -212,9 +203,19 @@ async def application(database: Database, settings: Settings) -> Application:
 
 
 @pytest.fixture
-async def db_session(application: Application) -> AsyncGenerator[AsyncSession, None]:
-    async with application.db.session_factory() as session:
-        yield session
+async def db_session(database: Database) -> AsyncGenerator[AsyncSession, None]:
+    async with database.engine.connect() as connection:
+        transaction = await connection.begin()
+        session = AsyncSession(
+            bind=connection,
+            join_transaction_mode="create_savepoint",
+            expire_on_commit=False,
+        )
+        try:
+            yield session
+        finally:
+            await session.close()
+            await transaction.rollback()
 
 
 @pytest.fixture

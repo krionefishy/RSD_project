@@ -13,6 +13,9 @@ backend/app/<module>/usecases/<entity>/<action>_<entity>_usecase.py
 - `backend/app/knowledge_base/usecases/materials/get_material_usecase.py`
 - `backend/app/knowledge_base/usecases/tests/start_test_usecase.py`
 
+Правило выбора модуля по ролям описано отдельно: `.cursor/rules/USECASE_PLACEMENT_RULES.md`.
+Коротко: use case располагается в блоке наименьшей по правам роли, которой доступен сценарий. Если сценарий доступен пользователю, его нельзя класть в `admin`, даже если администраторы тоже могут им пользоваться.
+
 ### 1.2. Класс use case
 
 ```python

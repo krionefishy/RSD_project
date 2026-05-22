@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from typing import Any, Self
 from uuid import UUID, uuid4
 
@@ -8,6 +9,7 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.auth.deps import AuthContext
 from app.knowledge_base.db_models import (
     CourseMaterialModel,
     CourseModel,
@@ -23,10 +25,20 @@ from app.knowledge_base.db_models import (
 )
 from app.locations.db_models import (
     BlockLocationModel,
+    BlockMemberModel,
+    BlockMemberStatus,
     BlockModel,
     LocationModel,
     ManagerBlockModel,
     UserLocationModel,
+)
+from app.personnel.db_models import (
+    ActivityCodeModel,
+    EmployeeCompensationModel,
+    EmployeeTimeEntryModel,
+    ShiftType,
+    TimesheetUploadModel,
+    TimesheetUploadStatus,
 )
 from app.users.db_models import UserModel, UserRole
 
@@ -37,8 +49,12 @@ class Builder:
         self._default_datetime = default_datetime
 
         self.__user: UserModel | None = None
+        self.__seller: UserModel | None = None
+        self.__manager: UserModel | None = None
+        self.__admin_staff: UserModel | None = None
         self.__location: LocationModel | None = None
         self.__block: BlockModel | None = None
+        self.__activity_code: ActivityCodeModel | None = None
 
     @property
     async def default_user(self) -> UserModel:
@@ -61,6 +77,50 @@ class Builder:
         if self.__block is None:
             self.__block = await self.build_block(name="Default Block")
         return self.__block
+
+    @property
+    async def default_seller(self) -> UserModel:
+        if self.__seller is None:
+            self.__seller = await self.build_user(
+                external_system_id="default_seller",
+                role=UserRole.SELLER,
+            )
+        return self.__seller
+
+    @property
+    async def default_manager(self) -> UserModel:
+        if self.__manager is None:
+            manager, _, _ = await self.build_manager_with_block(
+                user_kwargs={
+                    "external_system_id": "default_manager",
+                    "first_name": "Default",
+                    "last_name": "Manager",
+                    "role": UserRole.MANAGER,
+                },
+            )
+            self.__manager = manager
+        return self.__manager
+
+    @property
+    async def default_admin_staff(self) -> UserModel:
+        if self.__admin_staff is None:
+            self.__admin_staff = await self.build_user(
+                external_system_id="default_admin_staff",
+                role=UserRole.ADMIN_STAFF,
+                first_name="Admin",
+                last_name="Staff",
+            )
+        return self.__admin_staff
+
+    @property
+    async def default_activity_code(self) -> ActivityCodeModel:
+        if self.__activity_code is None:
+            self.__activity_code = await self.build_activity_code()
+        return self.__activity_code
+
+    def auth_context_for(self, user: UserModel) -> AuthContext:
+        role = user.role.value if isinstance(user.role, UserRole) else str(user.role)
+        return AuthContext(user_id=str(user.id), role=role)
 
     def with_user(self, user: UserModel) -> Self:
         self.__user = user
@@ -85,6 +145,8 @@ class Builder:
         last_name: str | None = "Doe",
         phone: str | None = "+7-999-123-45-67",
         position: str | None = "Sales Manager",
+        seller_role: str | None = None,
+        birth_date: date | None = None,
         avatar_url: str | None = "https://example.com/avatar.jpg",
         is_active: bool = True,
         is_temp_password: bool = False,
@@ -102,6 +164,8 @@ class Builder:
                 last_name=last_name,
                 phone=phone,
                 position=position,
+                seller_role=seller_role,
+                birth_date=birth_date,
                 avatar_url=avatar_url,
                 is_active=is_active,
                 is_temp_password=is_temp_password,
@@ -156,6 +220,142 @@ class Builder:
         if block_id is not None:
             values["id"] = block_id
         statement = insert(BlockModel).values(**values).returning(BlockModel)
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_activity_code(
+        self,
+        *,
+        code: str = "Я",
+        name: str = "Явка",
+        entry_type: str = "work",
+        default_hours: Decimal | None = Decimal("8.00"),
+        is_paid: bool = True,
+        is_worked_time: bool = True,
+    ) -> ActivityCodeModel:
+        statement = (
+            insert(ActivityCodeModel)
+            .values(
+                code=code,
+                name=name,
+                entry_type=entry_type,
+                default_hours=default_hours,
+                is_paid=is_paid,
+                is_worked_time=is_worked_time,
+            )
+            .returning(ActivityCodeModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_employee_compensation(
+        self,
+        *,
+        user: UserModel | None = None,
+        base_salary: Decimal = Decimal("50000.00"),
+        hourly_rate: Decimal = Decimal("300.00"),
+        night_hourly_rate: Decimal | None = None,
+        updated_at: datetime | None = None,
+    ) -> EmployeeCompensationModel:
+        user_obj = user or await self.default_seller
+        statement = (
+            insert(EmployeeCompensationModel)
+            .values(
+                user_id=user_obj.id,
+                base_salary=base_salary,
+                hourly_rate=hourly_rate,
+                night_hourly_rate=night_hourly_rate,
+                updated_at=updated_at or self._default_datetime,
+            )
+            .returning(EmployeeCompensationModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_time_entry(
+        self,
+        *,
+        user: UserModel | None = None,
+        work_date: date | None = None,
+        activity_code: str | None = None,
+        hours: Decimal = Decimal("8.00"),
+        shift_type: str = ShiftType.DAY.value,
+        comment: str | None = None,
+        timesheet_upload_id: int | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> EmployeeTimeEntryModel:
+        user_obj = user or await self.default_seller
+        code_obj = await self.default_activity_code
+        code = activity_code or code_obj.code
+        statement = (
+            insert(EmployeeTimeEntryModel)
+            .values(
+                user_id=user_obj.id,
+                work_date=work_date or self._default_datetime.date(),
+                activity_code=code,
+                hours=hours,
+                shift_type=shift_type,
+                comment=comment,
+                timesheet_upload_id=timesheet_upload_id,
+                created_at=created_at or self._default_datetime,
+                updated_at=updated_at or self._default_datetime,
+            )
+            .returning(EmployeeTimeEntryModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_timesheet_upload(
+        self,
+        *,
+        file_name: str = "timesheet.xlsx",
+        s3_file_key: str = "timesheets/test.xlsx",
+        period_from: date | None = None,
+        period_to: date | None = None,
+        status: str = TimesheetUploadStatus.UPLOADED.value,
+        rows_count: int = 0,
+        created_at: datetime | None = None,
+    ) -> TimesheetUploadModel:
+        period_start = period_from or self._default_datetime.date()
+        period_end = period_to or period_start
+        statement = (
+            insert(TimesheetUploadModel)
+            .values(
+                file_name=file_name,
+                s3_file_key=s3_file_key,
+                period_from=period_start,
+                period_to=period_end,
+                status=status,
+                rows_count=rows_count,
+                created_at=created_at or self._default_datetime,
+            )
+            .returning(TimesheetUploadModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
+    async def build_block_member(
+        self,
+        *,
+        user: UserModel | None = None,
+        block: BlockModel | None = None,
+        status: str = BlockMemberStatus.PRIMARY.value,
+        assigned_at: datetime | None = None,
+    ) -> BlockMemberModel:
+        user_obj = user or await self.default_user
+        block_obj = block or await self.default_block
+
+        statement = (
+            insert(BlockMemberModel)
+            .values(
+                user_id=user_obj.id,
+                block_id=block_obj.id,
+                status=status,
+                assigned_at=assigned_at or self._default_datetime,
+            )
+            .returning(BlockMemberModel)
+        )
         result = await self._session.execute(statement)
         return result.scalar_one()
 
@@ -235,7 +435,11 @@ class Builder:
         if user_kwargs:
             merged_kwargs.update(user_kwargs)
         user = await self.build_user(**merged_kwargs)
-        block = await self.build_block(**(block_kwargs or {}))
+        block = (
+            await self.build_block(**block_kwargs)
+            if block_kwargs
+            else await self.default_block
+        )
         assignment = await self.build_manager_block(manager=user, block=block)
         return user, block, assignment
 
