@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -19,6 +19,7 @@ class UserDTO(BaseModel):
     external_system_id: str
     role: str
     first_name: str | None = None
+    middle_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
     name: str | None = None
@@ -26,8 +27,14 @@ class UserDTO(BaseModel):
     avatar_url: str | None = None
     is_active: bool | None = None
     is_temp_password: bool | None = None
+    birth_date: date | None = None
     location: LocationBriefDTO | None = None
     managed_block: BlockBriefDTO | None = None
+
+
+class UsersListDTO(BaseModel):
+    items: list[UserDTO]
+    total: int
 
 
 class UserCreateResultDTO(BaseModel):

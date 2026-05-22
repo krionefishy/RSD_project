@@ -19,6 +19,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from storage.pg.database import Base
 
 if TYPE_CHECKING:
+    from app.reports.db_models import RatingSnapshotItemModel
+    from app.sellings.db_models import LocationDailySalesAggregateModel, LocationSalesPlanModel, SalesFactModel, SalesReceiptModel
     from app.users.db_models import UserModel
 
 
@@ -59,6 +61,10 @@ class BlockModel(Base):
         back_populates="block",
         cascade="all, delete-orphan"
     )
+    rating_snapshot_items: Mapped[list["RatingSnapshotItemModel"]] = relationship(
+        "RatingSnapshotItemModel",
+        back_populates="block",
+    )
 
     @property
     def locations(self) -> list["LocationModel"]:
@@ -73,7 +79,7 @@ class ManagerBlockModel(Base):
     __tablename__ = "manager_blocks"
 
     __table_args__ = (
-        UniqueConstraint("manager_id", name="uq_manager_blocks_manager"),
+        UniqueConstraint("manager_id", "block_id", name="uq_manager_blocks_manager_block"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -134,6 +140,7 @@ class BlockLocationModel(Base):
 
     __table_args__ = (
         UniqueConstraint("block_id", "location_id", name="uq_block_locations_block_location"),
+        UniqueConstraint("location_id", name="uq_block_locations_location"),
         Index("ix_block_locations_location_id", "location_id"),
     )
 
@@ -184,6 +191,28 @@ class LocationModel(Base):
         "UserLocationModel",
         back_populates="location",
         cascade="all, delete-orphan"
+    )
+    sales_plans: Mapped[list["LocationSalesPlanModel"]] = relationship(
+        "LocationSalesPlanModel",
+        back_populates="location",
+        cascade="all, delete-orphan",
+    )
+    sales_receipts: Mapped[list["SalesReceiptModel"]] = relationship(
+        "SalesReceiptModel",
+        back_populates="location",
+    )
+    sales_facts: Mapped[list["SalesFactModel"]] = relationship(
+        "SalesFactModel",
+        back_populates="location",
+    )
+    daily_sales_aggregates: Mapped[list["LocationDailySalesAggregateModel"]] = relationship(
+        "LocationDailySalesAggregateModel",
+        back_populates="location",
+        cascade="all, delete-orphan",
+    )
+    rating_snapshot_items: Mapped[list["RatingSnapshotItemModel"]] = relationship(
+        "RatingSnapshotItemModel",
+        back_populates="location",
     )
 
     @property

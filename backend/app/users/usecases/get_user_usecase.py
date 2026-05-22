@@ -37,6 +37,7 @@ class GetUserUseCase:
             external_system_id=user.external_system_id,
             role=user.role,
             first_name=user.first_name,
+            middle_name=user.middle_name,
             last_name=user.last_name,
             phone=user.phone,
             name=user.full_name,
@@ -44,6 +45,7 @@ class GetUserUseCase:
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             is_temp_password=user.is_temp_password,
+            birth_date=user.birth_date,
             location=(
                 LocationBriefDTO(id=location.id, name=location.name)
                 if location is not None

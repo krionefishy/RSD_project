@@ -1,159 +1,183 @@
-# Justfile for RSD project
+# RSD local development tasks
 
-package := "backend/app backend/tests"
-run := "cd backend && python -m"
-
-# Load environment variables from .env
 set dotenv-load
 
-# Database settings from .env (ohs_arm_postgres_local)
-export PGHOST := env_var_or_default("PGHOST", "localhost")
-export PGPORT := env_var_or_default("PGPORT", "5400")
-export PGUSER := env_var_or_default("PGUSER", "local_user")
-export PGPASSWORD := env_var_or_default("PGPASSWORD", "local_password")
-export PGDATABASE := env_var_or_default("PGDATABASE", "rsd_local")
-export DATABASE_URL := env_var_or_default("DATABASE_URL", "postgresql+asyncpg://local_user:local_password@localhost:5400/rsd_local")
+compose_file := "docker-compose.local.yml"
+compose := "docker compose -f " + compose_file
 
-# Test database settings
-export TEST_PGHOST := env_var_or_default("TEST_PGHOST", "localhost")
-export TEST_PGPORT := env_var_or_default("TEST_PGPORT", "5400")
-export TEST_PGUSER := env_var_or_default("TEST_PGUSER", "local_user")
-export TEST_PGPASSWORD := env_var_or_default("TEST_PGPASSWORD", "local_password")
-export TEST_PGDATABASE := env_var_or_default("TEST_PGDATABASE", "rsd_test")
-export TEST_DATABASE_URL := env_var_or_default("TEST_DATABASE_URL", "postgresql+asyncpg://local_user:local_password@localhost:5400/rsd_test")
+backend_dir := "backend"
+app_module := "app.main:app"
+config_path := "shared/settings/config.yaml"
+test_config_path := "shared/settings/config.test.yaml"
+python := env_var_or_default("PYTHON", "python")
 
-# Default task: run lint and test
-[doc('Default: run linting and tests')]
+export PGHOST := env_var_or_default("LOCAL_PGHOST", "localhost")
+export PGPORT := env_var_or_default("LOCAL_PGPORT", "5432")
+export PGUSER := env_var_or_default("DB_USER", "app")
+export PGPASSWORD := env_var_or_default("DB_PASSWORD", "appsecret")
+export PGDATABASE := env_var_or_default("DB_NAME", "rsd_db")
+export TEST_PGHOST := env_var_or_default("LOCAL_TEST_PGHOST", "localhost")
+export TEST_PGPORT := env_var_or_default("LOCAL_TEST_PGPORT", "5433")
+export TEST_PGDATABASE := env_var_or_default("LOCAL_TEST_PGDATABASE", "rsd_test_db")
+
+export DATABASE_URL := env_var_or_default(
+    "LOCAL_DATABASE_URL",
+    "postgresql+asyncpg://" + PGUSER + ":" + PGPASSWORD + "@" + PGHOST + ":" + PGPORT + "/" + PGDATABASE,
+)
+export TEST_DATABASE_URL := env_var_or_default(
+    "LOCAL_TEST_DATABASE_URL",
+    "postgresql+asyncpg://" + PGUSER + ":" + PGPASSWORD + "@" + TEST_PGHOST + ":" + TEST_PGPORT + "/" + TEST_PGDATABASE,
+)
+
+[doc('Show available tasks')]
 default:
-    just lint
-    just test
+    @just --list
 
-# --- Code Quality ---
+# --- Docker / infrastructure ---
 
-[doc('Run mypy type checking')]
-mypy:
-    cd backend && python -m mypy {{ package }} --show-traceback
+[private]
+_docker:
+    @docker info >/dev/null
 
-[doc('Format code with ruff')]
-format:
-    cd backend && ruff format .
+[doc('Start Postgres container')]
+pg-up: _docker
+    {{ compose }} up -d db
 
-[doc('Check code with ruff')]
-ruff-check:
-    cd backend && ruff check .
+[doc('Start test Postgres container')]
+pg-up-test: _docker
+    {{ compose }} up -d db_test
 
-[doc('Fix code issues with ruff')]
-ruff-fix:
-    cd backend && ruff check . --fix
+[doc('Start local infrastructure: Postgres, Redis and Kafka')]
+infra-up: _docker
+    {{ compose }} up -d
 
-[doc('Run all linters (format + check + mypy)')]
-lint: format ruff-fix mypy
+[doc('Stop local infrastructure')]
+infra-down: _docker
+    {{ compose }} down
 
-[doc('Check for common security issues')]
-bandit:
-    cd backend && bandit -r app -f json -o bandit-report.json || true
-    cd backend && bandit -r app -f screen
+[doc('Stop local infrastructure and remove volumes')]
+infra-clean: _docker
+    {{ compose }} down -v
 
-# --- Tests ---
+[doc('Show local infrastructure status')]
+infra-status: _docker
+    {{ compose }} ps
 
-test-run := "cd backend && CONFIG_PATH=shared/settings/config.test.yaml python -m"
+[doc('Follow local infrastructure logs')]
+infra-logs service="":
+    {{ compose }} logs -f {{ service }}
 
-[doc('Run all tests')]
-test *args:
-    {{ test-run }} pytest tests/ -v --tb=short {{ args }}
+[doc('Wait until Postgres is ready')]
+pg-wait: pg-up
+    @for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do if {{ compose }} exec -T db pg_isready -U {{ PGUSER }} -d {{ PGDATABASE }} >/dev/null 2>&1; then echo "Postgres is ready"; exit 0; fi; sleep 1; done; {{ compose }} logs --tail=50 db; exit 1
 
-[doc('Run tests with coverage report')]
-test-coverage *args:
-    {{ test-run }} pytest tests/ -v --tb=short --cov=app --cov-report=term-missing --cov-report=html {{ args }}
-
-[doc('Run specific test file')]
-test-file filepath *args:
-    {{ test-run }} pytest {{ filepath }} -v --tb=short {{ args }}
-
-[doc('Run tests matching pattern')]
-test-pattern pattern *args:
-    {{ test-run }} pytest tests/ -v -k "{{ pattern }}" {{ args }}
-
-[doc('Full test reset (test db + tests)')]
-test-full-reset: db-reset-test test
+[doc('Wait until test Postgres is ready')]
+pg-wait-test: pg-up-test
+    @for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do if {{ compose }} exec -T db_test pg_isready -U {{ PGUSER }} -d {{ TEST_PGDATABASE }} >/dev/null 2>&1; then echo "Test Postgres is ready"; exit 0; fi; sleep 1; done; {{ compose }} logs --tail=50 db_test; exit 1
 
 # --- Database ---
 
-[doc('Create local development database')]
-db-create:
-    @PGPASSWORD={{ PGPASSWORD }} psql -U {{ PGUSER }} -d postgres -h {{ PGHOST }} -p {{ PGPORT }} -c "CREATE DATABASE {{ PGDATABASE }};" 2>/dev/null || echo "Database {{ PGDATABASE }} may already exist"
+[doc('Create development database')]
+db-create: pg-wait
+    @{{ compose }} exec -T db createdb -U {{ PGUSER }} {{ PGDATABASE }} 2>/dev/null || true
 
-[doc('Drop local development database')]
-db-drop:
-    @PGPASSWORD={{ PGPASSWORD }} psql -U {{ PGUSER }} -d postgres -h {{ PGHOST }} -p {{ PGPORT }} -c "DROP DATABASE IF EXISTS {{ PGDATABASE }} WITH (FORCE);"
+[doc('Drop development database')]
+db-drop: pg-up
+    @{{ compose }} exec -T db dropdb -U {{ PGUSER }} --if-exists --force {{ PGDATABASE }}
 
-[doc('Reset local development database (drop + create)')]
+[doc('Reset development database')]
 db-reset: db-drop db-create
 
 [doc('Create test database')]
-db-create-test:
-    @PGPASSWORD={{ TEST_PGPASSWORD }} psql -U {{ TEST_PGUSER }} -d postgres -h {{ TEST_PGHOST }} -p {{ TEST_PGPORT }} -c "CREATE DATABASE {{ TEST_PGDATABASE }};" 2>/dev/null || echo "Database {{ TEST_PGDATABASE }} may already exist"
+db-create-test: pg-wait-test
+    @{{ compose }} exec -T db_test createdb -U {{ PGUSER }} {{ TEST_PGDATABASE }} 2>/dev/null || true
 
 [doc('Drop test database')]
-db-drop-test:
-    @PGPASSWORD={{ TEST_PGPASSWORD }} psql -U {{ TEST_PGUSER }} -d postgres -h {{ TEST_PGHOST }} -p {{ TEST_PGPORT }} -c "DROP DATABASE IF EXISTS {{ TEST_PGDATABASE }} WITH (FORCE);"
+db-drop-test: pg-up-test
+    @{{ compose }} exec -T db_test dropdb -U {{ PGUSER }} --if-exists --force {{ TEST_PGDATABASE }}
 
-[doc('Reset test database (drop + create)')]
+[doc('Reset test database')]
 db-reset-test: db-drop-test db-create-test
 
-[doc('Run migrations on local database')]
-db-migrate:
-    export PYTHONPATH=backend && DATABASE_URL={{ DATABASE_URL }} alembic upgrade head
+[doc('Apply migrations to development database')]
+db-migrate: db-create
+    DATABASE_URL={{ DATABASE_URL }} {{ python }} -m alembic upgrade head
 
-[doc('Run migrations on test database')]
-db-migrate-test:
-    export PYTHONPATH=backend && DATABASE_URL={{ TEST_DATABASE_URL }} alembic upgrade head
+[doc('Apply migrations to test database')]
+db-migrate-test: db-create-test
+    DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m alembic upgrade head
 
-[doc('Full reset with migrations (local db)')]
-db-full-reset: db-reset db-migrate
+[doc('Reset development database and apply migrations')]
+db-rebuild: db-reset db-migrate
 
-[doc('Full reset with migrations (test db)')]
-db-full-reset-test: db-reset-test db-migrate-test
+[doc('Reset test database and apply migrations')]
+db-rebuild-test: db-reset-test db-migrate-test
+
+[doc('Create a new autogenerated migration')]
+migration message:
+    DATABASE_URL={{ DATABASE_URL }} {{ python }} -m alembic revision --autogenerate -m "{{ message }}"
 
 [doc('Show database connection info')]
 db-info:
-    @echo "Local DB: {{ DATABASE_URL }}"
-    @echo "Test DB:  {{ TEST_DATABASE_URL }}"
+    @echo "Development DB: {{ DATABASE_URL }}"
+    @echo "Test DB:        {{ TEST_DATABASE_URL }}"
 
-# --- Infrastructure ---
+# --- Backend ---
 
-[private]
-_check-docker:
-    @docker info >/dev/null 2>&1 || { echo "Error: Docker daemon is not running. Please start Docker first."; exit 1; }
-
-[doc('Show local infrastructure status')]
-infra-status: _check-docker
-    @docker ps | grep -E "(NAMES|ohs_arm)"
-
-[doc('Create rsd_local and rsd_test databases in ohs_arm postgres')]
-infra-setup-db: _check-docker
-    @docker exec ohs_arm_postgres_local psql -U postgres -d postgres -c "CREATE DATABASE rsd_local;" 2>/dev/null || echo "Database rsd_local may already exist"
-    @docker exec ohs_arm_postgres_local psql -U postgres -d postgres -c "CREATE DATABASE rsd_test;" 2>/dev/null || echo "Database rsd_test may already exist"
-    @echo "Databases created: rsd_local, rsd_test"
-
-[doc('Stop zecar-postgres container if running')]
-infra-stop-zecar: _check-docker
-    @docker stop zecar-postgres 2>/dev/null || echo "zecar-postgres is not running"
-
-# --- Development ---
-
-[doc('Install dependencies')]
+[doc('Install backend dependencies')]
 install:
-    cd backend && pip install -r requirements.txt
+    cd {{ backend_dir }} && pip install -r requirements.txt
 
-[doc('Run development server')]
-dev:
-    cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+[doc('Run backend with auto reload')]
+backend:
+    cd {{ backend_dir }} && CONFIG_PATH={{ config_path }} {{ python }} -m uvicorn {{ app_module }} --reload --host 0.0.0.0 --port 8000
 
-[doc('Run production server')]
+[doc('Alias for backend')]
+dev: backend
+
+[doc('Run backend without reload')]
 serve:
-    cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    cd {{ backend_dir }} && CONFIG_PATH={{ config_path }} {{ python }} -m uvicorn {{ app_module }} --host 0.0.0.0 --port 8000
 
-[doc('Create new migration')]
-migration message:
-    cd backend && alembic revision --autogenerate -m "{{ message }}"
+# --- Tests ---
+
+[doc('Run backend tests')]
+test *args: db-create-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
+
+[doc('Run backend tests with coverage')]
+test-cov *args: db-create-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest --cov=backend/app --cov-report=term-missing --cov-report=html {{ args }}
+
+[doc('Run tests matching pytest -k expression')]
+test-k pattern *args: db-create-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -k "{{ pattern }}" {{ args }}
+
+[doc('Reset test database and run tests')]
+test-reset *args: db-rebuild-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
+
+# --- Linters / formatting ---
+
+[doc('Run all checks without modifying files')]
+lint: ruff format-check mypy
+
+[doc('Run ruff linter')]
+ruff:
+    {{ python }} -m ruff check backend
+
+[doc('Check formatting')]
+format-check:
+    {{ python }} -m ruff format --check backend
+
+[doc('Format backend code')]
+fmt:
+    {{ python }} -m ruff format backend
+
+[doc('Apply safe ruff fixes')]
+lint-fix:
+    {{ python }} -m ruff check backend --fix
+
+[doc('Run mypy type checks')]
+mypy:
+    {{ python }} -m mypy backend/app backend/tests --show-traceback

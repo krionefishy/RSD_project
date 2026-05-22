@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -34,9 +34,11 @@ class UserCreate(BaseModel):
 
 class UserAdminUpdate(BaseModel):
     first_name: str | None = None
+    middle_name: str | None = None
     last_name: str | None = None
     phone: str | None = None
     position: str | None = None
+    birth_date: date | None = None
     location_id: int | None = None
     block_member_status: str | None = None
 

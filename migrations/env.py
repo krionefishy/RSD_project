@@ -14,6 +14,9 @@ from storage.pg.database import Base
 
 import app.knowledge_base.db_models  # noqa: F401 - register tables with Base.metadata
 import app.locations.db_models  # noqa: F401 - register tables with Base.metadata
+import app.personnel.db_models  # noqa: F401 - register tables with Base.metadata
+import app.reports.db_models  # noqa: F401 - register tables with Base.metadata
+import app.sellings.db_models  # noqa: F401 - register tables with Base.metadata
 import app.users.db_models  # noqa: F401 - register tables with Base.metadata
 
 try:

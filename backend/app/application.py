@@ -35,13 +35,20 @@ class Application:
         self._setup_middleware()
 
     def _setup_middleware(self):
+        cors_origins = self._get_cors_origins()
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=cors_origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    def _get_cors_origins(self) -> list[str]:
+        raw = os.getenv("CORS_ORIGINS", "*").strip()
+        if not raw or raw == "*":
+            return ["*"]
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
     def _setup_routes(self):
         self.app.include_router(api_router, prefix="/api/v1")

@@ -24,7 +24,7 @@ interface UpdateUserDTO {
 }
 
 interface ResetPasswordDTO {
-  temporary_password: string;
+  temp_password: string;
 }
 
 interface LocationAssignmentDTO {
@@ -34,7 +34,7 @@ interface LocationAssignmentDTO {
 
 function mapResetPassword(dto: ResetPasswordDTO): ResetPasswordResult {
   return {
-    temporaryPassword: dto.temporary_password,
+    temporaryPassword: dto.temp_password,
   };
 }
 
@@ -53,7 +53,7 @@ class AdminStaffAPIImpl {
       phone: data.phone,
       position: data.position,
     };
-    await apiClient.patch(`/admin/staff/users/${userId}`, body);
+    await apiClient.request(`/admin/staff/users/${userId}`, { method: "PATCH", body });
   }
 
   async resetPassword(userId: string): Promise<ResetPasswordResult> {
@@ -65,17 +65,17 @@ class AdminStaffAPIImpl {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await apiClient.post<{ avatar_url: string }>(`/admin/staff/users/${userId}/upload-avatar`, formData);
+    const response = await apiClient.post<{ avatar_url: string }>(`/admin/staff/users/${userId}/avatar`, formData);
     return { avatarUrl: response.avatar_url };
   }
 
   async assignLocation(userId: string, locationId: string): Promise<LocationAssignment> {
-    const response = await apiClient.post<LocationAssignmentDTO>(`/admin/staff/users/${userId}/locations`, { location_id: locationId });
+    const response = await apiClient.post<LocationAssignmentDTO>(`/admin/staff/users/${userId}/location`, { location_id: locationId });
     return mapLocationAssignment(response);
   }
 
-  async removeLocation(userId: string, locationId: string): Promise<void> {
-    await apiClient.delete(`/admin/staff/users/${userId}/locations`, { query: { location_id: locationId } });
+  async removeLocation(userId: string, _locationId: string): Promise<void> {
+    await apiClient.delete(`/admin/staff/users/${userId}/location`);
   }
 }
 

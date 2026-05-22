@@ -15,8 +15,12 @@ export interface CreateUserData {
 
 export interface BlockAssignment {
   blockId: string;
-  name: string;
-  managerId?: string;
+  assignedAt: string;
+}
+
+export interface CreateUserResult {
+  user: AppUser;
+  tempPassword: string;
 }
 
 interface CreateUserDTO {
@@ -39,14 +43,19 @@ interface UserResponse {
   phone?: string | null;
   name?: string | null;
   is_active?: boolean;
-  block_id?: string | null;
-  location_id?: string | null;
+  avatar_url?: string | null;
+  managed_block?: { id: number; name: string } | null;
+  location?: { id: number; name: string } | null;
 }
 
 interface BlockAssignmentDTO {
-  block_id: string;
-  name: string;
-  manager_id?: string;
+  block_id: number;
+  assigned_at: string;
+}
+
+interface UserCreateResultDTO {
+  user: UserResponse;
+  temp_password: string;
 }
 
 function mapUserResponse(response: UserResponse): AppUser {
@@ -63,21 +72,28 @@ function mapUserResponse(response: UserResponse): AppUser {
     role: toFrontendRole(response.role ?? "seller"),
     externalSystemId,
     phone: response.phone ?? undefined,
-    block: response.block_id ?? undefined,
-    store: response.location_id ?? undefined,
+    avatar: response.avatar_url ?? undefined,
+    block: response.managed_block?.id ? String(response.managed_block.id) : undefined,
+    store: response.location?.id ? String(response.location.id) : undefined,
   };
 }
 
 function mapBlockAssignment(dto: BlockAssignmentDTO): BlockAssignment {
   return {
-    blockId: dto.block_id,
-    name: dto.name,
-    managerId: dto.manager_id,
+    blockId: String(dto.block_id),
+    assignedAt: dto.assigned_at,
+  };
+}
+
+function mapCreateUserResult(dto: UserCreateResultDTO): CreateUserResult {
+  return {
+    user: mapUserResponse(dto.user),
+    tempPassword: dto.temp_password,
   };
 }
 
 class AdminSoftwareAPIImpl {
-  async createUser(data: CreateUserData): Promise<AppUser> {
+  async createUser(data: CreateUserData): Promise<CreateUserResult> {
     const body: CreateUserDTO = {
       external_system_id: data.externalSystemId,
       password: data.password,
@@ -89,30 +105,30 @@ class AdminSoftwareAPIImpl {
       location_id: data.locationId,
     };
 
-    const response = await apiClient.post<UserResponse>("/admin/software/users", body);
-    return mapUserResponse(response);
+    const response = await apiClient.post<UserCreateResultDTO>("/admin/software/users", body);
+    return mapCreateUserResult(response);
   }
 
   async blockUser(userId: string): Promise<void> {
-    await apiClient.post(`/admin/software/users/${userId}/block`);
+    await apiClient.request(`/admin/software/users/${userId}/block`, { method: "PATCH" });
   }
 
   async unblockUser(userId: string): Promise<void> {
-    await apiClient.post(`/admin/software/users/${userId}/unblock`);
+    await apiClient.request(`/admin/software/users/${userId}/unblock`, { method: "PATCH" });
   }
 
   async assignManagerBlock(managerId: string, blockId: string): Promise<BlockAssignment> {
-    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/managers/${managerId}/blocks`, { block_id: blockId });
+    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${managerId}/blocks`, { block_id: Number(blockId) });
     return mapBlockAssignment(response);
   }
 
   async assignUserBlock(userId: string, blockId: string): Promise<BlockAssignment> {
-    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${userId}/blocks`, { block_id: blockId });
+    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${userId}/block`, { block_id: Number(blockId) });
     return mapBlockAssignment(response);
   }
 
   async removeUserBlock(userId: string): Promise<void> {
-    await apiClient.delete(`/admin/software/users/${userId}/blocks`);
+    await apiClient.delete(`/admin/software/users/${userId}/block`);
   }
 }
 

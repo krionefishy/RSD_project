@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.locations.db_models import BlockModel, ManagerBlockModel
@@ -28,9 +28,20 @@ class AssignManagerBlockUseCase:
         if block is None:
             return None
 
-        await self.session.execute(
-            delete(ManagerBlockModel).where(ManagerBlockModel.manager_id == manager_id)
+        existing_result = await self.session.execute(
+            select(ManagerBlockModel).where(
+                ManagerBlockModel.manager_id == manager_id,
+                ManagerBlockModel.block_id == block_id,
+            )
         )
+        existing = existing_result.scalar_one_or_none()
+        if existing is not None:
+            return ManagerBlockDTO(
+                id=existing.id,
+                manager_id=existing.manager_id,
+                block_id=existing.block_id,
+                assigned_at=existing.assigned_at,
+            )
 
         assignment = ManagerBlockModel(
             manager_id=manager_id,

@@ -4,10 +4,28 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, status
 
 from app.auth.deps import AuthContext
-from app.users.dto import UserDTO
+from app.users.dto import UserDTO, UsersListDTO
 from app.users.usecases.get_user_usecase import GetUserUseCase
+from app.users.usecases.list_users_usecase import ListUsersUseCase
 
 router = APIRouter(route_class=DishkaRoute)
+
+
+@router.get("", response_model=UsersListDTO, summary="Список пользователей")
+async def list_users(
+    _: FromDishka[AuthContext],
+    usecase: FromDishka[ListUsersUseCase],
+    block_id: int | None = None,
+    location_id: int | None = None,
+    role: str | None = None,
+    is_active: bool | None = None,
+) -> UsersListDTO:
+    return await usecase.execute(
+        block_id=block_id,
+        location_id=location_id,
+        role=role,
+        is_active=is_active,
+    )
 
 
 @router.get("/me", response_model=UserDTO, summary="Текущий пользователь")

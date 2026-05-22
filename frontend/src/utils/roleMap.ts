@@ -11,7 +11,7 @@ export type BackendRole =
 
 const BACKEND_TO_FRONTEND: Record<BackendRole, UserRole> = {
   super_admin: "superadmin",
-  root_admin: "superadmin",
+  root_admin: "admin-po",
   admin_staff: "admin-personnel",
   admin_education: "admin-edu",
   admin_sales: "admin-sales",
@@ -24,7 +24,7 @@ const FRONTEND_TO_BACKEND: Record<UserRole, BackendRole> = {
   "admin-personnel": "admin_staff",
   "admin-edu": "admin_education",
   "admin-sales": "admin_sales",
-  "admin-po": "admin_staff",
+  "admin-po": "root_admin",
   manager: "manager",
   seller: "seller",
 };

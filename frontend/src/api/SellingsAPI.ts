@@ -159,12 +159,12 @@ class SellingsAPIImpl {
   async getStats(userId?: string, signal?: AbortSignal): Promise<SellingStats> {
     const query: Record<string, string> = {};
     if (userId) query.user_id = userId;
-    const response = await apiClient.get<SellingStatsDTO>("/sellings/stats", { query, signal });
+    const response = await apiClient.get<SellingStatsDTO>("/sales/stats", { query, signal });
     return mapSellingStats(response);
   }
 
   async getMotivation(signal?: AbortSignal): Promise<MotivationRating> {
-    const response = await apiClient.get<MotivationRatingDTO>("/sellings/motivation", { signal });
+    const response = await apiClient.get<MotivationRatingDTO>("/sales/motivation", { signal });
     return mapMotivationRating(response);
   }
 
@@ -172,7 +172,7 @@ class SellingsAPIImpl {
     const query: Record<string, string> = { block_id: blockId };
     if (from) query.from = from;
     if (to) query.to = to;
-    const response = await apiClient.get<SellingStatsDTO>("/sellings/stats", { query });
+    const response = await apiClient.get<SellingStatsDTO>("/sales/stats", { query });
     return mapSellingStats(response);
   }
 }

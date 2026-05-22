@@ -24,12 +24,16 @@ class UpdateUserAdminUseCase:
 
         if request.first_name is not None:
             user.first_name = request.first_name
+        if request.middle_name is not None:
+            user.middle_name = request.middle_name
         if request.last_name is not None:
             user.last_name = request.last_name
         if request.phone is not None:
             user.phone = request.phone
         if request.position is not None:
             user.position = request.position
+        if request.birth_date is not None:
+            user.birth_date = request.birth_date
 
         if request.block_member_status:
             member_result = await self.session.execute(
@@ -82,6 +86,7 @@ class UpdateUserAdminUseCase:
             external_system_id=user.external_system_id,
             role=user.role,
             first_name=user.first_name,
+            middle_name=user.middle_name,
             last_name=user.last_name,
             phone=user.phone,
             name=user.full_name,
@@ -89,4 +94,5 @@ class UpdateUserAdminUseCase:
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             is_temp_password=user.is_temp_password,
+            birth_date=user.birth_date,
         )

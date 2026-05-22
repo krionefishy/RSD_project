@@ -35,13 +35,14 @@ interface UserResponse {
   id: string;
   external_system_id?: string | null;
   first_name?: string | null;
+  middle_name?: string | null;
   last_name?: string | null;
   role?: string | null;
   phone?: string | null;
   name?: string | null;
-  avatar?: string | null;
-  block_id?: string | null;
-  location_id?: string | null;
+  avatar_url?: string | null;
+  managed_block?: { id: number; name: string } | null;
+  location?: { id: number; name: string } | null;
   is_active?: boolean;
 }
 
@@ -59,9 +60,9 @@ function mapUserResponse(response: UserResponse): AppUser {
     role,
     externalSystemId,
     phone: response.phone ?? undefined,
-    avatar: response.avatar ?? undefined,
-    block: response.block_id ?? undefined,
-    store: response.location_id ?? undefined,
+    avatar: response.avatar_url ?? undefined,
+    block: response.managed_block?.id ? String(response.managed_block.id) : undefined,
+    store: response.location?.id ? String(response.location.id) : undefined,
   };
 }
 

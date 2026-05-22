@@ -6,6 +6,10 @@ COPY package*.json ./
 RUN npm ci --silent && npm cache clean --force
 
 COPY . .
+
+# Копируем production env
+COPY .env.production .env
+
 RUN npm run build
 
 FROM nginx:alpine

@@ -1,10 +1,10 @@
 from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy import Boolean, String, DateTime, Index
+from sqlalchemy import Boolean, String, Date, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from storage.pg.database import Base
@@ -12,6 +12,9 @@ from storage.pg.database import Base
 if TYPE_CHECKING:
     from app.knowledge_base.db_models import CourseUserModel, UserCourseMaterialModel, UserCourseTestModel, CourseModel, MaterialModel
     from app.locations.db_models import UserLocationModel, LocationModel, ManagerBlockModel, BlockModel, BlockMemberModel
+    from app.personnel.db_models import EmployeeCompensationModel, EmployeeEarningEventModel, EmployeeEarningTotalModel, EmployeeTimeEntryModel
+    from app.reports.db_models import RatingSnapshotItemModel, ReportExportModel
+    from app.sellings.db_models import EmployeeDailySalesAggregateModel, EmployeeSalesPlanModel, SalesFactModel, SalesReceiptModel
 
 
 class UserRole(str, Enum):
@@ -40,9 +43,11 @@ class UserModel(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(String(50), nullable=False, default=UserRole.SELLER)
     first_name: Mapped[str | None] = mapped_column(String(100))
+    middle_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     phone: Mapped[str | None] = mapped_column(String(50))
-    position: Mapped[str | None] = mapped_column(String(100))
+    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    position: Mapped[str | None] = mapped_column(String(100), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_temp_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -87,6 +92,55 @@ class UserModel(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    compensation: Mapped["EmployeeCompensationModel | None"] = relationship(
+        "EmployeeCompensationModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+        single_parent=True,
+    )
+    time_entries: Mapped[list["EmployeeTimeEntryModel"]] = relationship(
+        "EmployeeTimeEntryModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    earning_events: Mapped[list["EmployeeEarningEventModel"]] = relationship(
+        "EmployeeEarningEventModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    earning_totals: Mapped[list["EmployeeEarningTotalModel"]] = relationship(
+        "EmployeeEarningTotalModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    employee_sales_plans: Mapped[list["EmployeeSalesPlanModel"]] = relationship(
+        "EmployeeSalesPlanModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    sales_receipts: Mapped[list["SalesReceiptModel"]] = relationship(
+        "SalesReceiptModel",
+        back_populates="user",
+    )
+    sales_facts: Mapped[list["SalesFactModel"]] = relationship(
+        "SalesFactModel",
+        back_populates="user",
+    )
+    employee_daily_sales_aggregates: Mapped[list["EmployeeDailySalesAggregateModel"]] = relationship(
+        "EmployeeDailySalesAggregateModel",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    rating_snapshot_items: Mapped[list["RatingSnapshotItemModel"]] = relationship(
+        "RatingSnapshotItemModel",
+        back_populates="user",
+    )
+    report_exports: Mapped[list["ReportExportModel"]] = relationship(
+        "ReportExportModel",
+        back_populates="requested_by_user",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def courses(self) -> list["CourseModel"]:
@@ -125,5 +179,5 @@ class UserModel(Base):
 
     @property
     def full_name(self) -> str:
-        parts = [p for p in [self.first_name, self.last_name] if p]
+        parts = [p for p in [self.last_name, self.first_name, self.middle_name] if p]
         return " ".join(parts) if parts else self.external_system_id
