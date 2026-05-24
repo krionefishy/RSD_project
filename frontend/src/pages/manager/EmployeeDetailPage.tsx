@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router";
 import { ChevronLeft } from "lucide-react";
 import { Avatar } from "../../components/Avatar";
 import { ProgressCircle } from "../../components/ProgressCircle";
-import { UserAPI, AppUser } from "../../api/UserAPI";
+import { UserAPI } from "../../api/UserAPI";
+import { AppUser } from "../../types/user";
 import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
-import { KnowledgeAPI, Course } from "../../api/KnowledgeAPI";
+import { KnowledgeAPI, type Course } from "../../api/KnowledgeAPI";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
@@ -66,7 +67,17 @@ export default function EmployeeDetailPage() {
     { day: "Вс", fact: 0 },
   ];
 
-  const shiftDays = ["12 апр", "13 апр", "14 апр", "16 апр", "17 апр", "19 апр"];
+  const scheduleDays = Array.from({ length: 31 }, (_, i) => {
+    const day = i + 1;
+    const date = new Date(2026, 4, day);
+    const weekend = date.getDay() === 0 || date.getDay() === 6;
+    return {
+      day,
+      hours: weekend ? 0 : day % 9 === 0 ? 0 : 8,
+      type: weekend ? "Выходной" : day % 9 === 0 ? "Отпуск" : "Смена",
+    };
+  });
+  const scheduleOffset = (new Date(2026, 4, 1).getDay() + 6) % 7;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -161,7 +172,7 @@ export default function EmployeeDetailPage() {
                 Нет назначенных курсов
               </div>
             ) : (
-              courses.map((course, i) => {
+              courses.map((course) => {
                 const completedMaterials = course.materials.filter(m => m.isCompleted).length;
                 const totalMaterials = course.materials.length;
                 const pct = totalMaterials > 0 ? Math.round((completedMaterials / totalMaterials) * 100) : 0;
@@ -182,18 +193,25 @@ export default function EmployeeDetailPage() {
         )}
 
         {tab === "schedule" && (
-          <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            {shiftDays.map((day, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: i < shiftDays.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#E8F5E9" }}>
-                    <span style={{ fontSize: 14 }}>💼</span>
+          <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Май 2026</p>
+            <div className="grid grid-cols-7 mb-2">
+              {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
+                <span key={day} style={{ color: "#94A3B8", fontSize: 11, textAlign: "center" }}>{day}</span>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: scheduleOffset }).map((_, i) => <div key={`empty-${i}`} />)}
+              {scheduleDays.map((item) => {
+                const color = item.type === "Смена" ? "#2E7D32" : item.type === "Отпуск" ? "#22C55E" : "#94A3B8";
+                return (
+                  <div key={item.day} className="h-12 rounded-lg flex flex-col items-center justify-center" style={{ background: item.type === "Смена" ? "#E8F5E9" : "#F8FAFC" }}>
+                    <span style={{ color: "#1E293B", fontSize: 12, fontWeight: 600 }}>{item.day}</span>
+                    <span style={{ color, fontSize: 10 }}>{item.hours ? `${item.hours} ч` : item.type}</span>
                   </div>
-                  <span style={{ color: "#374151", fontSize: 14 }}>{day}</span>
-                </div>
-                <span style={{ color: "#2E7D32", fontSize: 13, fontWeight: 500 }}>09:00–18:00</span>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

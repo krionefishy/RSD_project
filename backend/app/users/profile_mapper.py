@@ -45,5 +45,4 @@ def map_user_profile(user: UserModel) -> UserProfileDTO:
         ),
         block=(BlockBriefDTO(id=block.id, name=block.name) if block is not None else None),
         block_member_status=membership.status if membership is not None else None,
-        seller_role=user.seller_role,
     )

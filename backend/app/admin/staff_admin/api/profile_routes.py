@@ -10,7 +10,9 @@ from app.admin.staff_admin.usecases.profiles.block_employee_profile_usecase impo
 from app.admin.staff_admin.usecases.profiles.change_block_member_status_usecase import (
     ChangeBlockMemberStatusUseCase,
 )
-from app.admin.staff_admin.usecases.profiles.change_seller_role_usecase import ChangeSellerRoleUseCase
+from app.admin.staff_admin.usecases.profiles.change_employee_position_usecase import (
+    ChangeEmployeePositionUseCase,
+)
 from app.admin.staff_admin.usecases.profiles.create_employee_profile_usecase import (
     CreateEmployeeProfileUseCase,
 )
@@ -26,7 +28,7 @@ from app.admin.staff_admin.usecases.profiles.update_employee_profile_usecase imp
 from app.auth.deps import AuthContext, require_staff_admin
 from app.personnel.domain import (
     ChangeBlockMemberStatusRequest,
-    ChangeSellerRoleRequest,
+    ChangeEmployeePositionRequest,
     CreateEmployeeProfileRequest,
     UpdateEmployeeProfileRequest,
 )
@@ -104,15 +106,15 @@ async def unblock_employee_profile(
 
 
 @router.patch(
-    "/users/{user_id}/seller-role",
+    "/users/{user_id}/position",
     response_model=UserProfileDTO,
-    summary="Изменить кадровую роль продавца",
+    summary="Изменить должность продавца",
 )
-async def change_seller_role(
+async def change_employee_position(
     user_id: UUID,
-    request: ChangeSellerRoleRequest,
+    request: ChangeEmployeePositionRequest,
     auth: Annotated[AuthContext, Depends(require_staff_admin)],
-    usecase: FromDishka[ChangeSellerRoleUseCase],
+    usecase: FromDishka[ChangeEmployeePositionUseCase],
 ) -> UserProfileDTO:
     return await usecase.execute(user_id, request, auth)
 

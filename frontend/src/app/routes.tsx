@@ -38,7 +38,7 @@ import SellerProfilePage from "../pages/seller/ProfilePage";
 import ManagerDashboardPage from "../pages/manager/DashboardPage";
 import ManagerReportsPage from "../pages/manager/ReportsPage";
 import EmployeesPage from "../pages/manager/EmployeesPage";
-import EmployeeDetailPage from "../pages/manager/EmployeeDetailPage";
+import ManagerEmployeeDetailPage from "../pages/manager/EmployeeDetailPage";
 import ManagerProfilePage from "../pages/manager/ProfilePage";
 
 // Pages - Admin Edu
@@ -55,6 +55,8 @@ import AdminSalesDashboardPage from "../pages/admin-sales/DashboardPage";
 // Pages - Admin Personnel
 import AdminPersonnelDashboardPage from "../pages/admin-personnel/DashboardPage";
 import ManageUsersPage from "../pages/admin-personnel/ManageUsersPage";
+import CreateEmployeePage from "../pages/admin-personnel/CreateEmployeePage";
+import AdminEmployeeDetailPage from "../pages/admin-personnel/EmployeeDetailPage";
 import AdminPersonnelProfilePage from "../pages/admin-personnel/ProfilePage";
 import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
@@ -63,7 +65,10 @@ import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
 
 // Pages - SuperAdmin
 import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
-import SuperAdminStructurePage from "../pages/superadmin/StructurePage";
+import BlocksListPage from "../pages/admin-personnel/BlocksListPage";
+import BlockDetailPage from "../pages/admin-personnel/BlockDetailPage";
+import LocationsListPage from "../pages/admin-personnel/LocationsListPage";
+import LocationDetailPage from "../pages/admin-personnel/LocationDetailPage";
 import SuperAdminSettingsPage from "../pages/superadmin/SettingsPage";
 
 function RequireAuth({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
@@ -144,7 +149,9 @@ export const router = createBrowserRouter([
       { index: true, element: <ManagerDashboardPage /> },
       { path: "reports", element: <ManagerReportsPage /> },
       { path: "employees", element: <EmployeesPage /> },
-      { path: "employees/:employeeId", element: <EmployeeDetailPage /> },
+      { path: "employees/:employeeId", element: <ManagerEmployeeDetailPage /> },
+      { path: "locations", element: <LocationsListPage /> },
+      { path: "locations/:locationId", element: <LocationDetailPage /> },
       { path: "profile", element: <ManagerProfilePage /> },
     ],
   },
@@ -180,13 +187,19 @@ export const router = createBrowserRouter([
   {
     path: "/admin-personnel",
     element: (
-      <RequireAuth allowedRoles={["admin-personnel"]}>
+      <RequireAuth allowedRoles={["admin-personnel", "admin-po", "superadmin"]}>
         <AdminPersonnelTemplate />
       </RequireAuth>
     ),
     children: [
       { index: true, element: <AdminPersonnelDashboardPage /> },
       { path: "manage", element: <ManageUsersPage /> },
+      { path: "manage/create", element: <CreateEmployeePage /> },
+      { path: "manage/:userId", element: <AdminEmployeeDetailPage /> },
+      { path: "blocks", element: <BlocksListPage /> },
+      { path: "blocks/:blockId", element: <BlockDetailPage /> },
+      { path: "locations", element: <LocationsListPage /> },
+      { path: "locations/:locationId", element: <LocationDetailPage /> },
       { path: "timesheets", element: <TimesheetsPage /> },
       { path: "profile", element: <AdminPersonnelProfilePage /> },
     ],
@@ -216,7 +229,10 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <SuperAdminDashboardPage /> },
-      { path: "structure", element: <SuperAdminStructurePage /> },
+      { path: "structure", element: <BlocksListPage /> },
+      { path: "structure/blocks/:blockId", element: <BlockDetailPage /> },
+      { path: "structure/locations", element: <LocationsListPage /> },
+      { path: "structure/locations/:locationId", element: <LocationDetailPage /> },
       { path: "settings", element: <SuperAdminSettingsPage /> },
       { path: "profile", element: <SuperAdminDashboardPage /> },
     ],

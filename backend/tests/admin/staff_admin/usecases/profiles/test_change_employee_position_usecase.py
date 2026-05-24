@@ -4,30 +4,32 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.admin.staff_admin.usecases.profiles.change_seller_role_usecase import ChangeSellerRoleUseCase
-from app.personnel.domain import ChangeSellerRoleRequest
+from app.admin.staff_admin.usecases.profiles.change_employee_position_usecase import (
+    ChangeEmployeePositionUseCase,
+)
+from app.personnel.domain import ChangeEmployeePositionRequest
 from app.users.db_models import UserRole
 from app.users.profile_errors import ProfileConflictError, ProfileForbiddenError
 from tests.builder import Builder
 
 
-class TestChangeSellerRoleUseCase:
-    async def test_updates_seller_role(
+class TestChangeEmployeePositionUseCase:
+    async def test_updates_position(
         self,
         db_session: AsyncSession,
         builder: Builder,
     ) -> None:
         admin = await builder.default_admin_staff
-        seller = await builder.build_user(external_system_id="change_seller_role_user")
+        seller = await builder.build_user(external_system_id="change_position_user")
         ctx = builder.auth_context_for(admin)
 
-        result = await ChangeSellerRoleUseCase(db_session).execute(
+        result = await ChangeEmployeePositionUseCase(db_session).execute(
             seller.id,
-            ChangeSellerRoleRequest(seller_role="senior_seller"),
+            ChangeEmployeePositionRequest(position="Старший продавец"),
             ctx,
         )
 
-        assert result.seller_role == "senior_seller"
+        assert result.position == "Старший продавец"
 
     async def test_raises_conflict_for_non_seller_user(
         self,
@@ -42,18 +44,18 @@ class TestChangeSellerRoleUseCase:
         ctx = builder.auth_context_for(admin)
 
         with pytest.raises(ProfileConflictError):
-            await ChangeSellerRoleUseCase(db_session).execute(
+            await ChangeEmployeePositionUseCase(db_session).execute(
                 manager.id,
-                ChangeSellerRoleRequest(seller_role="trainee"),
+                ChangeEmployeePositionRequest(position="Продавец"),
                 ctx,
             )
 
-    async def test_raises_validation_for_unknown_seller_role(
+    async def test_raises_validation_for_empty_position(
         self,
         builder: Builder,
     ) -> None:
         with pytest.raises(ValidationError):
-            ChangeSellerRoleRequest(seller_role="unknown_role")
+            ChangeEmployeePositionRequest(position="   ")
 
     async def test_raises_forbidden_for_seller(
         self,
@@ -64,8 +66,8 @@ class TestChangeSellerRoleUseCase:
         ctx = builder.auth_context_for(seller)
 
         with pytest.raises(ProfileForbiddenError):
-            await ChangeSellerRoleUseCase(db_session).execute(
+            await ChangeEmployeePositionUseCase(db_session).execute(
                 seller.id,
-                ChangeSellerRoleRequest(seller_role="trainee"),
+                ChangeEmployeePositionRequest(position="Продавец"),
                 ctx,
             )

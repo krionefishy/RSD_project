@@ -74,6 +74,8 @@ class StartTestUseCase:
             )
         )
         user_test = user_test_result.scalar_one_or_none()
+        if user_test is not None and user_test.completed_at is not None:
+            return None
 
         if user_test is None:
             user_test = UserCourseTestModel(

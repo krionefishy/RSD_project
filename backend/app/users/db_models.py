@@ -40,10 +40,6 @@ class UserModel(Base):
             "role IN ('super_admin', 'root_admin', 'admin_staff', 'admin_education', 'admin_sales', 'manager', 'seller')",
             name="ck_users_role_valid",
         ),
-        CheckConstraint(
-            "seller_role IS NULL OR seller_role IN ('seller', 'senior_seller', 'trainee')",
-            name="ck_users_seller_role_valid",
-        ),
     )
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -56,7 +52,6 @@ class UserModel(Base):
     phone: Mapped[str | None] = mapped_column(String(50))
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     position: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    seller_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_temp_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

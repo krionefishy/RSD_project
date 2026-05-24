@@ -6,17 +6,35 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from app.auth.deps import AuthContext, require_staff_admin
 from app.users.domain import UserAdminUpdate, UserLocationRequest
-from app.users.dto import AvatarUploadResultDTO, TempPasswordDTO, UserDTO, UserLocationDTO
+from app.users.dto import AvatarUploadResultDTO, TempPasswordDTO, UserDTO, UserLocationDTO, UsersListDTO
 from app.admin.staff_admin.usecases.assign_user_location_usecase import AssignUserLocationUseCase
 from app.admin.staff_admin.usecases.remove_user_location_usecase import RemoveUserLocationUseCase
 from app.admin.staff_admin.usecases.reset_password_usecase import ResetPasswordUseCase
 from app.admin.staff_admin.usecases.update_user_admin_usecase import UpdateUserAdminUseCase
 from app.admin.staff_admin.usecases.upload_avatar_usecase import UploadAvatarUseCase
+from app.users.usecases.list_users_usecase import ListUsersUseCase
 
 router = APIRouter(route_class=DishkaRoute)
 
 MAX_AVATAR_SIZE = 2 * 1024 * 1024
 ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png"}
+
+
+@router.get("/users", response_model=UsersListDTO, summary="Админский список пользователей")
+async def list_users_for_admin(
+	_: Annotated[AuthContext, Depends(require_staff_admin)],
+	usecase: FromDishka[ListUsersUseCase],
+	block_id: int | None = None,
+	location_id: int | None = None,
+	role: str | None = None,
+	is_active: bool | None = None,
+) -> UsersListDTO:
+	return await usecase.execute(
+		block_id=block_id,
+		location_id=location_id,
+		role=role,
+		is_active=is_active,
+	)
 
 
 @router.patch("/users/{user_id}", response_model=UserDTO, summary="Обновить профиль сотрудника")

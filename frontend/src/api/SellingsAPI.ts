@@ -59,19 +59,6 @@ interface SellingStatsDTO {
   positions: Array<{ name: string; plan: number; fact: number }>;
 }
 
-interface MotivationProgramDTO {
-  user_id: string;
-  current_points: number;
-  level: string;
-  next_level_points: number;
-  rewards: Array<{
-    id: string;
-    name: string;
-    points_required: number;
-    is_achieved: boolean;
-  }>;
-}
-
 interface RatingItemDTO {
   rank: number;
   user_id: string;
@@ -110,21 +97,6 @@ function mapSellingStats(dto: SellingStatsDTO): SellingStats {
   };
 }
 
-function mapMotivationProgram(dto: MotivationProgramDTO): MotivationProgram {
-  return {
-    userId: dto.user_id,
-    currentPoints: dto.current_points,
-    level: dto.level,
-    nextLevelPoints: dto.next_level_points,
-    rewards: dto.rewards.map(r => ({
-      id: r.id,
-      name: r.name,
-      pointsRequired: r.points_required,
-      isAchieved: r.is_achieved,
-    })),
-  };
-}
-
 function mapRatingItem(dto: RatingItemDTO): RatingItem {
   return {
     rank: dto.rank,
@@ -156,10 +128,15 @@ function mapMotivationRating(dto: MotivationRatingDTO): MotivationRating {
 }
 
 class SellingsAPIImpl {
-  async getStats(userId?: string, signal?: AbortSignal): Promise<SellingStats> {
+  async getStats(userIdOrSignal?: string | AbortSignal, signal?: AbortSignal): Promise<SellingStats> {
+    const userId = typeof userIdOrSignal === "string" ? userIdOrSignal : undefined;
+    const requestSignal = userIdOrSignal instanceof AbortSignal ? userIdOrSignal : signal;
     const query: Record<string, string> = {};
     if (userId) query.user_id = userId;
-    const response = await apiClient.get<SellingStatsDTO>("/sales/stats", { query, signal });
+    const response = await apiClient.get<SellingStatsDTO>("/sales/stats", {
+      query,
+      signal: requestSignal,
+    });
     return mapSellingStats(response);
   }
 

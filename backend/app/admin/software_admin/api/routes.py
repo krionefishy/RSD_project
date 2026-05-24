@@ -12,6 +12,7 @@ from app.admin.software_admin.usecases.assign_manager_block_usecase import Assig
 from app.admin.software_admin.usecases.assign_user_block_usecase import AssignUserBlockUseCase
 from app.admin.software_admin.usecases.block_user_usecase import BlockUserUseCase
 from app.admin.software_admin.usecases.create_user_usecase import CreateUserUseCase
+from app.admin.software_admin.usecases.remove_manager_block_usecase import RemoveManagerBlockUseCase
 from app.admin.software_admin.usecases.remove_user_block_usecase import RemoveUserBlockUseCase
 from app.admin.software_admin.usecases.unblock_user_usecase import UnblockUserUseCase
 
@@ -100,3 +101,19 @@ async def remove_user_block(
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 	if not result:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Block assignment not found")
+
+
+@router.delete(
+	"/users/{user_id}/blocks/{block_id}",
+	status_code=status.HTTP_204_NO_CONTENT,
+	summary="Снять менеджера с блока",
+)
+async def remove_manager_block(
+	user_id: UUID,
+	block_id: int,
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
+	usecase: FromDishka[RemoveManagerBlockUseCase],
+) -> None:
+	result = await usecase.execute(user_id, block_id)
+	if result is None:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Manager assignment not found")

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, Phone, Mail, MapPin, Building2 } from "lucide-react";
+import { ChevronLeft, Phone, Mail, MapPin, Building2, LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Avatar } from "../../components/Avatar";
-import { UserAPI, AppUser } from "../../api/UserAPI";
+import { UserAPI } from "../../api/UserAPI";
+import { AppUser } from "../../types/user";
 import { useApp } from "../../context/AppContext";
 import { ROLE_LABELS } from "../../constants/roles";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
@@ -10,7 +11,7 @@ import { toast } from "sonner";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user: contextUser } = useApp();
+  const { user: contextUser, logout } = useApp();
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +96,7 @@ export default function ProfilePage() {
             <div>
               <p style={{ color: "#64748B", fontSize: 12 }}>Блок</p>
               <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>
-                {displayUser.block || "Не назначен"}
+                {displayUser.blockName ?? displayUser.block ?? "Не назначен"}
               </p>
             </div>
           </div>
@@ -107,7 +108,7 @@ export default function ProfilePage() {
             <div>
               <p style={{ color: "#64748B", fontSize: 12 }}>Локация</p>
               <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>
-                {displayUser.store || "Не назначена"}
+                {displayUser.storeName ?? displayUser.store ?? "Не назначена"}
               </p>
             </div>
           </div>
@@ -142,6 +143,17 @@ export default function ProfilePage() {
             <p style={{ color: "#64748B", fontSize: 14 }}>Загрузка данных...</p>
           </div>
         )}
+        <button
+          onClick={() => {
+            logout();
+            navigate("/");
+          }}
+          className="w-full h-12 rounded-[10px] flex items-center justify-center gap-2"
+          style={{ background: "#FEF2F2", color: "#DC2626", fontSize: 14, fontWeight: 600 }}
+        >
+          <LogOut size={18} />
+          Выйти из аккаунта
+        </button>
       </div>
     </div>
   );

@@ -10,7 +10,9 @@ from app.admin.staff_admin.usecases.profiles.block_employee_profile_usecase impo
 from app.admin.staff_admin.usecases.profiles.change_block_member_status_usecase import (
     ChangeBlockMemberStatusUseCase,
 )
-from app.admin.staff_admin.usecases.profiles.change_seller_role_usecase import ChangeSellerRoleUseCase
+from app.admin.staff_admin.usecases.profiles.change_employee_position_usecase import (
+    ChangeEmployeePositionUseCase,
+)
 from app.admin.staff_admin.usecases.profiles.create_employee_profile_usecase import (
     CreateEmployeeProfileUseCase,
 )
@@ -49,7 +51,7 @@ class ProfileUsecaseProvider(Provider):
     delete_employee_profile = provide(DeleteEmployeeProfileUseCase)
     block_employee_profile = provide(BlockEmployeeProfileUseCase)
     unblock_employee_profile = provide(UnblockEmployeeProfileUseCase)
-    change_seller_role = provide(ChangeSellerRoleUseCase)
+    change_employee_position = provide(ChangeEmployeePositionUseCase)
     change_block_member_status = provide(ChangeBlockMemberStatusUseCase)
     upsert_employee_compensation = provide(UpsertEmployeeCompensationUseCase)
     update_time_entry = provide(UpdateTimeEntryUseCase)
@@ -59,7 +61,7 @@ class ProfileUsecaseProvider(Provider):
     def upload_own_avatar(
         self,
         session: AsyncSession,
-        s3_client: S3Client | None = None,
+        s3_client: S3Client,
     ) -> UploadOwnAvatarUseCase:
         return UploadOwnAvatarUseCase(session, s3_client)
 
@@ -67,6 +69,6 @@ class ProfileUsecaseProvider(Provider):
     def upload_timesheet_file(
         self,
         session: AsyncSession,
-        s3_client: S3Client | None = None,
+        s3_client: S3Client,
     ) -> UploadTimesheetFileUseCase:
         return UploadTimesheetFileUseCase(session, s3_client)

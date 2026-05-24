@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -14,9 +13,13 @@ class DatabaseConfig:
     user: str
     password: str
     database: str
+    echo: bool = False
+    url_override: str | None = None
 
     @property
     def url(self) -> str:
+        if self.url_override:
+            return self.url_override
         return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
@@ -56,6 +59,7 @@ class S3Config:
     secret_key: str
     bucket_name: str
     region: str = "ru-central-1"
+    verify: bool = True
 
 
 @dataclass(frozen=True)
@@ -80,7 +84,32 @@ def _load_yaml(config_path: str | Path | None = None) -> dict:
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f) or {}
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return int(raw)
+
+
+def _section(data: dict, backend: dict, name: str) -> dict:
+    return backend.get(name) or data.get(name) or {}
+
+
+def _get_any(data: dict, *keys: str, default=None):
+    for key in keys:
+        if key in data:
+            return data[key]
+    return default
 
 
 def load_settings(config_path: str | Path | None = None) -> Settings:
@@ -95,6 +124,8 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
         user=db_data.get("user", "app"),
         password=db_data.get("password", "appsecret"),
         database=db_data.get("database", "rsd_db"),
+        echo=_env_bool("DATABASE_ECHO", db_data.get("echo", False)),
+        url_override=os.getenv("DATABASE_URL") or db_data.get("url"),
     )
 
     # Backend section
@@ -103,47 +134,68 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
     # JWT
     jwt_data = backend.get("jwt", {})
     jwt = JWTConfig(
-        secret=jwt_data.get("secret", "change-me-in-production"),
-        algorithm=jwt_data.get("algorithm", "HS256"),
-        access_expire_seconds=jwt_data.get("access_expire_seconds", 900),
-        refresh_expire_seconds=jwt_data.get("refresh_expire_seconds", 259200),
-        rsa_private_key_pem=jwt_data.get("rsa_private_key_pem"),
-        rsa_key_size=jwt_data.get("rsa_key_size", 2048),
+        secret=os.getenv("JWT_SECRET") or jwt_data.get("secret", "change-me-in-production"),
+        algorithm=os.getenv("JWT_ALGORITHM") or jwt_data.get("algorithm", "HS256"),
+        access_expire_seconds=_env_int(
+            "JWT_ACCESS_EXPIRE_SECONDS",
+            jwt_data.get("access_expire_seconds", 900),
+        ),
+        refresh_expire_seconds=_env_int(
+            "JWT_REFRESH_EXPIRE_SECONDS",
+            jwt_data.get("refresh_expire_seconds", 259200),
+        ),
+        rsa_private_key_pem=os.getenv("AUTH_RSA_PRIVATE_KEY_PEM") or jwt_data.get("rsa_private_key_pem"),
+        rsa_key_size=_env_int("AUTH_RSA_KEY_SIZE", jwt_data.get("rsa_key_size", 2048)),
     )
 
     # Redis
-    redis_data = backend.get("redis", {})
+    redis_data = _section(data, backend, "redis")
     redis = RedisConfig(
-        host=redis_data.get("host", "localhost"),
-        port=redis_data.get("port", 6379),
-        db=redis_data.get("db", 0),
+        host=os.getenv("REDIS_HOST") or redis_data.get("host", "localhost"),
+        port=_env_int("REDIS_PORT", redis_data.get("port", 6379)),
+        db=_env_int("REDIS_DB", redis_data.get("db", 0)),
     )
 
     # Kafka
-    kafka_data = backend.get("kafka", {})
+    kafka_data = _section(data, backend, "kafka")
     kafka = KafkaConfig(
-        bootstrap_servers=kafka_data.get("bootstrap_servers", "localhost:9092"),
-        consumer_group=kafka_data.get("consumer_group", "rsd-backend-group"),
-        max_request_size=kafka_data.get("max_request_size", 10 * 1024 * 1024),
+        bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+        or kafka_data.get("bootstrap_servers", "localhost:9092"),
+        consumer_group=os.getenv("KAFKA_CONSUMER_GROUP")
+        or kafka_data.get("consumer_group", "rsd-backend-group"),
+        max_request_size=_env_int(
+            "KAFKA_MAX_REQUEST_SIZE",
+            kafka_data.get("max_request_size", 10 * 1024 * 1024),
+        ),
     )
 
     # S3 (optional)
-    s3_data = backend.get("s3")
+    s3_data = _section(data, backend, "s3")
     s3 = None
-    if s3_data:
+    if s3_data or os.getenv("S3_ENDPOINT_URL"):
         s3 = S3Config(
-            endpoint_url=s3_data.get("endpoint_url", ""),
-            tenant_id=s3_data.get("tenant_id", ""),
-            key_id=s3_data.get("key_id", ""),
-            secret_key=s3_data.get("secret_key", ""),
-            bucket_name=s3_data.get("bucket_name", "rsd-bucket"),
-            region=s3_data.get("region", "ru-central-1"),
-            verify=s3_data.get("verify", True),
+            endpoint_url=os.getenv("S3_ENDPOINT_URL") or _get_any(s3_data, "endpoint_url", "S3_ENDPOINT_URL", default=""),
+            tenant_id=os.getenv("S3_TENANT_ID") or _get_any(s3_data, "tenant_id", "S3_TENANT_ID", default=""),
+            key_id=os.getenv("S3_KEY_ID")
+            or os.getenv("S3_KEYID")
+            or _get_any(s3_data, "key_id", "S3_KEY_ID", "S3_KEYID", default=""),
+            secret_key=os.getenv("S3_SECRET_KEY")
+            or _get_any(s3_data, "secret_key", "S3_SECRET_KEY", default=""),
+            bucket_name=os.getenv("S3_BUCKET_NAME")
+            or _get_any(s3_data, "bucket_name", "S3_BUCKET_NAME", default="rsd-bucket"),
+            region=os.getenv("S3_REGION") or _get_any(s3_data, "region", "S3_REGION", default="ru-central-1"),
+            verify=_env_bool("S3_VERIFY", _get_any(s3_data, "verify", "S3_VERIFY", default=True)),
         )
 
     # Logging and env
-    log_level = backend.get("logging", {}).get("level", "INFO")
-    env_mode = backend.get("env", {}).get("mode", "production")
+    log_level = os.getenv("LOG_LEVEL") or data.get("log_level") or backend.get("logging", {}).get("level", "INFO")
+    env_mode = (
+        os.getenv("ENVIRONMENT")
+        or data.get("environment")
+        or backend.get("environment")
+        or backend.get("env", {}).get("mode")
+        or "production"
+    )
 
     return Settings(
         database=database,

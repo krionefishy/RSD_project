@@ -87,6 +87,11 @@ async def require_personnel_viewer(request: Request) -> AuthContext:
     )
 
 
+async def require_manager(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(auth, {UserRole.MANAGER.value})
+
+
 async def require_software_admin(request: Request) -> AuthContext:
     auth = await _get_auth_context(request)
     return require_any_role(
@@ -96,3 +101,20 @@ async def require_software_admin(request: Request) -> AuthContext:
             UserRole.SUPER_ADMIN.value,
         },
     )
+
+
+async def require_structure_viewer(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.MANAGER.value,
+            UserRole.ADMIN_STAFF.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )
+
+
+async def require_structure_admin(request: Request) -> AuthContext:
+    return await require_software_admin(request)

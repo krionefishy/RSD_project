@@ -144,7 +144,7 @@ export default function MaterialPage() {
     <div style={{ background: "#F8FAFC", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <AppHeader title={material.name} showBack white />
 
-      <div className="flex-1 overflow-auto" style={{ paddingBottom: 100 }}>
+      <div className="flex-1 overflow-auto" style={{ paddingBottom: 24 }}>
         <div
           className="px-4 py-3 flex items-center gap-3"
           style={{ background: "#fff", borderBottom: "1px solid #F1F5F9" }}
@@ -211,35 +211,29 @@ export default function MaterialPage() {
             </div>
           </div>
         )}
-      </div>
 
-      <div
-        className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-4 pb-4 pt-3"
-        style={{ background: "#F8FAFC", borderTop: "1px solid #E2E8F0" }}
-      >
-        {done ? (
-          <div
-            className="h-12 rounded-[10px] flex items-center justify-center gap-2"
-            style={{ background: "#F0FDF4" }}
-          >
-            <CheckCircle size={20} color="#22C55E" />
-            <span style={{ color: "#16A34A", fontWeight: 600, fontSize: 15 }}>Отмечено как пройденное!</span>
-          </div>
-        ) : (
-          <button
-            onClick={() => void markDone()}
-            disabled={submitting}
-            className="w-full h-12 rounded-[10px] flex items-center justify-center"
-            style={{
-              background: submitting ? "#A5D6A7" : "#22C55E",
-              color: "#fff",
-              fontSize: 15,
-              fontWeight: 600,
-            }}
-          >
-            {submitting ? "Сохранение..." : "Отметить как пройденное ✓"}
-          </button>
-        )}
+        <div className="px-4 pb-5">
+          {done ? (
+            <div className="h-12 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#F0FDF4" }}>
+              <CheckCircle size={20} color="#22C55E" />
+              <span style={{ color: "#16A34A", fontWeight: 600, fontSize: 15 }}>Материал пройден</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => void markDone()}
+              disabled={submitting}
+              className="w-full h-12 rounded-[10px] flex items-center justify-center"
+              style={{
+                background: submitting ? "#A5D6A7" : "#22C55E",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 600,
+              }}
+            >
+              {submitting ? "Сохранение..." : "Пройти материал"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

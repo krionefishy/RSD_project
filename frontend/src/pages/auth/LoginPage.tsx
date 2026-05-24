@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { APIError } from "../../api/APIClient";
 import { AuthAPI } from "../../api/AuthAPI";
 import { UserAPI } from "../../api/UserAPI";
+import { DEMO_LOGIN_ACCOUNTS, DEMO_PASSWORD, isDemoMode } from "../../config/demoAccounts";
 import { useApp } from "../../context/AppContext";
 import { roleRoutes } from "../../utils/roleMap";
 
@@ -15,6 +16,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const demoMode = isDemoMode();
+
+  const fillDemoAccount = (externalSystemId: string) => {
+    setExternalSystemId(externalSystemId);
+    setPassword(DEMO_PASSWORD);
+  };
 
   const handleLogin = async () => {
     if (!externalSystemId || !password) {
@@ -149,6 +156,51 @@ export default function LoginPage() {
         >
           {loading ? "Вход..." : "Войти"}
         </button>
+
+        {demoMode && (
+          <div
+            className="mt-6 rounded-[12px] border px-4 py-4"
+            style={{ borderColor: "#BBF7D0", background: "#F0FDF4" }}
+          >
+            <p style={{ color: "#166534", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
+              Демо-вход
+            </p>
+            <p style={{ color: "#15803D", fontSize: 12, marginBottom: 12 }}>
+              Пароль для всех аккаунтов: <span style={{ fontFamily: "monospace" }}>{DEMO_PASSWORD}</span>
+            </p>
+            <div className="flex flex-col gap-2">
+              {DEMO_LOGIN_ACCOUNTS.map((account) => (
+                <button
+                  key={account.externalSystemId}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => fillDemoAccount(account.externalSystemId)}
+                  className="w-full rounded-[8px] px-3 py-2.5 text-left transition-colors"
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #DCFCE7",
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span style={{ color: "#14532D", fontSize: 13, fontWeight: 600 }}>{account.label}</span>
+                    <span
+                      style={{
+                        color: "#64748B",
+                        fontSize: 11,
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {account.externalSystemId}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <p style={{ color: "#86EFAC", fontSize: 11, marginTop: 10 }}>
+              Нажмите на роль, чтобы подставить ID и пароль, затем «Войти»
+            </p>
+          </div>
+        )}
 
         <p style={{ color: "#94A3B8", fontSize: 12, marginTop: 16, textAlign: "center" }}>
           Забыли пароль? Обратитесь к администратору

@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Search, ChevronRight } from "lucide-react";
 import { Avatar } from "../../components/Avatar";
-import { UserAPI, AppUser } from "../../api/UserAPI";
-import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
+import { UserAPI } from "../../api/UserAPI";
+import { AppUser } from "../../types/user";
+import { SellingsAPI } from "../../api/SellingsAPI";
 import { useApp } from "../../context/AppContext";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
@@ -38,9 +39,8 @@ export default function EmployeesPage() {
           return;
         }
 
-        const users = await UserAPI.listUsers({
+        const users = await UserAPI.listManagedUsers({
           blockId: user.block,
-          role: "seller",
           isActive: true,
         }, controller.signal);
 
@@ -77,10 +77,14 @@ export default function EmployeesPage() {
     return () => controller.abort();
   }, [user?.block]);
 
-  const storeNames = ["all", ...Array.from(new Set(employees.map((e) => e.store).filter(Boolean)))];
+  const storeNames = [
+    "all",
+    ...Array.from(new Set(employees.map((e) => e.storeName ?? e.store).filter(Boolean) as string[])),
+  ];
   const filtered = employees.filter((e) => {
     const matchQuery = e.name.toLowerCase().includes(query.toLowerCase());
-    const matchStore = filterStore === "all" || e.store === filterStore;
+    const storeLabel = e.storeName ?? e.store;
+    const matchStore = filterStore === "all" || storeLabel === filterStore;
     return matchQuery && matchStore;
   });
 
@@ -88,7 +92,7 @@ export default function EmployeesPage() {
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
       <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
-        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{user?.block ? `Блок ${user.block}` : "Блок не назначен"}</p>
+        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{user?.blockName ?? user?.block ?? "Блок не назначен"}</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Сотрудники</h1>
         {/* Search */}
         <div className="mt-4 relative">

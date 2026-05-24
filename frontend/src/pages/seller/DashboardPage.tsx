@@ -5,7 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { ProgressCircle } from "../../components/ProgressCircle";
 import { Avatar } from "../../components/Avatar";
 import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
-import { KnowledgeAPI, CourseListItem } from "../../api/KnowledgeAPI";
+import { KnowledgeAPI, type CourseListItem } from "../../api/KnowledgeAPI";
 import { formatFullDate } from "../../utils/date";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";

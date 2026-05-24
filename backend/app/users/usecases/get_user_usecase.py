@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.locations.db_models import ManagerBlockModel, UserLocationModel
+from app.locations.db_models import BlockMemberModel, ManagerBlockModel, UserLocationModel
 from app.users.db_models import UserModel
 from app.users.dto import BlockBriefDTO, LocationBriefDTO, UserDTO
 
@@ -25,12 +25,17 @@ class GetUserUseCase:
                 selectinload(UserModel.block_assignments).selectinload(
                     ManagerBlockModel.block
                 ),
+                selectinload(UserModel.block_memberships).selectinload(
+                    BlockMemberModel.block
+                ),
             )
         )
         user = result.scalar_one_or_none()
         if user is None:
             return None
         location = user.location
+        membership = user.block_memberships[0] if user.block_memberships else None
+        block = membership.block if membership and membership.block else None
         managed_block = user.managed_block
         return UserDTO(
             id=user.id,
@@ -51,6 +56,12 @@ class GetUserUseCase:
                 if location is not None
                 else None
             ),
+            block=(
+                BlockBriefDTO(id=block.id, name=block.name)
+                if block is not None
+                else None
+            ),
+            block_member_status=membership.status if membership is not None else None,
             managed_block=(
                 BlockBriefDTO(id=managed_block.id, name=managed_block.name)
                 if managed_block is not None

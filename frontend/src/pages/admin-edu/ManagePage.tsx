@@ -4,10 +4,8 @@ import {
   ChevronDown,
   ChevronRight,
   Edit2,
-  Trash2,
   FileText,
   BookOpen,
-  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";

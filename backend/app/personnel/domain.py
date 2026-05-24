@@ -106,16 +106,15 @@ class ChangeBlockMemberStatusRequest(BaseModel):
         return self
 
 
-class ChangeSellerRoleRequest(BaseModel):
-    seller_role: str = Field(min_length=1, max_length=50)
+class ChangeEmployeePositionRequest(BaseModel):
+    position: str = Field(min_length=1, max_length=100)
 
     @model_validator(mode="after")
-    def validate_seller_role(self) -> ChangeSellerRoleRequest:
-        allowed = {"seller", "senior_seller", "trainee"}
-        value = self.seller_role.strip().lower()
-        if value not in allowed:
-            raise ValueError(f"seller_role must be one of {sorted(allowed)}")
-        self.seller_role = value
+    def validate_position(self) -> ChangeEmployeePositionRequest:
+        value = self.position.strip()
+        if not value:
+            raise ValueError("position must not be empty")
+        self.position = value
         return self
 
 

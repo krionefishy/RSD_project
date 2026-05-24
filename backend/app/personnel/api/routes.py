@@ -5,14 +5,36 @@ from uuid import UUID
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends
 
-from app.auth.deps import AuthContext, require_personnel_viewer
+from app.auth.deps import AuthContext, require_manager, require_personnel_viewer
 from app.personnel.domain import TimesheetPeriodQuery
 from app.personnel.dto import EmployeeCompensationDTO, EmployeeTimesheetDTO, LocationTimesheetDTO
 from app.personnel.usecases.get_employee_compensation_usecase import GetEmployeeCompensationUseCase
 from app.personnel.usecases.get_employee_timesheet_usecase import GetEmployeeTimesheetUseCase
 from app.personnel.usecases.get_location_timesheet_usecase import GetLocationTimesheetUseCase
+from app.users.dto import UsersListDTO
+from app.users.usecases.list_users_usecase import ListUsersUseCase
 
 router = APIRouter(route_class=DishkaRoute)
+
+
+@router.get(
+    "/managed-users",
+    response_model=UsersListDTO,
+    summary="Сотрудники блока менеджера",
+)
+async def list_managed_users(
+    auth: Annotated[AuthContext, Depends(require_manager)],
+    usecase: FromDishka[ListUsersUseCase],
+    block_id: int | None = None,
+    location_id: int | None = None,
+    is_active: bool | None = True,
+) -> UsersListDTO:
+    return await usecase.execute(
+        block_id=block_id,
+        location_id=location_id,
+        is_active=is_active,
+        manager_id=UUID(auth.user_id),
+    )
 
 
 @router.get(

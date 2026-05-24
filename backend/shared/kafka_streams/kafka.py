@@ -12,6 +12,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger("main")
 
 
+def _log_consumer_task_result(task: asyncio.Task) -> None:
+    if task.cancelled():
+        return
+    try:
+        task.result()
+    except Exception as exc:
+        logger.warning("Kafka consumer task stopped: %s", exc, exc_info=False)
+
+
 async def start_kafka(
     app: "FastAPI",
     bootstrap_servers: str,
@@ -19,18 +28,24 @@ async def start_kafka(
     max_request_size: int = 10 * 1024 * 1024,
     s3_client=None,
     consumers: list | None = None,
+    kafka_producer: KafkaProducerWrapper | None = None,
 ) -> None:
+    wrapper = kafka_producer or getattr(app.state, "kafka_producer", None)
+    if wrapper is None:
+        wrapper = KafkaProducerWrapper(None)
+    app.state.kafka_producer = wrapper
+
     try:
         raw = AIOKafkaProducer(
             bootstrap_servers=bootstrap_servers,
             max_request_size=max_request_size,
         )
         await raw.start()
-        app.state.kafka_producer = KafkaProducerWrapper(raw)
+        wrapper._producer = raw
         logger.info("Kafka producer started")
     except Exception as e:
-        logger.warning("Kafka producer not started: %s", e)
-        app.state.kafka_producer = KafkaProducerWrapper(None)
+        logger.warning("Kafka producer not started: %s", e, exc_info=False)
+        wrapper._producer = None
 
     tasks = []
     for run_consumer in consumers or []:
@@ -42,9 +57,15 @@ async def start_kafka(
                     s3_client=s3_client,
                 ),
             )
+            task.add_done_callback(_log_consumer_task_result)
             tasks.append(task)
         except Exception as e:
-            logger.warning("Kafka subscriber %s not started: %s", getattr(run_consumer, "__name__", ""), e)
+            logger.warning(
+                "Kafka subscriber %s not started: %s",
+                getattr(run_consumer, "__name__", ""),
+                e,
+                exc_info=False,
+            )
 
     app.state._kafka_consumer_tasks = tasks
     if tasks:
@@ -61,6 +82,8 @@ async def stop_kafka(app: "FastAPI") -> None:
             await task
         except asyncio.CancelledError:
             pass
+        except Exception:
+            logger.exception("Kafka consumer task failed before shutdown")
     if tasks:
         logger.info("Kafka consumer tasks stopped: %d", len(tasks))
 

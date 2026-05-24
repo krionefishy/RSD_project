@@ -30,7 +30,6 @@ class UserProfileDTO(BaseModel):
     location: LocationBriefDTO | None = None
     block: BlockBriefDTO | None = None
     block_member_status: str | None = None
-    seller_role: str | None = None
 
 
 class UserBriefDTO(BaseModel):
@@ -56,6 +55,8 @@ class UserDTO(BaseModel):
     is_temp_password: bool | None = None
     birth_date: date | None = None
     location: LocationBriefDTO | None = None
+    block: BlockBriefDTO | None = None
+    block_member_status: str | None = None
     managed_block: BlockBriefDTO | None = None
 
 

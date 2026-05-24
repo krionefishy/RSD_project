@@ -1,111 +1,196 @@
-import { useEffect, useState } from "react";
-import { Search, ChevronRight, UserCog, Lock, MapPin } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Search,
+  ChevronRight,
+  UserCog,
+  Lock,
+  UserPlus,
+  Ban,
+  Trash2,
+  UserCheck,
+  RotateCcw,
+} from "lucide-react";
+import { useNavigate } from "react-router";
 import { Avatar } from "../../components/Avatar";
-import { UserAPI, AppUser } from "../../api/UserAPI";
+import { UserAPI } from "../../api/UserAPI";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
+import { AppUser } from "../../types/user";
+import { UserRole } from "../../types/user";
 import { ROLE_LABELS_SHORT } from "../../constants/roles";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { Button } from "../../components/ui/button";
+import { useStructureOptions } from "../../hooks/useStructureOptions";
+
+type ConfirmAction = "block" | "unblock" | "delete" | "resetPassword" | null;
+
+const ROLE_FILTERS: Array<UserRole | "all"> = [
+  "all",
+  "seller",
+  "manager",
+  "admin-edu",
+  "admin-sales",
+  "admin-personnel",
+  "admin-po",
+  "superadmin",
+];
 
 export default function ManageUsersPage() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [filterRole, setFilterRole] = useState("all");
+  const [filterRole, setFilterRole] = useState<UserRole | "all">("all");
+  const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [filterBlockId, setFilterBlockId] = useState("");
+  const [filterLocationId, setFilterLocationId] = useState("");
+
+  const { blocks: structureBlocks, locations: structureLocations } = useStructureOptions();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
-  const [editForm, setEditForm] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    position: "",
-  });
+
+  const locationOptions = useMemo(
+    () =>
+      filterBlockId
+        ? structureLocations.filter((location) => location.blockId === filterBlockId)
+        : structureLocations,
+    [filterBlockId, structureLocations],
+  );
+
+  const resetStructureFilters = () => {
+    setFilterBlockId("");
+    setFilterLocationId("");
+  };
+
+  const loadUsers = useCallback(async (signal?: AbortSignal) => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await UserAPI.listUsers(
+        {
+          blockId: filterBlockId || undefined,
+          locationId: filterLocationId || undefined,
+          role: filterRole !== "all" ? filterRole : undefined,
+          isActive:
+            filterActive === "all" ? undefined : filterActive === "active",
+        },
+        signal,
+      );
+      setUsers(data);
+    } catch (error) {
+      if (isAbortError(error)) return;
+      const message = getErrorMessage(error, "Не удалось загрузить список пользователей");
+      setLoadError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterBlockId, filterLocationId, filterRole, filterActive]);
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadUsers() {
-      try {
-        const data = await UserAPI.listUsers(undefined, controller.signal);
-        setUsers(data);
-      } catch (error) {
-        if (isAbortError(error)) return;
-        toast.error(getErrorMessage(error, "Не удалось загрузить список пользователей"));
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadUsers();
+    void loadUsers(controller.signal);
     return () => controller.abort();
-  }, []);
+  }, [loadUsers]);
 
-  const filtered = users.filter((u) => {
-    const matchQuery = u.name.toLowerCase().includes(query.toLowerCase()) ||
-                      u.externalSystemId.toLowerCase().includes(query.toLowerCase());
-    const matchRole = filterRole === "all" || u.role === filterRole;
-    return matchQuery && matchRole;
-  });
-
-  const handleEditClick = (user: AppUser) => {
-    setSelectedUser(user);
-    setEditForm({
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
-      phone: user.phone || "",
-      position: user.position || "",
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return users.filter((u) => {
+      const matchQuery =
+        !q ||
+        u.name.toLowerCase().includes(q) ||
+        u.externalSystemId.toLowerCase().includes(q);
+      return matchQuery;
     });
-    setShowEditModal(true);
+  }, [users, query]);
+
+  const openConfirm = (user: AppUser, action: ConfirmAction) => {
+    setSelectedUser(user);
+    setConfirmAction(action);
   };
 
-  const handleSaveEdit = async () => {
-    if (!selectedUser) return;
+  const closeConfirm = () => {
+    setConfirmAction(null);
+    setSelectedUser(null);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedUser || !confirmAction) return;
+    setActionLoading(true);
     try {
-      await AdminStaffAPI.updateUser(selectedUser.id, {
-        firstName: editForm.firstName,
-        lastName: editForm.lastName,
-        phone: editForm.phone,
-        position: editForm.position,
-      });
-      toast.success("Данные пользователя обновлены");
-      setShowEditModal(false);
-      const updated = await UserAPI.listUsers();
-      setUsers(updated);
+      if (confirmAction === "block") {
+        await AdminStaffAPI.blockEmployeeProfile(selectedUser.id);
+        toast.success("Профиль заблокирован");
+      } else if (confirmAction === "unblock") {
+        await AdminStaffAPI.unblockEmployeeProfile(selectedUser.id);
+        toast.success("Профиль разблокирован");
+      } else if (confirmAction === "delete") {
+        await AdminStaffAPI.deleteEmployeeProfile(selectedUser.id);
+        toast.success("Профиль удалён");
+      } else if (confirmAction === "resetPassword") {
+        const result = await AdminStaffAPI.resetPassword(selectedUser.id);
+        setTempPassword(result.temporaryPassword);
+        setConfirmAction(null);
+        setShowPasswordModal(true);
+        await loadUsers();
+        return;
+      }
+      closeConfirm();
+      await loadUsers();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Не удалось обновить данные"));
+      toast.error(getErrorMessage(error, "Не удалось выполнить действие"));
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!selectedUser) return;
-    try {
-      const result = await AdminStaffAPI.resetPassword(selectedUser.id);
-      setTempPassword(result.temporaryPassword);
-      toast.success("Пароль сброшен");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Не удалось сбросить пароль"));
-    }
+  const confirmTitles: Record<Exclude<ConfirmAction, null>, string> = {
+    block: "Заблокировать профиль?",
+    unblock: "Разблокировать профиль?",
+    delete: "Удалить профиль?",
+    resetPassword: "Сбросить пароль?",
   };
 
-  const handleAssignLocation = async (locationId: string) => {
-    if (!selectedUser) return;
-    try {
-      await AdminStaffAPI.assignLocation(selectedUser.id, locationId);
-      toast.success("Локация назначена");
-      setShowLocationModal(false);
-      const updated = await UserAPI.listUsers();
-      setUsers(updated);
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Не удалось назначить локацию"));
-    }
+  const confirmDescriptions: Record<Exclude<ConfirmAction, null>, string> = {
+    block: "Сотрудник не сможет войти в систему до разблокировки.",
+    unblock: "Сотрудник снова получит доступ к системе.",
+    delete: "Профиль сотрудника будет удалён без возможности восстановления.",
+    resetPassword: "Будет сгенерирован новый пароль для передачи сотруднику.",
   };
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      {/* Header */}
-      <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
-        <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Управление пользователями</h1>
+      <div
+        className="px-4 pt-6 pb-5"
+        style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>
+            Управление пользователями
+          </h1>
+          <button
+            onClick={() => navigate("/admin-personnel/manage/create")}
+            className="p-2 rounded-xl"
+            style={{ background: "rgba(255,255,255,0.2)" }}
+            aria-label="Создать сотрудника"
+          >
+            <UserPlus size={20} color="#fff" />
+          </button>
+        </div>
         <div className="mt-4 relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2">
             <Search size={16} color="#94A3B8" />
@@ -113,41 +198,113 @@ export default function ManageUsersPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Поиск по имени или ID..."
+            placeholder="Поиск по ФИО или ID..."
             className="w-full h-10 pl-9 pr-4 rounded-xl outline-none"
             style={{ background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14 }}
           />
         </div>
       </div>
 
-      {/* Role filter */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto" style={{ borderBottom: "1px solid #E2E8F0", background: "#fff", scrollbarWidth: "none" }}>
-        {["all", "seller", "manager", "admin-edu", "admin-sales", "admin-personnel", "superadmin"].map((role) => (
-          <button
-            key={role}
-            onClick={() => setFilterRole(role)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full"
-            style={{
-              background: filterRole === role ? "#2E7D32" : "#F1F5F9",
-              color: filterRole === role ? "#fff" : "#374151",
-              fontSize: 12,
-              fontWeight: filterRole === role ? 600 : 400,
+      <div className="px-4 py-3 flex flex-col gap-2" style={{ background: "#fff", borderBottom: "1px solid #E2E8F0" }}>
+        <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          {ROLE_FILTERS.map((role) => (
+            <button
+              key={role}
+              onClick={() => setFilterRole(role)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full"
+              style={{
+                background: filterRole === role ? "#2E7D32" : "#F1F5F9",
+                color: filterRole === role ? "#fff" : "#374151",
+                fontSize: 12,
+                fontWeight: filterRole === role ? 600 : 400,
+              }}
+            >
+              {role === "all" ? "Все роли" : ROLE_LABELS_SHORT[role]}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          {(["all", "active", "inactive"] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterActive(status)}
+              className="flex-1 py-1.5 rounded-lg"
+              style={{
+                background: filterActive === status ? "#E8F5E9" : "#F1F5F9",
+                color: filterActive === status ? "#2E7D32" : "#64748B",
+                fontSize: 12,
+                fontWeight: filterActive === status ? 600 : 400,
+              }}
+            >
+              {status === "all" ? "Все" : status === "active" ? "Активные" : "Заблок."}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <select
+            value={filterBlockId}
+            onChange={(e) => {
+              setFilterBlockId(e.target.value);
+              setFilterLocationId("");
             }}
+            className="min-w-0 h-9 px-3 rounded-lg border text-sm"
+            style={{ borderColor: "#E2E8F0" }}
           >
-            {role === "all" ? "Все роли" : ROLE_LABELS_SHORT[role]}
+            <option value="">Все блоки</option>
+            {structureBlocks.map((block) => (
+              <option key={block.id} value={block.id}>
+                {block.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterLocationId}
+            onChange={(e) => setFilterLocationId(e.target.value)}
+            disabled={locationOptions.length === 0}
+            className="min-w-0 h-9 px-3 rounded-lg border text-sm"
+            style={{ borderColor: "#E2E8F0" }}
+          >
+            <option value="">Все точки</option>
+            {locationOptions.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={resetStructureFilters}
+            className="h-9 w-9 rounded-lg border flex items-center justify-center"
+            style={{ borderColor: "#E2E8F0", background: "#fff" }}
+            aria-label="Сбросить фильтры"
+          >
+            <RotateCcw size={15} color="#64748B" />
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* User list */}
       <div className="px-4 py-4">
         <p style={{ color: "#64748B", fontSize: 13, marginBottom: 10 }}>
           {loading ? "Загрузка..." : `${filtered.length} пользователей`}
         </p>
-        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+        >
           {loading ? (
             <div className="px-4 py-8 text-center" style={{ color: "#64748B", fontSize: 14 }}>
               Загрузка пользователей...
+            </div>
+          ) : loadError ? (
+            <div className="px-4 py-8 text-center">
+              <p style={{ color: "#DC2626", fontSize: 14, marginBottom: 12 }}>{loadError}</p>
+              <button
+                onClick={() => void loadUsers()}
+                className="px-4 py-2 rounded-lg"
+                style={{ background: "#2E7D32", color: "#fff", fontSize: 13 }}
+              >
+                Повторить
+              </button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="px-4 py-8 text-center" style={{ color: "#64748B", fontSize: 14 }}>
@@ -158,37 +315,75 @@ export default function ManageUsersPage() {
               <div
                 key={user.id}
                 className="flex items-center gap-3 px-4 py-3.5"
-                style={{ borderBottom: i < filtered.length - 1 ? "1px solid #F1F5F9" : "none" }}
+                style={{
+                  borderBottom: i < filtered.length - 1 ? "1px solid #F1F5F9" : "none",
+                }}
               >
-                <Avatar name={user.name} size={40} />
-                <div className="flex-1 min-w-0">
-                  <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>{user.name}</p>
-                  <p style={{ color: "#94A3B8", fontSize: 12 }}>{ROLE_LABELS_SHORT[user.role] || user.role}</p>
-                  <p style={{ color: "#64748B", fontSize: 11 }}>{user.externalSystemId}</p>
-                </div>
-                <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                  onClick={() => navigate(`/admin-personnel/manage/${user.id}`)}
+                >
+                  <Avatar name={user.name} size={40} src={user.avatar} />
+                  <div className="flex-1 min-w-0">
+                    <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>{user.name}</p>
+                    <p style={{ color: "#94A3B8", fontSize: 12 }}>
+                      {ROLE_LABELS_SHORT[user.role] || user.role}
+                      {user.isActive === false ? " · заблокирован" : ""}
+                    </p>
+                    <p style={{ color: "#64748B", fontSize: 11 }}>{user.externalSystemId}</p>
+                    {(user.blockName || user.storeName) && (
+                      <p style={{ color: "#94A3B8", fontSize: 11 }}>
+                        {[user.blockName, user.storeName].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight size={15} color="#CBD5E1" />
+                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <button
-                    onClick={() => handleEditClick(user)}
+                    onClick={() => navigate(`/admin-personnel/manage/${user.id}`)}
                     className="p-2 rounded-lg"
                     style={{ background: "#F1F5F9" }}
+                    aria-label="Редактировать"
                   >
                     <UserCog size={16} color="#64748B" />
                   </button>
                   <button
-                    onClick={() => { setSelectedUser(user); setShowPasswordModal(true); setTempPassword(""); }}
+                    onClick={() => openConfirm(user, "resetPassword")}
                     className="p-2 rounded-lg"
                     style={{ background: "#F1F5F9" }}
+                    aria-label="Сбросить пароль"
                   >
                     <Lock size={16} color="#64748B" />
                   </button>
+                  {user.isActive !== false ? (
+                    <button
+                      onClick={() => openConfirm(user, "block")}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#FEF2F2" }}
+                      aria-label="Заблокировать"
+                    >
+                      <Ban size={16} color="#DC2626" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openConfirm(user, "unblock")}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#F0FDF4" }}
+                      aria-label="Разблокировать"
+                    >
+                      <UserCheck size={16} color="#2E7D32" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => { setSelectedUser(user); setShowLocationModal(true); }}
+                    onClick={() => openConfirm(user, "delete")}
                     className="p-2 rounded-lg"
-                    style={{ background: "#F1F5F9" }}
+                    style={{ background: "#FEF2F2" }}
+                    aria-label="Удалить"
                   >
-                    <MapPin size={16} color="#64748B" />
+                    <Trash2 size={16} color="#DC2626" />
                   </button>
-                  <ChevronRight size={15} color="#CBD5E1" />
                 </div>
               </div>
             ))
@@ -196,131 +391,87 @@ export default function ManageUsersPage() {
         </div>
       </div>
 
-      {/* Edit Modal */}
-      {showEditModal && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-4" style={{ background: "#fff" }}>
-            <h3 style={{ color: "#1E293B", fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Редактирование</h3>
-            <div className="flex flex-col gap-3">
-              <input
-                value={editForm.firstName}
-                onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
-                placeholder="Имя"
-                className="w-full h-10 px-3 rounded-lg border"
-                style={{ borderColor: "#E2E8F0", fontSize: 14 }}
-              />
-              <input
-                value={editForm.lastName}
-                onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
-                placeholder="Фамилия"
-                className="w-full h-10 px-3 rounded-lg border"
-                style={{ borderColor: "#E2E8F0", fontSize: 14 }}
-              />
-              <input
-                value={editForm.phone}
-                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                placeholder="Телефон"
-                className="w-full h-10 px-3 rounded-lg border"
-                style={{ borderColor: "#E2E8F0", fontSize: 14 }}
-              />
-              <input
-                value={editForm.position}
-                onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
-                placeholder="Должность"
-                className="w-full h-10 px-3 rounded-lg border"
-                style={{ borderColor: "#E2E8F0", fontSize: 14 }}
-              />
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => setShowEditModal(false)}
-                className="flex-1 h-10 rounded-lg"
-                style={{ background: "#F1F5F9", color: "#64748B", fontSize: 14, fontWeight: 500 }}
-              >
-                Отмена
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="flex-1 h-10 rounded-lg"
-                style={{ background: "#2E7D32", color: "#fff", fontSize: 14, fontWeight: 500 }}
-              >
-                Сохранить
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Password Reset Modal */}
-      {showPasswordModal && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-4" style={{ background: "#fff" }}>
-            <h3 style={{ color: "#1E293B", fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Сброс пароля</h3>
-            <p style={{ color: "#64748B", fontSize: 14, marginBottom: 16 }}>
-              Пользователь: <strong>{selectedUser.name}</strong>
-            </p>
-            {tempPassword ? (
-              <div className="p-3 rounded-lg mb-4" style={{ background: "#F0FDF4" }}>
-                <p style={{ color: "#166534", fontSize: 12, marginBottom: 4 }}>Временный пароль:</p>
-                <p style={{ color: "#166534", fontSize: 16, fontWeight: 600, fontFamily: "monospace" }}>{tempPassword}</p>
-              </div>
-            ) : (
-              <p style={{ color: "#94A3B8", fontSize: 13, marginBottom: 16 }}>
-                Будет сгенерирован временный пароль, который нужно будет передать пользователю.
-              </p>
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="flex-1 h-10 rounded-lg"
-                style={{ background: "#F1F5F9", color: "#64748B", fontSize: 14, fontWeight: 500 }}
-              >
-                Закрыть
-              </button>
-              {!tempPassword && (
-                <button
-                  onClick={handleResetPassword}
-                  className="flex-1 h-10 rounded-lg"
-                  style={{ background: "#2E7D32", color: "#fff", fontSize: 14, fontWeight: 500 }}
-                >
-                  Сбросить
-                </button>
+      <Dialog open={confirmAction !== null} onOpenChange={(open) => !open && closeConfirm()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmAction ? confirmTitles[confirmAction] : ""}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedUser && (
+                <>
+                  Пользователь: <strong>{selectedUser.name}</strong>
+                  <br />
+                  {confirmAction ? confirmDescriptions[confirmAction] : ""}
+                </>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeConfirm} disabled={actionLoading}>
+              Отмена
+            </Button>
+            <Button
+              variant={confirmAction === "delete" || confirmAction === "block" ? "destructive" : "default"}
+              onClick={() => void handleConfirm()}
+              disabled={actionLoading}
+            >
+              {actionLoading ? "Выполняется..." : "Подтвердить"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Location Modal */}
-      {showLocationModal && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-4" style={{ background: "#fff" }}>
-            <h3 style={{ color: "#1E293B", fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Назначение локации</h3>
-            <p style={{ color: "#64748B", fontSize: 14, marginBottom: 16 }}>
-              Пользователь: <strong>{selectedUser.name}</strong>
-            </p>
-            <p style={{ color: "#94A3B8", fontSize: 13, marginBottom: 16 }}>
-              Текущая локация: {selectedUser.store || "Не назначена"}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowLocationModal(false)}
-                className="flex-1 h-10 rounded-lg"
-                style={{ background: "#F1F5F9", color: "#64748B", fontSize: 14, fontWeight: 500 }}
+      <Dialog
+        open={showPasswordModal}
+        onOpenChange={(open) => {
+          setShowPasswordModal(open);
+          if (!open) {
+            setTempPassword("");
+            setSelectedUser(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Сброс пароля</DialogTitle>
+            <DialogDescription>
+              {selectedUser && (
+                <>
+                  Пользователь: <strong>{selectedUser.name}</strong>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {tempPassword ? (
+            <div className="p-3 rounded-lg" style={{ background: "#F0FDF4" }}>
+              <p style={{ color: "#166534", fontSize: 12, marginBottom: 4 }}>Новый пароль:</p>
+              <p
+                style={{
+                  color: "#166534",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  fontFamily: "monospace",
+                }}
               >
-                Отмена
-              </button>
-              <button
-                onClick={() => handleAssignLocation("loc-001")}
-                className="flex-1 h-10 rounded-lg"
-                style={{ background: "#2E7D32", color: "#fff", fontSize: 14, fontWeight: 500 }}
-              >
-                Назначить
-              </button>
+                {tempPassword}
+              </p>
             </div>
-          </div>
-        </div>
-      )}
+          ) : null}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPasswordModal(false);
+                setTempPassword("");
+                setSelectedUser(null);
+              }}
+            >
+              Закрыть
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

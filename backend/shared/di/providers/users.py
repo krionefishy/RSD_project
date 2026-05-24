@@ -1,4 +1,5 @@
 from dishka import Provider, Scope, provide
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.software_admin.usecases.assign_manager_block_usecase import AssignManagerBlockUseCase
 from app.admin.software_admin.usecases.assign_user_block_usecase import AssignUserBlockUseCase
@@ -13,6 +14,7 @@ from app.admin.staff_admin.usecases.update_user_admin_usecase import UpdateUserA
 from app.admin.staff_admin.usecases.upload_avatar_usecase import UploadAvatarUseCase
 from app.users.usecases.get_user_usecase import GetUserUseCase
 from app.users.usecases.list_users_usecase import ListUsersUseCase
+from storage.s3.client import S3Client
 
 
 class UsersUsecaseProvider(Provider):
@@ -30,4 +32,11 @@ class UsersUsecaseProvider(Provider):
     assign_user_location = provide(AssignUserLocationUseCase)
     remove_user_block = provide(RemoveUserBlockUseCase)
     remove_user_location = provide(RemoveUserLocationUseCase)
-    upload_avatar = provide(UploadAvatarUseCase)
+
+    @provide
+    def upload_avatar(
+        self,
+        session: AsyncSession,
+        s3_client: S3Client,
+    ) -> UploadAvatarUseCase:
+        return UploadAvatarUseCase(session, s3_client)

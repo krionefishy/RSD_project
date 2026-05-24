@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -76,11 +76,16 @@ class SubmitAnswerUseCase:
         user_test = user_test_result.scalar_one_or_none()
         if user_test is None:
             return None
+        if user_test.completed_at is not None:
+            return None
 
         is_correct = request.selected_variant == task.correct_variant
         points_earned = task.points if is_correct else 0
 
         answers = user_test.answers or {}
+        previous_answer = answers.get(str(request.task_id))
+        if previous_answer is not None:
+            return None
         answers[str(request.task_id)] = {
             "selected_variant": request.selected_variant,
             "is_correct": is_correct,

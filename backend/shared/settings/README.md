@@ -8,6 +8,7 @@ The application uses YAML configuration files, following the pattern from `baris
 |------|---------|----------|
 | `config.yaml` | Production / default configuration | Project root (`/Users/dmitrii/Desktop/RSD/`) |
 | `shared/settings/config.test.yaml` | Test configuration (pytest) | `backend/shared/settings/` |
+| `shared/settings/config.demo.yaml` | Demo environment (destructive DB seed) | `backend/shared/settings/` |
 
 ## Usage
 
@@ -36,6 +37,23 @@ pytest
 cd backend
 CONFIG_PATH=shared/settings/config.test.yaml pytest
 ```
+
+### Demo
+
+Reset and fill the database with demo data (requires `environment: demo` in config):
+
+```bash
+CONFIG_PATH=backend/shared/settings/config.demo.yaml uv run python -m backend.scripts.seed_demo
+```
+
+Frontend with demo login shortcuts on the login screen:
+
+```bash
+cd frontend
+npm run dev:demo
+```
+
+Demo accounts are defined in `backend/scripts/demo_accounts.json` (one user per `UserRole`, plus extra sellers).
 
 ## Configuration Structure
 
@@ -85,6 +103,7 @@ Individual values can be overridden via environment variables:
 | `DATABASE_URL` | Full database URL (overrides database.*) |
 | `JWT_SECRET` | JWT signing secret |
 | `AUTH_RSA_PRIVATE_KEY_PEM` | RSA private key for password encryption |
+| `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_CONSUMER_GROUP`, `KAFKA_MAX_REQUEST_SIZE` | Kafka connection |
+| `S3_ENDPOINT_URL`, `S3_KEY_ID`, `S3_SECRET_KEY`, `S3_BUCKET_NAME`, `S3_TENANT_ID`, `S3_REGION`, `S3_VERIFY` | S3 connection (`S3_KEYID` is supported as a legacy alias) |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB` | Redis connection |
 | `LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) |
-

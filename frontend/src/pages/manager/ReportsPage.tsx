@@ -11,13 +11,15 @@ const reports = [
 
 export default function ReportsPage() {
   const [selected, setSelected] = useState<string | null>(null);
+  const [period, setPeriod] = useState("2026-04");
+  const periodLabel = period === "2026-03" ? "Март 2026" : period === "2026-05" ? "Май 2026" : "Апрель 2026";
 
   if (selected) {
     const report = reports.find(r => r.id === selected);
     if (!report) return null;
     return (
       <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-        <AppHeader title={report.title} showBack white rightAction={
+        <AppHeader title={report.title} showBack backTo="/manager/reports" white rightAction={
           <button className="flex items-center gap-1 px-3 py-1.5 rounded-lg" style={{ background: "#2E7D32" }}>
             <Download size={14} color="#fff" />
             <span style={{ color: "#fff", fontSize: 12, fontWeight: 500 }}>Выгрузить</span>
@@ -27,10 +29,16 @@ export default function ReportsPage() {
         {/* Period selector */}
         <div className="px-4 py-4">
           <div className="flex items-center gap-2 mb-4">
-            <div className="flex-1 h-11 rounded-[10px] border px-3 flex items-center justify-between" style={{ border: "1.5px solid #E2E8F0", background: "#fff" }}>
-              <span style={{ color: "#1E293B", fontSize: 14 }}>Апрель 2026</span>
-              <ChevronRight size={16} color="#94A3B8" />
-            </div>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="flex-1 h-11 rounded-[10px] border px-3"
+              style={{ border: "1.5px solid #E2E8F0", background: "#fff", color: "#1E293B", fontSize: 14 }}
+            >
+              <option value="2026-03">Март 2026</option>
+              <option value="2026-04">Апрель 2026</option>
+              <option value="2026-05">Май 2026</option>
+            </select>
             <button className="h-11 w-11 rounded-[10px] flex items-center justify-center" style={{ border: "1.5px solid #E2E8F0", background: "#fff" }}>
               <Filter size={18} color="#64748B" />
             </button>
@@ -46,7 +54,7 @@ export default function ReportsPage() {
               <span style={{ flex: 1, color: "#64748B", fontSize: 12, fontWeight: 500, textAlign: "right" }}>%</span>
             </div>
             {[
-              { name: "А. Иванова", plan: "45 000", fact: "35 100", pct: 78 },
+              { name: "А. Иванова", plan: periodLabel === "Май 2026" ? "50 000" : "45 000", fact: "35 100", pct: 78 },
               { name: "К. Захаров", plan: "45 000", fact: "52 400", pct: 116 },
               { name: "М. Федорова", plan: "40 000", fact: "28 800", pct: 72 },
               { name: "О. Крылова", plan: "50 000", fact: "48 500", pct: 97 },

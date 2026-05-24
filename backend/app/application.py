@@ -27,9 +27,31 @@ class Application:
             lifespan=self.lifespan,
         )
         self.db: Database = Database()
-        self.settings: Settings | None = None
-        self.redis_client: RedisClient | None = None
+        config_path = os.getenv("CONFIG_PATH", "shared/settings/config.yaml")
+        self.settings: Settings = load_settings(config_path)
+        self.redis_client = RedisClient(
+            host=self.settings.redis.host,
+            port=self.settings.redis.port,
+            db=self.settings.redis.db,
+        )
         self.s3_client: S3Client | None = None
+        self.kafka_producer = KafkaProducerWrapper(None)
+
+        self._setup_logging()
+        self._init_s3_client()
+
+        container = make_async_container(
+            *ALL_PROVIDERS,
+            context={
+                Settings: self.settings,
+                Database: self.db,
+                RedisClient: self.redis_client,
+                KafkaProducerWrapper: self.kafka_producer,
+                S3Client: self.s3_client,
+            },
+        )
+        self.container = container
+        setup_dishka(container, self.app)
 
         self._setup_routes()
         self._setup_middleware()
@@ -53,13 +75,25 @@ class Application:
     def _setup_routes(self):
         self.app.include_router(api_router, prefix="/api/v1")
 
+    def _init_s3_client(self) -> None:
+        if not self.settings.s3:
+            return
+        try:
+            self.s3_client = S3Client(
+                endpoint_url=self.settings.s3.endpoint_url,
+                key_id=self.settings.s3.key_id,
+                secret_key=self.settings.s3.secret_key,
+                bucket_name=self.settings.s3.bucket_name,
+                tenant_id=self.settings.s3.tenant_id,
+                region=self.settings.s3.region,
+                verify=self.settings.s3.verify,
+            )
+        except Exception as e:
+            logging.getLogger("main").warning("S3 not available: %s", e)
+
     async def _on_startup(self):
         logger = logging.getLogger("main")
         logger.info("RSD Backend starting...")
-
-        config_path = os.getenv("CONFIG_PATH", "shared/settings/config.yaml")
-        self.settings = load_settings(config_path)
-        self._setup_logging()
 
         await self.db.connect(
             db_url=self.settings.database.url,
@@ -67,55 +101,25 @@ class Application:
         )
         logger.info("Database connected")
 
-        self.redis_client = RedisClient(
-            host=self.settings.redis.host,
-            port=self.settings.redis.port,
-            db=self.settings.redis.db,
-        )
         await self.redis_client.connect()
         logger.info("Redis connected")
 
-        if self.settings.s3:
-            try:
-                self.s3_client = S3Client(
-                    endpoint_url=self.settings.s3.endpoint_url,
-                    key_id=self.settings.s3.key_id,
-                    secret_key=self.settings.s3.secret_key,
-                    bucket_name=self.settings.s3.bucket_name,
-                    tenant_id=self.settings.s3.tenant_id,
-                    region=self.settings.s3.region,
-                    verify=self.settings.s3.verify,
-                )
-                logger.info("S3 client initialized")
-            except Exception as e:
-                logger.warning("S3 not available: %s", e)
+        if self.s3_client is not None:
+            logger.info("S3 client initialized")
 
-        await start_kafka(
-            app=self.app,
-            bootstrap_servers=self.settings.kafka.bootstrap_servers,
-            consumer_group=self.settings.kafka.consumer_group,
-            max_request_size=self.settings.kafka.max_request_size,
-            s3_client=self.s3_client,
-            consumers=s3_consumers,
-        )
-        kafka_producer = getattr(
-            self.app.state, "kafka_producer", KafkaProducerWrapper(None)
-        )
-        logger.info("Kafka started")
-
-        container = make_async_container(
-            *ALL_PROVIDERS,
-            context={
-                Settings: self.settings,
-                Database: self.db,
-                RedisClient: self.redis_client,
-                KafkaProducerWrapper: kafka_producer,
-                S3Client: self.s3_client,
-            },
-        )
-        setup_dishka(container, self.app)
-        logger.info("DI Container initialized")
-
+        try:
+            await start_kafka(
+                app=self.app,
+                bootstrap_servers=self.settings.kafka.bootstrap_servers,
+                consumer_group=self.settings.kafka.consumer_group,
+                max_request_size=self.settings.kafka.max_request_size,
+                s3_client=self.s3_client,
+                consumers=s3_consumers,
+                kafka_producer=self.kafka_producer,
+            )
+            logger.info("Kafka started")
+        except Exception as exc:
+            logger.warning("Kafka unavailable, continuing without it: %s", exc)
         logger.info("RSD Backend started successfully")
 
     async def _on_shutdown(self):
@@ -124,9 +128,7 @@ class Application:
 
         await stop_kafka(self.app)
 
-        dishka_container = getattr(self.app.state, "dishka_container", None)
-        if dishka_container:
-            await dishka_container.close()
+        await self.container.close()
 
         if self.redis_client:
             await self.redis_client.disconnect()
@@ -134,11 +136,25 @@ class Application:
         await self.db.disconnect()
         logger.info("RSD Backend stopped")
 
+    async def _safe_on_shutdown(self) -> None:
+        try:
+            await self._on_shutdown()
+        except Exception:
+            logging.getLogger("main").exception("RSD Backend shutdown failed")
+
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
-        await self._on_startup()
-        yield
-        await self._on_shutdown()
+        try:
+            await self._on_startup()
+        except Exception:
+            logging.getLogger("main").exception("RSD Backend startup failed")
+            await self._safe_on_shutdown()
+            raise
+
+        try:
+            yield
+        finally:
+            await self._safe_on_shutdown()
 
     def _setup_logging(self):
         logging.basicConfig(

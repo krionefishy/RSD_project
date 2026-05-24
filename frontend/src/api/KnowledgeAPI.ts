@@ -1,4 +1,4 @@
-import {
+import type {
   CompleteCourseResult,
   CompleteMaterialResult,
   Course,
@@ -14,6 +14,8 @@ import {
   TestTask,
 } from "../types/knowledge";
 import { apiClient } from "./APIClient";
+
+export type { Course, CourseListItem } from "../types/knowledge";
 
 function isMockKB(): boolean {
   return import.meta.env.VITE_MOCK_KB === "true";
@@ -490,7 +492,7 @@ function mapTask(dto: TestTaskDTO): TestTask {
 }
 
 // Helper to get fresh mock course with current state
-function getMockCourse(courseId: number): CourseDTO | null {
+function getMockCourse(courseId: number): Course | null {
   const base = MOCK_COURSES[courseId];
   if (!base) return null;
 
@@ -498,13 +500,13 @@ function getMockCourse(courseId: number): CourseDTO | null {
     ...base,
     materials: base.materials.map(m => ({
       id: m.id,
-      material_id: m.materialId,
+      materialId: m.materialId,
       name: m.name,
       category: m.category,
       description: m.description,
-      is_completed: mockCompletedMaterials.has(m.materialId),
+      isCompleted: mockCompletedMaterials.has(m.materialId),
     })),
-  } as CourseDTO;
+  };
 }
 
 class KnowledgeAPIImpl {
@@ -520,7 +522,7 @@ class KnowledgeAPIImpl {
     if (isMockKB()) {
       const course = getMockCourse(courseId);
       if (!course) throw new Error("Course not found");
-      return mapCourse(course);
+      return course;
     }
     const response = await apiClient.get<CourseDTO>(`/kb/courses/${courseId}`, { signal });
     return mapCourse(response);

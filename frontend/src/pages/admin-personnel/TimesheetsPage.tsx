@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Upload, FileSpreadsheet, CheckCircle, Clock, AlertCircle, Download } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
 import { timesheetUploads } from "../../mock/mockData";
+import { useStructureOptions } from "../../hooks/useStructureOptions";
 
 const statusConfig = {
   processed: { label: "Обработан", icon: CheckCircle, color: "#22C55E", bg: "#F0FDF4" },
@@ -10,8 +11,16 @@ const statusConfig = {
 };
 
 export default function TimesheetsPage() {
+  const { locations: structureLocations } = useStructureOptions();
   const [isDragging, setIsDragging] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+
+  useEffect(() => {
+    if (!selectedLocationId && structureLocations[0]) {
+      setSelectedLocationId(structureLocations[0].id);
+    }
+  }, [structureLocations, selectedLocationId]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -34,22 +43,29 @@ export default function TimesheetsPage() {
       <AppHeader title="Табели учёта" showBack white />
 
       <div className="px-4 py-4 flex flex-col gap-3">
-        {/* Current period stats */}
+        {/* Location timesheet viewer */}
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Текущий период: Апрель 2026</p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl p-3 text-center" style={{ background: "#F8FAFC" }}>
-              <p style={{ color: "#2E7D32", fontSize: 22, fontWeight: 700 }}>142</p>
-              <p style={{ color: "#64748B", fontSize: 11 }}>Сотрудников</p>
-            </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: "#F8FAFC" }}>
-              <p style={{ color: "#22C55E", fontSize: 22, fontWeight: 700 }}>98</p>
-              <p style={{ color: "#64748B", fontSize: 11 }}>Рабочих дней</p>
-            </div>
-            <div className="rounded-xl p-3 text-center" style={{ background: "#F8FAFC" }}>
-              <p style={{ color: "#F5A623", fontSize: 22, fontWeight: 700 }}>4,256</p>
-              <p style={{ color: "#64748B", fontSize: 11 }}>Часов</p>
-            </div>
+          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по точке</p>
+          <select
+            value={selectedLocationId}
+            onChange={(e) => setSelectedLocationId(e.target.value)}
+            className="w-full h-10 px-3 rounded-lg border mb-3"
+            style={{ borderColor: "#E2E8F0", fontSize: 14 }}
+          >
+            {structureLocations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+          <div className="rounded-xl p-3" style={{ background: "#F8FAFC" }}>
+            <p style={{ color: "#64748B", fontSize: 12 }}>Выбрана точка</p>
+            <p style={{ color: "#1E293B", fontSize: 16, fontWeight: 700 }}>
+              {structureLocations.find((location) => location.id === selectedLocationId)?.name ?? "Не выбрана"}
+            </p>
+            <p style={{ color: "#94A3B8", fontSize: 12, marginTop: 4 }}>
+              Табель хранит количество часов по дням. Время начала и окончания смены в файле не передается.
+            </p>
           </div>
         </div>
 

@@ -1,0 +1,95 @@
+{
+  "password": "Password123!",
+  "users": [
+    {
+      "key": "superadmin",
+      "external_system_id": "superadmin_001",
+      "role": "super_admin",
+      "label": "Суперадмин",
+      "first_name": "Супер",
+      "last_name": "Админ",
+      "show_on_login": true
+    },
+    {
+      "key": "rootadmin",
+      "external_system_id": "rootadmin_001",
+      "role": "root_admin",
+      "label": "Админ ПО",
+      "first_name": "Рут",
+      "last_name": "Админ",
+      "show_on_login": true
+    },
+    {
+      "key": "staff_admin",
+      "external_system_id": "staff_admin_001",
+      "role": "admin_staff",
+      "label": "Кадры",
+      "first_name": "Алина",
+      "last_name": "Кадровая",
+      "show_on_login": true
+    },
+    {
+      "key": "education_admin",
+      "external_system_id": "education_admin_001",
+      "role": "admin_education",
+      "label": "Обучение",
+      "first_name": "Елена",
+      "last_name": "Методист",
+      "show_on_login": true
+    },
+    {
+      "key": "sales_admin",
+      "external_system_id": "sales_admin_001",
+      "role": "admin_sales",
+      "label": "Продажи",
+      "first_name": "Сергей",
+      "last_name": "Продажи",
+      "show_on_login": true
+    },
+    {
+      "key": "manager_north",
+      "external_system_id": "manager_north_001",
+      "role": "manager",
+      "label": "Менеджер",
+      "first_name": "Марина",
+      "last_name": "Северная",
+      "show_on_login": true
+    },
+    {
+      "key": "seller_anna",
+      "external_system_id": "seller_anna_001",
+      "role": "seller",
+      "label": "Продавец",
+      "first_name": "Анна",
+      "last_name": "Иванова",
+      "phone": "+7 900 100-10-01",
+      "position": "Продавец",
+      "is_active": true,
+      "show_on_login": true
+    },
+    {
+      "key": "seller_kirill",
+      "external_system_id": "seller_kirill_001",
+      "role": "seller",
+      "label": "Старший продавец",
+      "first_name": "Кирилл",
+      "last_name": "Захаров",
+      "phone": "+7 900 100-10-02",
+      "position": "Старший продавец",
+      "is_active": true,
+      "show_on_login": false
+    },
+    {
+      "key": "seller_olga",
+      "external_system_id": "seller_olga_001",
+      "role": "seller",
+      "label": "Продавец (заблокирован)",
+      "first_name": "Ольга",
+      "last_name": "Крылова",
+      "phone": "+7 900 100-10-03",
+      "position": "Стажер",
+      "is_active": false,
+      "show_on_login": false
+    }
+  ]
+}

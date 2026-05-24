@@ -1,4 +1,5 @@
 // React import not needed in React 18+
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   Calendar,
@@ -10,6 +11,9 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
+import { UserAPI } from "../../api/UserAPI";
+import { getErrorMessage } from "../../utils/errors";
+import { toast } from "sonner";
 
 const menuItems = [
   { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#2E7D32" },
@@ -18,10 +22,26 @@ const menuItems = [
 ];
 
 export default function ProfilePage() {
-  const { user, logout } = useApp();
+  const { user, logout, setUser } = useApp();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   if (!user) return null;
+
+  const handleAvatarChange = async (file: File) => {
+    if (!user) return;
+    setAvatarUploading(true);
+    try {
+      const result = await UserAPI.uploadOwnAvatar(file);
+      setUser({ ...user, avatar: result.avatarUrl });
+      toast.success("Аватар обновлён");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Не удалось загрузить аватар"));
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -31,17 +51,32 @@ export default function ProfilePage() {
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
         <div className="relative">
-          <Avatar name={user.name} size={80} />
+          <Avatar name={user.name} size={80} src={user.avatar} />
           <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={avatarUploading}
             className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: "#fff" }}
+            style={{ background: "#fff", opacity: avatarUploading ? 0.7 : 1 }}
+            aria-label="Загрузить аватар"
           >
             <Camera size={14} color="#2E7D32" />
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleAvatarChange(file);
+              e.target.value = "";
+            }}
+          />
         </div>
         <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginTop: 12 }}>{user.name}</h2>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, marginTop: 2 }}>{user.position}</p>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 1 }}>{user.store}</p>
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 1 }}>{user.storeName ?? user.store}</p>
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-3">
@@ -53,7 +88,7 @@ export default function ProfilePage() {
           {[
             { label: "ID сотрудника", value: user.externalSystemId },
             { label: "Телефон", value: user.phone },
-            { label: "Блок", value: user.block },
+            { label: "Блок", value: user.blockName ?? user.block },
           ].map((item, i) => (
             <div
               key={i}

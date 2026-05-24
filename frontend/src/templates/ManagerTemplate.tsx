@@ -1,11 +1,12 @@
 // React import not needed in React 18+
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { LayoutDashboard, FileText, Users, User } from "lucide-react";
+import { LayoutDashboard, FileText, Users, User, MapPin } from "lucide-react";
 
 const TABS = [
   { path: "/manager", label: "Дашборд", Icon: LayoutDashboard, exact: true },
   { path: "/manager/reports", label: "Отчёты", Icon: FileText },
   { path: "/manager/employees", label: "Сотрудники", Icon: Users },
+  { path: "/manager/locations", label: "Точки", Icon: MapPin },
   { path: "/manager/profile", label: "Профиль", Icon: User },
 ];
 
