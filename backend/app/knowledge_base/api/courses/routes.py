@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from typing import Annotated
 
-from app.auth.deps import AuthContext
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.auth.deps import AuthContext, require_auth
 from app.knowledge_base.domain import CompleteCourseRequest, UserContext
 from app.knowledge_base.dto import CompleteCourseResultDTO, CourseDTO, CoursesListDTO
 from app.knowledge_base.usecases.courses.complete_course_usecase import CompleteCourseUseCase
@@ -20,7 +22,7 @@ router = APIRouter(route_class=DishkaRoute)
 )
 async def get_course_by_id(
     course_id: int,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetCourseByIdUseCase],
 ) -> CourseDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
@@ -45,7 +47,7 @@ async def get_course_by_id(
     description="Возвращает список курсов в рамках прав пользователя",
 )
 async def list_courses(
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[ListCoursesUseCase],
 ) -> CoursesListDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
@@ -68,7 +70,7 @@ async def list_courses(
 )
 async def complete_course(
     request: CompleteCourseRequest,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[CompleteCourseUseCase],
 ) -> CompleteCourseResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))

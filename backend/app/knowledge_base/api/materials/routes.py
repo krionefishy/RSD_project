@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from typing import Annotated
 
-from app.auth.deps import AuthContext
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.auth.deps import AuthContext, require_auth
 from app.knowledge_base.domain import CompleteMaterialRequest, UserContext
 from app.knowledge_base.dto import (
     MaterialDTO,
@@ -25,7 +27,7 @@ router = APIRouter(route_class=DishkaRoute)
 async def get_material_by_id(
     material_id: int,
     course_id: int,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetMaterialByIdUseCase],
 ) -> MaterialDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
@@ -52,7 +54,7 @@ async def get_material_by_id(
 )
 async def complete_material(
     request: CompleteMaterialRequest,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[CompleteMaterialUseCase],
 ) -> CompleteMaterialResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))

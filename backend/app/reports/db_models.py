@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
+    CheckConstraint,
     Date,
     DateTime,
     ForeignKey,
@@ -30,6 +31,14 @@ class RatingSnapshotModel(Base):
         Index("ix_rating_snapshots_type_scope", "rating_type", "scope_type", "scope_id"),
         Index("ix_rating_snapshots_period", "period_type", "period_from", "period_to"),
         Index("ix_rating_snapshots_metric_code", "metric_code"),
+        CheckConstraint("rating_type IN ('sales', 'learning')", name="ck_rating_snapshots_rating_type_valid"),
+        CheckConstraint("scope_type IN ('network', 'block', 'location')", name="ck_rating_snapshots_scope_type_valid"),
+        CheckConstraint("period_type IN ('day', 'week', 'month', 'custom')", name="ck_rating_snapshots_period_type_valid"),
+        CheckConstraint("period_from <= period_to", name="ck_rating_snapshots_period_order"),
+        CheckConstraint(
+            "(scope_type = 'network' AND scope_id IS NULL) OR (scope_type <> 'network' AND scope_id IS NOT NULL)",
+            name="ck_rating_snapshots_scope_id_matches_scope_type",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -58,6 +67,7 @@ class RatingSnapshotItemModel(Base):
         UniqueConstraint("snapshot_id", "user_id", name="uq_rating_snapshot_items_snapshot_user"),
         Index("ix_rating_snapshot_items_snapshot_rank", "snapshot_id", "rank"),
         Index("ix_rating_snapshot_items_user_id", "user_id"),
+        CheckConstraint("rank > 0", name="ck_rating_snapshot_items_rank_positive"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -99,6 +109,21 @@ class ReportExportModel(Base):
         Index("ix_report_exports_scope", "scope_type", "scope_id"),
         Index("ix_report_exports_status", "status"),
         Index("ix_report_exports_period", "period_from", "period_to"),
+        CheckConstraint("scope_type IN ('network', 'block', 'location', 'user')", name="ck_report_exports_scope_type_valid"),
+        CheckConstraint("period_from <= period_to", name="ck_report_exports_period_order"),
+        CheckConstraint("format IN ('xlsx', 'csv', 'pdf')", name="ck_report_exports_format_valid"),
+        CheckConstraint(
+            "status IN ('pending', 'processing', 'completed', 'failed')",
+            name="ck_report_exports_status_valid",
+        ),
+        CheckConstraint(
+            "(scope_type = 'network' AND scope_id IS NULL) OR (scope_type <> 'network' AND scope_id IS NOT NULL)",
+            name="ck_report_exports_scope_id_matches_scope_type",
+        ),
+        CheckConstraint(
+            "(status = 'completed' AND s3_file_key IS NOT NULL) OR status <> 'completed'",
+            name="ck_report_exports_completed_has_file",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

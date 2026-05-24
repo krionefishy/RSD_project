@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from datetime import date, datetime, timezone
 
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy import Boolean, String, Date, DateTime, Index
+from sqlalchemy import Boolean, CheckConstraint, String, Date, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from storage.pg.database import Base
@@ -36,6 +36,14 @@ class UserModel(Base):
 
     __table_args__ = (
         Index("ix_users_external_system_id", "external_system_id"),
+        CheckConstraint(
+            "role IN ('super_admin', 'root_admin', 'admin_staff', 'admin_education', 'admin_sales', 'manager', 'seller')",
+            name="ck_users_role_valid",
+        ),
+        CheckConstraint(
+            "seller_role IS NULL OR seller_role IN ('seller', 'senior_seller', 'trainee')",
+            name="ck_users_seller_role_valid",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)

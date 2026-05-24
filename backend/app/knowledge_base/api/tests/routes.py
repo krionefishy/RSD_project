@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from typing import Annotated
 
-from app.auth.deps import AuthContext
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.auth.deps import AuthContext, require_auth
 from app.knowledge_base.domain import StartTestRequest, SubmitAnswerRequest, UserContext
 from app.knowledge_base.dto import (
     TestDTO,
@@ -27,7 +29,7 @@ router = APIRouter(route_class=DishkaRoute)
 async def get_test_by_id(
     test_id: int,
     course_id: int,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetTestByIdUseCase],
 ) -> TestDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
@@ -54,7 +56,7 @@ async def get_test_by_id(
 )
 async def start_test(
     request: StartTestRequest,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[StartTestUseCase],
 ) -> StartTestResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
@@ -80,7 +82,7 @@ async def start_test(
 )
 async def submit_answer(
     request: SubmitAnswerRequest,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[SubmitAnswerUseCase],
 ) -> SubmitAnswerResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))
@@ -107,7 +109,7 @@ async def submit_answer(
 async def get_test_result(
     test_id: int,
     course_id: int,
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetTestResultUseCase],
 ) -> TestResultDTO:
     ctx = UserContext(user_id=auth.user_id, role=UserRole(auth.role))

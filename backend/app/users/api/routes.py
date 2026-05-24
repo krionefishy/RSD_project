@@ -1,9 +1,10 @@
+from typing import Annotated
 from uuid import UUID
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.auth.deps import AuthContext
+from app.auth.deps import AuthContext, require_auth
 from app.users.dto import UserDTO, UsersListDTO
 from app.users.usecases.get_user_usecase import GetUserUseCase
 from app.users.usecases.list_users_usecase import ListUsersUseCase
@@ -11,9 +12,9 @@ from app.users.usecases.list_users_usecase import ListUsersUseCase
 router = APIRouter(route_class=DishkaRoute)
 
 
-@router.get("", response_model=UsersListDTO, summary="Список пользователей")
+@router.get("/", response_model=UsersListDTO, summary="Список пользователей")
 async def list_users(
-    _: FromDishka[AuthContext],
+    _: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[ListUsersUseCase],
     block_id: int | None = None,
     location_id: int | None = None,
@@ -30,7 +31,7 @@ async def list_users(
 
 @router.get("/me", response_model=UserDTO, summary="Текущий пользователь")
 async def get_current_user(
-    auth: FromDishka[AuthContext],
+    auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetUserUseCase],
 ) -> UserDTO:
     user = await usecase.execute(UUID(auth.user_id))
@@ -42,7 +43,7 @@ async def get_current_user(
 @router.get("/{user_id}", response_model=UserDTO, summary="Пользователь по id")
 async def get_user(
     user_id: UUID,
-    _: FromDishka[AuthContext],
+    _: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetUserUseCase],
 ) -> UserDTO:
     user = await usecase.execute(user_id)

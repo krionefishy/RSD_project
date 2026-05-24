@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     ForeignKey,
@@ -44,6 +45,8 @@ class EmployeeSalesPlanModel(Base):
         Index("ix_employee_sales_plans_user_period", "user_id", "date_from", "date_to"),
         Index("ix_employee_sales_plans_product_name", "product_name"),
         Index("ix_employee_sales_plans_is_active", "is_active"),
+        CheckConstraint("date_from <= date_to", name="ck_employee_sales_plans_period_order"),
+        CheckConstraint("target_quantity >= 0", name="ck_employee_sales_plans_target_quantity_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -80,6 +83,7 @@ class LocationSalesPlanModel(Base):
         Index("ix_location_sales_plans_location_plan_date", "location_id", "plan_date"),
         Index("ix_location_sales_plans_product_name", "product_name"),
         Index("ix_location_sales_plans_is_active", "is_active"),
+        CheckConstraint("target_quantity >= 0", name="ck_location_sales_plans_target_quantity_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -107,6 +111,12 @@ class EmployeePlanBonusRuleModel(Base):
 
     __table_args__ = (
         Index("ix_employee_plan_bonus_rules_plan_from", "employee_sales_plan_id", "from_quantity"),
+        CheckConstraint("from_quantity >= 0", name="ck_employee_plan_bonus_rules_from_non_negative"),
+        CheckConstraint(
+            "to_quantity IS NULL OR to_quantity > from_quantity",
+            name="ck_employee_plan_bonus_rules_to_gt_from",
+        ),
+        CheckConstraint("bonus_per_unit >= 0", name="ck_employee_plan_bonus_rules_bonus_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -131,6 +141,13 @@ class SalesImportBatchModel(Base):
     __table_args__ = (
         Index("ix_sales_import_batches_status", "status"),
         Index("ix_sales_import_batches_period", "period_from", "period_to"),
+        CheckConstraint("status IN ('uploaded', 'processed', 'failed')", name="ck_sales_import_batches_status_valid"),
+        CheckConstraint(
+            "period_from IS NULL OR period_to IS NULL OR period_from <= period_to",
+            name="ck_sales_import_batches_period_order",
+        ),
+        CheckConstraint("receipts_count >= 0", name="ck_sales_import_batches_receipts_count_non_negative"),
+        CheckConstraint("lines_count >= 0", name="ck_sales_import_batches_lines_count_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -158,6 +175,9 @@ class SalesReceiptModel(Base):
         UniqueConstraint("source_system", "external_receipt_id", name="uq_sales_receipts_source_external"),
         Index("ix_sales_receipts_location_sold_at", "location_id", "sold_at"),
         Index("ix_sales_receipts_user_sold_at", "user_id", "sold_at"),
+        CheckConstraint("operation_type IN ('sale', 'return', 'correction')", name="ck_sales_receipts_operation_type_valid"),
+        CheckConstraint("total_amount >= 0", name="ck_sales_receipts_total_amount_non_negative"),
+        CheckConstraint("total_discount >= 0", name="ck_sales_receipts_total_discount_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -205,6 +225,11 @@ class SalesFactModel(Base):
         Index("ix_sales_facts_user_sale_datetime", "user_id", "sale_datetime"),
         Index("ix_sales_facts_location_sale_datetime", "location_id", "sale_datetime"),
         Index("ix_sales_facts_product_name", "product_name"),
+        CheckConstraint("operation_type IN ('sale', 'return', 'correction')", name="ck_sales_facts_operation_type_valid"),
+        CheckConstraint("quantity >= 0", name="ck_sales_facts_quantity_non_negative"),
+        CheckConstraint("gross_amount >= 0", name="ck_sales_facts_gross_amount_non_negative"),
+        CheckConstraint("discount_amount >= 0", name="ck_sales_facts_discount_amount_non_negative"),
+        CheckConstraint("net_amount >= 0", name="ck_sales_facts_net_amount_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -249,6 +274,9 @@ class EmployeeDailySalesAggregateModel(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "sales_date", "product_name", name="uq_employee_daily_sales_aggregates_user_date_product"),
         Index("ix_employee_daily_sales_aggregates_sales_date", "sales_date"),
+        CheckConstraint("quantity >= 0", name="ck_employee_daily_sales_aggregates_quantity_non_negative"),
+        CheckConstraint("net_amount >= 0", name="ck_employee_daily_sales_aggregates_net_amount_non_negative"),
+        CheckConstraint("receipts_count >= 0", name="ck_employee_daily_sales_aggregates_receipts_count_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -277,6 +305,9 @@ class LocationDailySalesAggregateModel(Base):
     __table_args__ = (
         UniqueConstraint("location_id", "sales_date", "product_name", name="uq_location_daily_sales_aggregates_location_date_product"),
         Index("ix_location_daily_sales_aggregates_sales_date", "sales_date"),
+        CheckConstraint("quantity >= 0", name="ck_location_daily_sales_aggregates_quantity_non_negative"),
+        CheckConstraint("net_amount >= 0", name="ck_location_daily_sales_aggregates_net_amount_non_negative"),
+        CheckConstraint("receipts_count >= 0", name="ck_location_daily_sales_aggregates_receipts_count_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

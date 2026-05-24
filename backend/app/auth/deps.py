@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from fastapi import Request
+from fastapi import HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.errors import TokenInvalidError, TokenMissingError
 from app.auth.tokens import TokenError, decode_token
-from app.users.db_models import UserModel
+from app.users.db_models import UserModel, UserRole
 from shared.settings.config import Settings
 
 
@@ -45,3 +45,54 @@ async def build_auth_context(
         raise TokenInvalidError("User not found")
 
     return AuthContext(user_id=str(user.id), role=user.role)
+
+
+async def _get_auth_context(request: Request) -> AuthContext:
+    container = request.state.dishka_container
+    return await container.get(AuthContext)
+
+
+def require_any_role(auth: AuthContext, allowed_roles: set[str]) -> AuthContext:
+    if auth.role not in allowed_roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    return auth
+
+
+async def require_auth(request: Request) -> AuthContext:
+    return await _get_auth_context(request)
+
+
+async def require_staff_admin(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.ADMIN_STAFF.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )
+
+
+async def require_personnel_viewer(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.MANAGER.value,
+            UserRole.ADMIN_STAFF.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )
+
+
+async def require_software_admin(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )

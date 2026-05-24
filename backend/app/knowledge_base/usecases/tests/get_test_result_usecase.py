@@ -55,7 +55,7 @@ class GetTestResultUseCase:
 
         test = user_test.test
         score = user_test.score or 0
-        max_score = test.total_points
+        max_score = user_test.max_score or 0
         percentage = (score / max_score * 100) if max_score > 0 else 0
 
         return TestResultDTO(

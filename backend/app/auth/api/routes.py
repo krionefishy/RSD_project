@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Response, status
-from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from typing import Annotated
 
-from app.auth.deps import AuthContext
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from fastapi import APIRouter, Depends, Response, status
+
+from app.auth.deps import AuthContext, require_auth
 from app.auth.domain import LoginRequest, LogoutRequest, RefreshRequest
 from app.auth.dto import PublicKeyDTO, TokenPairDTO
 from app.auth.rsa_keys import RsaKeyProvider
@@ -54,7 +56,7 @@ async def refresh(
 )
 async def logout(
     request: LogoutRequest,
-    _: FromDishka[AuthContext],
+    _: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[LogoutUserUseCase],
 ) -> Response:
     await usecase.execute(request)

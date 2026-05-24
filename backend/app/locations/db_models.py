@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -108,6 +109,7 @@ class BlockMemberModel(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", name="uq_block_members_user"),
+        CheckConstraint("status IN ('primary', 'reserve')", name="ck_block_members_status_valid"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

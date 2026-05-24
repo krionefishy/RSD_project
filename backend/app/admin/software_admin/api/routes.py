@@ -1,10 +1,10 @@
+from typing import Annotated
 from uuid import UUID
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.auth.deps import AuthContext
-from app.users.db_models import UserRole
+from app.auth.deps import AuthContext, require_software_admin
 from app.users.domain import ManagerBlockAssignRequest, UserBlockRequest, UserCreate
 from app.locations.dto import BlockMemberDTO
 from app.users.dto import ManagerBlockDTO, UserCreateResultDTO, UserDTO
@@ -18,29 +18,21 @@ from app.admin.software_admin.usecases.unblock_user_usecase import UnblockUserUs
 router = APIRouter(route_class=DishkaRoute)
 
 
-def _require_software_admin(auth: AuthContext) -> None:
-	allowed = {UserRole.ROOT_ADMIN.value, UserRole.SUPER_ADMIN.value}
-	if auth.role not in allowed:
-		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-
-
 @router.post("/users", response_model=UserCreateResultDTO, summary="Создать пользователя")
 async def create_user(
 	request: UserCreate,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
 	usecase: FromDishka[CreateUserUseCase],
 ) -> UserCreateResultDTO:
-	_require_software_admin(auth)
 	return await usecase.execute(request)
 
 
 @router.patch("/users/{user_id}/block", response_model=UserDTO, summary="Блокировать пользователя")
 async def block_user(
 	user_id: UUID,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
 	usecase: FromDishka[BlockUserUseCase],
 ) -> UserDTO:
-	_require_software_admin(auth)
 	result = await usecase.execute(user_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -50,10 +42,9 @@ async def block_user(
 @router.patch("/users/{user_id}/unblock", response_model=UserDTO, summary="Разблокировать пользователя")
 async def unblock_user(
 	user_id: UUID,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
 	usecase: FromDishka[UnblockUserUseCase],
 ) -> UserDTO:
-	_require_software_admin(auth)
 	result = await usecase.execute(user_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -68,10 +59,9 @@ async def unblock_user(
 async def assign_manager_block(
 	user_id: UUID,
 	request: ManagerBlockAssignRequest,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
 	usecase: FromDishka[AssignManagerBlockUseCase],
 ) -> ManagerBlockDTO:
-	_require_software_admin(auth)
 	result = await usecase.execute(user_id, request.block_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Manager or block not found")
@@ -86,10 +76,9 @@ async def assign_manager_block(
 async def assign_user_block(
 	user_id: UUID,
 	request: UserBlockRequest,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
 	usecase: FromDishka[AssignUserBlockUseCase],
 ) -> BlockMemberDTO:
-	_require_software_admin(auth)
 	result = await usecase.execute(user_id, request.block_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User or block not found")
@@ -103,10 +92,9 @@ async def assign_user_block(
 )
 async def remove_user_block(
 	user_id: UUID,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_software_admin)],
 	usecase: FromDishka[RemoveUserBlockUseCase],
 ) -> None:
-	_require_software_admin(auth)
 	result = await usecase.execute(user_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

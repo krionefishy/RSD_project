@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -18,6 +19,11 @@ from storage.pg.database import Base
 
 class CourseModel(Base):
     __tablename__ = "courses"
+
+    __table_args__ = (
+        CheckConstraint("rating_points >= 0", name="ck_courses_rating_points_non_negative"),
+        CheckConstraint("mrp >= 0", name="ck_courses_mrp_non_negative"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -52,6 +58,7 @@ class CourseUserModel(Base):
         Index("ix_course_users_user_course", "user_id", "course_id", unique=True),
         Index("ix_course_users_course_user", "course_id", "user_id"),
         Index("ix_course_users_user_completed", "user_id", "is_course_completed_successfully"),
+        CheckConstraint("user_points_by_course >= 0", name="ck_course_users_points_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -192,6 +199,13 @@ class UserCourseTestModel(Base):
     __table_args__ = (
         Index("ix_user_course_tests_test_id", "test_id"),
         Index("ix_user_course_tests_user_course_test", "user_id", "course_id", "test_id", unique=True),
+        CheckConstraint("attempt_number > 0", name="ck_user_course_tests_attempt_positive"),
+        CheckConstraint("score IS NULL OR score >= 0", name="ck_user_course_tests_score_non_negative"),
+        CheckConstraint("max_score IS NULL OR max_score >= 0", name="ck_user_course_tests_max_score_non_negative"),
+        CheckConstraint(
+            "score IS NULL OR max_score IS NULL OR score <= max_score",
+            name="ck_user_course_tests_score_lte_max",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -301,6 +315,11 @@ class TestModel(Base):
     __table_args__ = (
         Index("ix_tests_is_final", "is_final"),
         Index("ix_tests_name_category", "name", "category"),
+        CheckConstraint(
+            "time_limit_minutes IS NULL OR time_limit_minutes > 0",
+            name="ck_tests_time_limit_positive",
+        ),
+        CheckConstraint("pass_score_percent BETWEEN 0 AND 100", name="ck_tests_pass_score_percent_valid"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -344,6 +363,11 @@ class TestModel(Base):
 class TestTaskModel(Base):
     __tablename__ = "test_tasks"
 
+    __table_args__ = (
+        CheckConstraint("points > 0", name="ck_test_tasks_points_positive"),
+        CheckConstraint("correct_variant >= 0", name="ck_test_tasks_correct_variant_non_negative"),
+    )
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
@@ -370,6 +394,7 @@ class TestTaskAssignmentModel(Base):
     __table_args__ = (
         Index("ix_test_task_assignments_test_order", "test_id", "order"),
         Index("ix_test_task_assignments_task_id", "task_id"),
+        CheckConstraint("\"order\" >= 0", name="ck_test_task_assignments_order_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

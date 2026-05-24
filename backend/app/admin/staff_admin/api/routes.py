@@ -1,10 +1,10 @@
+from typing import Annotated
 from uuid import UUID
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
-from app.auth.deps import AuthContext
-from app.users.db_models import UserRole
+from app.auth.deps import AuthContext, require_staff_admin
 from app.users.domain import UserAdminUpdate, UserLocationRequest
 from app.users.dto import AvatarUploadResultDTO, TempPasswordDTO, UserDTO, UserLocationDTO
 from app.admin.staff_admin.usecases.assign_user_location_usecase import AssignUserLocationUseCase
@@ -19,24 +19,13 @@ MAX_AVATAR_SIZE = 2 * 1024 * 1024
 ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png"}
 
 
-def _require_staff_admin(auth: AuthContext) -> None:
-	allowed = {
-		UserRole.ADMIN_STAFF.value,
-		UserRole.ROOT_ADMIN.value,
-		UserRole.SUPER_ADMIN.value,
-	}
-	if auth.role not in allowed:
-		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
-
-
 @router.patch("/users/{user_id}", response_model=UserDTO, summary="Обновить профиль сотрудника")
 async def update_user_profile(
 	user_id: UUID,
 	request: UserAdminUpdate,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_staff_admin)],
 	usecase: FromDishka[UpdateUserAdminUseCase],
 ) -> UserDTO:
-	_require_staff_admin(auth)
 	result = await usecase.execute(user_id, request)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -51,10 +40,9 @@ async def update_user_profile(
 async def upload_avatar(
 	user_id: UUID,
 	file: UploadFile,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_staff_admin)],
 	usecase: FromDishka[UploadAvatarUseCase],
 ) -> AvatarUploadResultDTO:
-	_require_staff_admin(auth)
 	if file.content_type not in ALLOWED_AVATAR_TYPES:
 		raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid file type")
 	payload = await file.read()
@@ -79,10 +67,9 @@ async def upload_avatar(
 )
 async def reset_password(
 	user_id: UUID,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_staff_admin)],
 	usecase: FromDishka[ResetPasswordUseCase],
 ) -> TempPasswordDTO:
-	_require_staff_admin(auth)
 	temp_password = await usecase.execute(user_id)
 	if temp_password is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -97,10 +84,9 @@ async def reset_password(
 async def assign_user_location(
 	user_id: UUID,
 	request: UserLocationRequest,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_staff_admin)],
 	usecase: FromDishka[AssignUserLocationUseCase],
 ) -> UserLocationDTO:
-	_require_staff_admin(auth)
 	result = await usecase.execute(user_id, request.location_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User or location not found")
@@ -114,10 +100,9 @@ async def assign_user_location(
 )
 async def remove_user_location(
 	user_id: UUID,
-	auth: FromDishka[AuthContext],
+	auth: Annotated[AuthContext, Depends(require_staff_admin)],
 	usecase: FromDishka[RemoveUserLocationUseCase],
 ) -> None:
-	_require_staff_admin(auth)
 	result = await usecase.execute(user_id)
 	if result is None:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

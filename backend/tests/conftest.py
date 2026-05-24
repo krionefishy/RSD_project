@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from datetime import datetime
+from collections.abc import AsyncIterator
 from typing import AsyncGenerator, Optional, Union
 from unittest.mock import patch
 from urllib.parse import urlparse, urlunparse
@@ -19,12 +20,21 @@ from app.api.router import api_router
 from app.application import Application
 from app.locations.db_models import BlockModel, LocationModel
 from app.users.db_models import UserModel
+from app.auth.password import PasswordService
+from app.auth.redis_store import RefreshTokenStore
+from app.auth.tokens import create_access_token
+from app.users.db_models import UserModel, UserRole
 from tests.builder import Builder
-from tests.mocks import FakeKafkaBroker, MockS3Client
+from tests.mocks import FakeKafkaBroker, MockPasswordService, MockRefreshTokenStore, MockS3Client
+
+_test_password_service = MockPasswordService()
+_test_refresh_store = MockRefreshTokenStore()
 from shared.di.providers.admin import AdminUsecaseProvider
 from shared.di.providers.app import AppProvider, SessionProvider
 from shared.di.providers.auth import AuthContextProvider, AuthProvider, AuthUsecaseProvider
 from shared.di.providers.knowledge_base import KnowledgeBaseUsecaseProvider
+from shared.di.providers.personnel import PersonnelUsecaseProvider
+from shared.di.providers.profile import ProfileUsecaseProvider
 from shared.di.providers.sellings import SellingsUsecaseProvider
 from shared.di.providers.users import UsersUsecaseProvider
 from shared.kafka_streams.producer import KafkaProducerWrapper
@@ -127,7 +137,11 @@ async def database(settings: Settings, db_engine) -> Database:
 
 
 @pytest.fixture
-async def application(database: Database, settings: Settings) -> Application:
+async def application(
+    database: Database,
+    settings: Settings,
+    db_session: AsyncSession,
+) -> Application:
     app = Application.__new__(Application)
     app.app = None
     app.db = database
@@ -148,17 +162,20 @@ async def application(database: Database, settings: Settings) -> Application:
 
     kafka_producer = KafkaProducerWrapper(None)
 
-    # Create S3Client without verification to avoid real connection
+    mock_s3_inner = MockS3Client()
     mock_s3_client = S3Client(
         endpoint_url="http://localhost:9000",
         key_id="test-key",
         secret_key="test-secret",
         bucket_name="test-bucket",
         region="us-east-1",
-        verify=False,  # Don't verify connection - use mock
+        verify=False,
     )
-    # Replace the internal boto3 client with our mock
-    mock_s3_client._client = MockS3Client()
+    mock_s3_client._client = type(
+        "Boto3PutObjectStub",
+        (),
+        {"put_object": mock_s3_inner.put_object_boto},
+    )()
 
     # Build providers list manually without AppProvider to avoid S3Client from_context conflict
     class TestAppProvider(Provider):
@@ -173,15 +190,39 @@ async def application(database: Database, settings: Settings) -> Application:
         def get_s3(self) -> Union[S3Client, None]:
             return mock_s3_client
 
+    from app.auth.rsa_keys import RsaKeyProvider
+
+    class TestAuthProvider(Provider):
+        scope = Scope.APP
+
+        rsa_keys = provide(RsaKeyProvider, scope=Scope.APP)
+
+        @provide
+        def password_service(self) -> PasswordService:
+            return _test_password_service
+
+        @provide
+        def refresh_store(self) -> RefreshTokenStore:
+            return _test_refresh_store
+
+    class TestSessionProvider(Provider):
+        scope = Scope.REQUEST
+
+        @provide
+        async def session(self) -> AsyncIterator[AsyncSession]:
+            yield db_session
+
     test_providers = [
         TestAppProvider(),
-        SessionProvider(),
+        TestSessionProvider(),
         FastapiProvider(),
-        AuthProvider(),
+        TestAuthProvider(),
         AuthContextProvider(),
         AuthUsecaseProvider(),
         KnowledgeBaseUsecaseProvider(),
-        # UsersUsecaseProvider(),  # Skip - has S3Client dependency issues
+        UsersUsecaseProvider(),
+        ProfileUsecaseProvider(),
+        PersonnelUsecaseProvider(),
         SellingsUsecaseProvider(),
         AdminUsecaseProvider(),
     ]
@@ -268,3 +309,18 @@ async def default_location(builder: Builder) -> LocationModel:
 @pytest.fixture
 async def default_block(builder: Builder) -> BlockModel:
     return await builder.default_block
+
+
+@pytest.fixture
+def bearer_headers(settings: Settings):
+    def _make(user: UserModel) -> dict[str, str]:
+        role = user.role.value if isinstance(user.role, UserRole) else user.role
+        token, _ = create_access_token(settings, user.id, role)
+        return {"Authorization": f"Bearer {token}"}
+
+    return _make
+
+
+@pytest.fixture
+def password_service() -> MockPasswordService:
+    return _test_password_service

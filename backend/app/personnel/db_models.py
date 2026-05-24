@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     ForeignKey,
@@ -60,6 +61,12 @@ class EmployeeCompensationModel(Base):
 
     __table_args__ = (
         UniqueConstraint("user_id", name="uq_employee_compensations_user"),
+        CheckConstraint("base_salary >= 0", name="ck_employee_compensations_base_salary_non_negative"),
+        CheckConstraint("hourly_rate >= 0", name="ck_employee_compensations_hourly_rate_non_negative"),
+        CheckConstraint(
+            "night_hourly_rate IS NULL OR night_hourly_rate >= 0",
+            name="ck_employee_compensations_night_rate_non_negative",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -87,6 +94,14 @@ class EmployeeCompensationModel(Base):
 class ActivityCodeModel(Base):
     __tablename__ = "activity_codes"
 
+    __table_args__ = (
+        CheckConstraint("entry_type IN ('work', 'absence', 'day_off')", name="ck_activity_codes_entry_type_valid"),
+        CheckConstraint(
+            "default_hours IS NULL OR default_hours >= 0",
+            name="ck_activity_codes_default_hours_non_negative",
+        ),
+    )
+
     code: Mapped[str] = mapped_column(String(10), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     entry_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -106,6 +121,12 @@ class TimesheetUploadModel(Base):
     __table_args__ = (
         Index("ix_timesheet_uploads_period", "period_from", "period_to"),
         Index("ix_timesheet_uploads_status", "status"),
+        CheckConstraint("period_from <= period_to", name="ck_timesheet_uploads_period_order"),
+        CheckConstraint(
+            "status IN ('uploaded', 'processed', 'failed')",
+            name="ck_timesheet_uploads_status_valid",
+        ),
+        CheckConstraint("rows_count >= 0", name="ck_timesheet_uploads_rows_count_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -131,6 +152,8 @@ class EmployeeTimeEntryModel(Base):
         Index("ix_employee_time_entries_work_date", "work_date"),
         Index("ix_employee_time_entries_user_work_date", "user_id", "work_date"),
         Index("ix_employee_time_entries_upload_id", "timesheet_upload_id"),
+        CheckConstraint("hours >= 0", name="ck_employee_time_entries_hours_non_negative"),
+        CheckConstraint("shift_type IN ('day', 'night', 'none')", name="ck_employee_time_entries_shift_type_valid"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -173,6 +196,16 @@ class EmployeeEarningEventModel(Base):
     __table_args__ = (
         Index("ix_employee_earning_events_user_datetime", "user_id", "event_datetime"),
         Index("ix_employee_earning_events_source", "source_type", "source_id"),
+        CheckConstraint("earning_type IN ('salary', 'hourly', 'bonus', 'manual')", name="ck_employee_earning_events_type_valid"),
+        CheckConstraint("amount >= 0", name="ck_employee_earning_events_amount_non_negative"),
+        CheckConstraint(
+            "source_type IS NULL OR source_type IN ('time_entry', 'sales_plan_bonus', 'manual')",
+            name="ck_employee_earning_events_source_type_valid",
+        ),
+        CheckConstraint(
+            "(source_type IS NULL AND source_id IS NULL) OR (source_type IS NOT NULL)",
+            name="ck_employee_earning_events_source_id_requires_type",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -198,6 +231,12 @@ class EmployeeEarningTotalModel(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "year", "month", name="uq_employee_earning_totals_user_year_month"),
         Index("ix_employee_earning_totals_year_month", "year", "month"),
+        CheckConstraint("year >= 2000", name="ck_employee_earning_totals_year_valid"),
+        CheckConstraint("month BETWEEN 1 AND 12", name="ck_employee_earning_totals_month_valid"),
+        CheckConstraint("salary_amount >= 0", name="ck_employee_earning_totals_salary_non_negative"),
+        CheckConstraint("hourly_amount >= 0", name="ck_employee_earning_totals_hourly_non_negative"),
+        CheckConstraint("bonus_amount >= 0", name="ck_employee_earning_totals_bonus_non_negative"),
+        CheckConstraint("total_amount >= 0", name="ck_employee_earning_totals_total_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

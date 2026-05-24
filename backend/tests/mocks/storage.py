@@ -18,6 +18,33 @@ class MockS3Client:
         cleaned = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in value)
         return cleaned or fallback
 
+    def _record_put_object(
+        self,
+        key: str,
+        body: bytes,
+        content_type: str = "application/octet-stream",
+        metadata: dict[str, str] | None = None,
+        bucket: str | None = None,
+    ) -> None:
+        self.operations.append({
+            "operation": "put_object",
+            "bucket": bucket or self._bucket,
+            "key": key,
+            "content_type": content_type,
+            "size": len(body),
+            "metadata": metadata or {},
+        })
+        self._uploads[key] = body
+
+    def put_object_boto(self, **kwargs: Any) -> None:
+        self._record_put_object(
+            key=kwargs.get("Key", ""),
+            body=kwargs.get("Body", b""),
+            content_type=kwargs.get("ContentType", "application/octet-stream"),
+            metadata=kwargs.get("Metadata"),
+            bucket=kwargs.get("Bucket"),
+        )
+
     async def put_object(
         self,
         key: str,
@@ -25,14 +52,7 @@ class MockS3Client:
         content_type: str = "application/octet-stream",
         metadata: dict[str, str] | None = None,
     ) -> None:
-        self.operations.append({
-            "operation": "put_object",
-            "key": key,
-            "content_type": content_type,
-            "size": len(body),
-            "metadata": metadata or {},
-        })
-        self._uploads[key] = body
+        self._record_put_object(key, body, content_type, metadata)
 
     async def upload_file(
         self,
