@@ -4,7 +4,7 @@ from uuid import UUID
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.auth.deps import AuthContext, require_auth, require_staff_admin
+from app.auth.deps import AuthContext, require_auth
 from app.users.dto import UserDTO, UsersListDTO
 from app.users.profile_scope import ensure_can_view_user_profile
 from app.users.usecases.get_user_usecase import GetUserUseCase
@@ -15,7 +15,7 @@ router = APIRouter(route_class=DishkaRoute)
 
 @router.get("/", response_model=UsersListDTO, summary="Список пользователей")
 async def list_users(
-    _: Annotated[AuthContext, Depends(require_staff_admin)],
+    _: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[ListUsersUseCase],
     block_id: int | None = None,
     location_id: int | None = None,

@@ -118,3 +118,15 @@ async def require_structure_viewer(request: Request) -> AuthContext:
 
 async def require_structure_admin(request: Request) -> AuthContext:
     return await require_software_admin(request)
+
+
+async def require_education_admin(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.ADMIN_EDUCATION.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )

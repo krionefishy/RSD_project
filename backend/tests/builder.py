@@ -714,6 +714,35 @@ class Builder:
         result = await self._session.execute(statement)
         return result.scalar_one()
 
+    async def build_material_attachment(
+        self,
+        *,
+        material: MaterialModel | None = None,
+        name: str = "attachment",
+        format: str = "pdf",
+        s3_file_key: str | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+    ) -> MaterialAttachmentModel:
+        material_obj = material or await self.build_material()
+        key = s3_file_key or MaterialAttachmentModel.generate_s3_key(
+            material_obj.id, name, format
+        )
+        statement = (
+            insert(MaterialAttachmentModel)
+            .values(
+                material_id=material_obj.id,
+                name=name,
+                format=format,
+                s3_file_key=key,
+                created_at=created_at or self._default_datetime,
+                updated_at=updated_at or self._default_datetime,
+            )
+            .returning(MaterialAttachmentModel)
+        )
+        result = await self._session.execute(statement)
+        return result.scalar_one()
+
     async def build_course_with_materials(
         self,
         *,

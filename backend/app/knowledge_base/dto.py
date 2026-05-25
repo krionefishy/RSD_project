@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -141,3 +142,40 @@ class CompleteCourseResultDTO(BaseModel):
     total_tests: int
     user_points: int
     required_points: int
+
+
+class MaterialsListDTO(BaseModel):
+    items: List[MaterialDTO]
+
+
+class MaterialAttachmentLinkDTO(BaseModel):
+    attachment_id: int
+    url: str
+
+
+class MaterialAttachmentLinksDTO(BaseModel):
+    items: List[MaterialAttachmentLinkDTO]
+
+
+class TestsListDTO(BaseModel):
+    items: List[TestDTO]
+
+
+class TestTaskAdminDTO(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    points: int
+    answer_variants: List[str]
+    correct_variant: int
+
+
+class CourseEnrollmentDTO(BaseModel):
+    user_id: UUID
+    name: str
+    progress: float
+    is_completed: bool
+
+
+class CourseEnrollmentsListDTO(BaseModel):
+    items: List[CourseEnrollmentDTO]

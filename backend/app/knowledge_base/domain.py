@@ -63,3 +63,16 @@ class CompleteCourseRequest(BaseModel):
         if self.course_id <= 0:
             raise ValueError("course_id должен быть положительным")
         return self
+
+
+class ResolveMaterialAttachmentsRequest(BaseModel):
+    course_id: int
+    attachment_ids: list[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_request(self):
+        if self.course_id <= 0:
+            raise ValueError("course_id должен быть положительным")
+        if any(attachment_id <= 0 for attachment_id in self.attachment_ids):
+            raise ValueError("attachment_ids должен содержать только положительные id")
+        return self

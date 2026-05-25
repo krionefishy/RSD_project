@@ -110,6 +110,13 @@ class MockS3Client:
             },
         }
 
+    async def delete_object(self, key: str) -> None:
+        self.operations.append({
+            "operation": "delete_object",
+            "key": key,
+        })
+        self._uploads.pop(key, None)
+
     async def delete_file(self, key: str) -> bool:
         self.operations.append({
             "operation": "delete",

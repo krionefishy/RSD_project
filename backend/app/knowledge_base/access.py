@@ -10,3 +10,11 @@ KB_CONTENT_VIEW_ALL_ROLES = frozenset(
 )
 
 KB_PROGRESSION_ROLES = frozenset({UserRole.SELLER.value})
+
+KB_ADMIN_ROLES = frozenset(
+    {
+        UserRole.SUPER_ADMIN.value,
+        UserRole.ROOT_ADMIN.value,
+        UserRole.ADMIN_EDUCATION.value,
+    }
+)

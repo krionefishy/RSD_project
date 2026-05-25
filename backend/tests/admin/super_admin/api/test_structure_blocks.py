@@ -11,6 +11,7 @@ class TestSuperAdminBlocksAPI:
         self,
         client: AsyncClient,
         builder: Builder,
+        bearer_headers,
     ) -> None:
         super_admin = await builder.build_user(
             external_system_id="super_admin_blocks",
@@ -22,7 +23,7 @@ class TestSuperAdminBlocksAPI:
 
         response = await client.get(
             "/api/v1/admin/super/blocks",
-            headers=builder.auth_headers(super_admin),
+            headers=bearer_headers(super_admin),
         )
 
         assert response.status_code == 200
@@ -36,6 +37,7 @@ class TestSuperAdminBlocksAPI:
         self,
         client: AsyncClient,
         builder: Builder,
+        bearer_headers,
     ) -> None:
         super_admin = await builder.build_user(
             external_system_id="super_admin_assign",
@@ -48,7 +50,7 @@ class TestSuperAdminBlocksAPI:
 
         response = await client.post(
             f"/api/v1/admin/super/blocks/{block_b.id}/locations/{location.id}",
-            headers=builder.auth_headers(super_admin),
+            headers=bearer_headers(super_admin),
         )
 
         assert response.status_code == 409

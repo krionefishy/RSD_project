@@ -1,3 +1,1 @@
-from fastapi import APIRouter
-
-router = APIRouter()
+from app.admin.educ_admin.api import router
