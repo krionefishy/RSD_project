@@ -3,7 +3,12 @@ import { ChevronLeft, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useStructureBasePath } from "../../hooks/useStructureBasePath";
 import { LocationsAPI } from "../../api/LocationsAPI";
+import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
+import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
+import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
+import type { TimesheetEntry } from "../../types/profile";
+import { monthPeriodQuery } from "../../utils/timesheet";
 import type { LocationDetail } from "../../types/location";
 import { useApp } from "../../context/AppContext";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
@@ -43,6 +48,12 @@ export default function LocationDetailPage() {
   const [form, setForm] = useState({ code: "", name: "", address: "", city: "" });
   const [saving, setSaving] = useState(false);
   const [assignUserId, setAssignUserId] = useState("");
+  const today = new Date();
+  const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [timesheetEntries, setTimesheetEntries] = useState<TimesheetEntry[]>([]);
+  const [timesheetTotalHours, setTimesheetTotalHours] = useState("0");
+  const [timesheetLoading, setTimesheetLoading] = useState(false);
+  const [timesheetError, setTimesheetError] = useState<string | null>(null);
 
   const loadLocation = useCallback(async (signal?: AbortSignal) => {
     if (!locationId) return;
@@ -69,6 +80,28 @@ export default function LocationDetailPage() {
     void loadLocation(controller.signal);
     return () => controller.abort();
   }, [loadLocation]);
+
+  useEffect(() => {
+    if (!locationId) return;
+    const controller = new AbortController();
+    setTimesheetLoading(true);
+    setTimesheetError(null);
+    PersonnelAPI.getLocationTimesheet(Number(locationId), monthPeriodQuery(monthDate), controller.signal)
+      .then((data) => {
+        setTimesheetEntries(data.items);
+        setTimesheetTotalHours(data.totalHours);
+      })
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель точки"));
+        setTimesheetEntries([]);
+        setTimesheetTotalHours("0");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTimesheetLoading(false);
+      });
+    return () => controller.abort();
+  }, [locationId, monthDate]);
 
   const handleSave = async () => {
     if (!locationId) return;
@@ -200,6 +233,21 @@ export default function LocationDetailPage() {
           <p style={{ fontSize: 13, color: "#64748B" }}>{location.address}</p>
           {location.city && <p style={{ fontSize: 13, color: "#64748B" }}>{location.city}</p>}
           <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>{location.employees} сотрудников на точке</p>
+        </div>
+
+        <div className="rounded-2xl p-4" style={{ background: "#fff" }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>Табель точки</p>
+          <div className="mb-3">
+            <TimesheetMonthFilter monthDate={monthDate} onChange={setMonthDate} />
+          </div>
+          <TimesheetEntriesList
+            entries={timesheetEntries}
+            totalHours={timesheetTotalHours}
+            loading={timesheetLoading}
+            error={timesheetError}
+            showEmployee
+            emptyMessage="Нет записей за период или нет доступа"
+          />
         </div>
 
         <div className="rounded-2xl overflow-hidden" style={{ background: "#fff" }}>

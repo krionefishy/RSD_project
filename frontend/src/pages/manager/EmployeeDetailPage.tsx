@@ -4,9 +4,14 @@ import { ChevronLeft } from "lucide-react";
 import { Avatar } from "../../components/Avatar";
 import { ProgressCircle } from "../../components/ProgressCircle";
 import { UserAPI } from "../../api/UserAPI";
+import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { AppUser } from "../../types/user";
 import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
 import { KnowledgeAPI, type Course } from "../../api/KnowledgeAPI";
+import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
+import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
+import type { TimesheetEntry } from "../../types/profile";
+import { monthPeriodQuery } from "../../utils/timesheet";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
@@ -19,6 +24,12 @@ export default function EmployeeDetailPage() {
   const [stats, setStats] = useState<SellingStats | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const today = new Date();
+  const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [timesheetEntries, setTimesheetEntries] = useState<TimesheetEntry[]>([]);
+  const [timesheetTotalHours, setTimesheetTotalHours] = useState("0");
+  const [timesheetLoading, setTimesheetLoading] = useState(false);
+  const [timesheetError, setTimesheetError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,6 +59,28 @@ export default function EmployeeDetailPage() {
     return () => controller.abort();
   }, [employeeId]);
 
+  useEffect(() => {
+    if (!employeeId || tab !== "schedule") return;
+    const controller = new AbortController();
+    setTimesheetLoading(true);
+    setTimesheetError(null);
+    PersonnelAPI.getEmployeeTimesheet(employeeId, monthPeriodQuery(monthDate), controller.signal)
+      .then((data) => {
+        setTimesheetEntries(data.items);
+        setTimesheetTotalHours(data.totalHours);
+      })
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель"));
+        setTimesheetEntries([]);
+        setTimesheetTotalHours("0");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTimesheetLoading(false);
+      });
+    return () => controller.abort();
+  }, [employeeId, tab, monthDate]);
+
   if (!employeeId) return null;
 
   const salesPercent = stats?.percent ?? 0;
@@ -66,18 +99,6 @@ export default function EmployeeDetailPage() {
     { day: "Сб", fact: 0 },
     { day: "Вс", fact: 0 },
   ];
-
-  const scheduleDays = Array.from({ length: 31 }, (_, i) => {
-    const day = i + 1;
-    const date = new Date(2026, 4, day);
-    const weekend = date.getDay() === 0 || date.getDay() === 6;
-    return {
-      day,
-      hours: weekend ? 0 : day % 9 === 0 ? 0 : 8,
-      type: weekend ? "Выходной" : day % 9 === 0 ? "Отпуск" : "Смена",
-    };
-  });
-  const scheduleOffset = (new Date(2026, 4, 1).getDay() + 6) % 7;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -194,24 +215,17 @@ export default function EmployeeDetailPage() {
 
         {tab === "schedule" && (
           <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Май 2026</p>
-            <div className="grid grid-cols-7 mb-2">
-              {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => (
-                <span key={day} style={{ color: "#94A3B8", fontSize: 11, textAlign: "center" }}>{day}</span>
-              ))}
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Табель сотрудника</p>
+            <div className="mb-3">
+              <TimesheetMonthFilter monthDate={monthDate} onChange={setMonthDate} />
             </div>
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: scheduleOffset }).map((_, i) => <div key={`empty-${i}`} />)}
-              {scheduleDays.map((item) => {
-                const color = item.type === "Смена" ? "#2E7D32" : item.type === "Отпуск" ? "#22C55E" : "#94A3B8";
-                return (
-                  <div key={item.day} className="h-12 rounded-lg flex flex-col items-center justify-center" style={{ background: item.type === "Смена" ? "#E8F5E9" : "#F8FAFC" }}>
-                    <span style={{ color: "#1E293B", fontSize: 12, fontWeight: 600 }}>{item.day}</span>
-                    <span style={{ color, fontSize: 10 }}>{item.hours ? `${item.hours} ч` : item.type}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <TimesheetEntriesList
+              entries={timesheetEntries}
+              totalHours={timesheetTotalHours}
+              loading={timesheetLoading}
+              error={timesheetError}
+              emptyMessage="Нет записей за период или нет доступа"
+            />
           </div>
         )}
       </div>

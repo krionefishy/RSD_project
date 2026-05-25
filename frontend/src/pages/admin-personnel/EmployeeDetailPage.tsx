@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, Camera } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { Avatar } from "../../components/Avatar";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
-import type { BlockMemberStatus, EmployeeCompensation, OwnTimesheetEntry, UserProfile } from "../../types/profile";
+import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
+import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
+import type { BlockMemberStatus, EmployeeCompensation, TimesheetEntry, UserProfile } from "../../types/profile";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { mapTimesheetErrorMessage, monthPeriodQuery } from "../../utils/timesheet";
 import { toast } from "sonner";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
 
@@ -25,11 +28,17 @@ export default function EmployeeDetailPage() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [compensation, setCompensation] = useState<EmployeeCompensation | null>(null);
-  const [timesheetEntries, setTimesheetEntries] = useState<OwnTimesheetEntry[]>([]);
+  const today = new Date();
+  const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [timesheetEntries, setTimesheetEntries] = useState<TimesheetEntry[]>([]);
+  const [timesheetTotalHours, setTimesheetTotalHours] = useState("0");
+  const [timesheetLoading, setTimesheetLoading] = useState(false);
+  const [timesheetError, setTimesheetError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingCompensation, setSavingCompensation] = useState(false);
   const [savingEntryId, setSavingEntryId] = useState<number | null>(null);
+  const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
 
   const [profileForm, setProfileForm] = useState({
     firstName: "",
@@ -59,18 +68,12 @@ export default function EmployeeDetailPage() {
 
     async function load() {
       try {
-        const [profileData, compensationData, timesheetData] = await Promise.all([
+        const [profileData, compensationData] = await Promise.all([
           UserAPI.getUserProfile(userId!, controller.signal),
           PersonnelAPI.getEmployeeCompensation(userId!, controller.signal),
-          PersonnelAPI.getEmployeeTimesheet(
-            userId!,
-            { periodFrom: "2026-04-01", periodTo: "2026-04-30" },
-            controller.signal,
-          ).catch(() => null),
         ]);
         setProfile(profileData);
         setCompensation(compensationData);
-        setTimesheetEntries(timesheetData?.items ?? []);
         setProfileForm({
           firstName: profileData.firstName ?? "",
           middleName: profileData.middleName ?? "",
@@ -101,6 +104,48 @@ export default function EmployeeDetailPage() {
     return () => controller.abort();
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId) return;
+    const controller = new AbortController();
+    const period = monthPeriodQuery(monthDate);
+    setTimesheetLoading(true);
+    setTimesheetError(null);
+    PersonnelAPI.getEmployeeTimesheet(userId, period, controller.signal)
+      .then((data) => {
+        setTimesheetEntries(data.items);
+        setTimesheetTotalHours(data.totalHours);
+      })
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель"));
+        setTimesheetEntries([]);
+        setTimesheetTotalHours("0");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTimesheetLoading(false);
+      });
+    return () => controller.abort();
+  }, [userId, monthDate]);
+
+  const reloadTimesheet = useCallback(async () => {
+    if (!userId) return;
+    const period = monthPeriodQuery(monthDate);
+    setTimesheetLoading(true);
+    setTimesheetError(null);
+    try {
+      const data = await PersonnelAPI.getEmployeeTimesheet(userId, period);
+      setTimesheetEntries(data.items);
+      setTimesheetTotalHours(data.totalHours);
+    } catch (error) {
+      if (isAbortError(error)) return;
+      setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель"));
+      setTimesheetEntries([]);
+      setTimesheetTotalHours("0");
+    } finally {
+      setTimesheetLoading(false);
+    }
+  }, [userId, monthDate]);
+
   const handleSaveProfile = async () => {
     if (!userId) return;
     const blockChanged = profile?.block?.id ? String(profile.block.id) !== profileForm.blockId : Boolean(profileForm.blockId);
@@ -127,21 +172,36 @@ export default function EmployeeDetailPage() {
     }
   };
 
-  const handleSaveTimeEntry = async (entry: OwnTimesheetEntry) => {
+  const handleSaveTimeEntry = async (entry: TimesheetEntry) => {
     setSavingEntryId(entry.id);
     try {
-      const updated = await PersonnelAPI.updateTimeEntry(entry.id, {
+      const updated = await AdminStaffAPI.updateTimeEntry(entry.id, {
         activityCode: entry.activityCode,
         hours: entry.hours,
         shiftType: entry.shiftType,
         comment: entry.comment,
       });
-      setTimesheetEntries((items) => items.map((item) => (item.id === entry.id ? updated : item)));
+      setTimesheetEntries((items) => items.map((item) => (item.id === entry.id ? { ...item, ...updated } : item)));
+      await reloadTimesheet();
       toast.success("Запись табеля сохранена");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Не удалось сохранить запись табеля"));
+      toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось сохранить запись табеля")));
     } finally {
       setSavingEntryId(null);
+    }
+  };
+
+  const handleDeleteTimeEntry = async (entryId: number) => {
+    setDeletingEntryId(entryId);
+    try {
+      await AdminStaffAPI.deleteTimeEntry(entryId);
+      setTimesheetEntries((items) => items.filter((item) => item.id !== entryId));
+      await reloadTimesheet();
+      toast.success("Запись удалена");
+    } catch (error) {
+      toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось удалить запись")));
+    } finally {
+      setDeletingEntryId(null);
     }
   };
 
@@ -322,63 +382,25 @@ export default function EmployeeDetailPage() {
               Табель сотрудника
             </h3>
             <p style={{ color: "#64748B", fontSize: 12, marginBottom: 12 }}>
-              Редактируются часы, тип смены и комментарий. В файле табеля время начала и конца смены не хранится.
+              Код «Я» — дневная смена, «Н» — ночная, отсутствия и выходные — без смены.
             </p>
-            <div className="flex flex-col gap-2">
-              {timesheetEntries.length === 0 ? (
-                <div className="rounded-xl px-3 py-4 text-center" style={{ background: "#F8FAFC", color: "#64748B", fontSize: 13 }}>
-                  Нет записей за выбранный период
-                </div>
-              ) : (
-                timesheetEntries.map((entry) => (
-                  <div key={entry.id} className="rounded-xl p-3" style={{ background: "#F8FAFC" }}>
-                    <div className="grid grid-cols-[1fr_88px] gap-2 mb-2">
-                      <input
-                        type="date"
-                        value={entry.workDate}
-                        readOnly
-                        className="h-9 px-3 rounded-lg border bg-white"
-                        style={inputStyle}
-                      />
-                      <input
-                        value={entry.hours}
-                        onChange={(e) =>
-                          setTimesheetEntries((items) =>
-                            items.map((item) => (item.id === entry.id ? { ...item, hours: e.target.value } : item)),
-                          )
-                        }
-                        className="h-9 px-3 rounded-lg border bg-white"
-                        style={inputStyle}
-                        inputMode="decimal"
-                        aria-label="Часы"
-                      />
-                    </div>
-                    <div className="grid grid-cols-[1fr_96px] gap-2">
-                      <input
-                        value={entry.comment ?? ""}
-                        onChange={(e) =>
-                          setTimesheetEntries((items) =>
-                            items.map((item) => (item.id === entry.id ? { ...item, comment: e.target.value } : item)),
-                          )
-                        }
-                        placeholder={entry.activityName}
-                        className="h-9 px-3 rounded-lg border bg-white"
-                        style={inputStyle}
-                      />
-                      <button
-                        type="button"
-                        disabled={savingEntryId === entry.id}
-                        onClick={() => void handleSaveTimeEntry(entry)}
-                        className="h-9 rounded-lg"
-                        style={{ background: "#2E7D32", color: "#fff", fontSize: 13, fontWeight: 600, opacity: savingEntryId === entry.id ? 0.7 : 1 }}
-                      >
-                        {savingEntryId === entry.id ? "..." : "Сохранить"}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="mb-3">
+              <TimesheetMonthFilter monthDate={monthDate} onChange={setMonthDate} />
             </div>
+            <TimesheetEntriesList
+              entries={timesheetEntries}
+              totalHours={timesheetTotalHours}
+              loading={timesheetLoading}
+              error={timesheetError}
+              editable
+              savingEntryId={savingEntryId}
+              deletingEntryId={deletingEntryId}
+              onChangeEntry={(entry) =>
+                setTimesheetEntries((items) => items.map((item) => (item.id === entry.id ? entry : item)))
+              }
+              onSaveEntry={(entry) => void handleSaveTimeEntry(entry)}
+              onDeleteEntry={(id) => void handleDeleteTimeEntry(id)}
+            />
           </section>
 
           <section className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>

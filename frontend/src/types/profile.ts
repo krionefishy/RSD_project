@@ -81,19 +81,52 @@ export interface OwnTimesheetQuery {
   locationId?: number;
 }
 
-export interface OwnTimesheetEntry {
+export type ShiftType = "day" | "night" | "none";
+
+export interface TimesheetEntry {
   id: number;
   workDate: string;
   activityCode: string;
   activityName: string;
   hours: string;
-  shiftType: string;
+  shiftType: ShiftType;
   comment?: string;
+  userId?: string;
+  userName?: string;
+  locationName?: string;
 }
 
+export type OwnTimesheetEntry = TimesheetEntry;
+
 export interface OwnTimesheet {
-  items: OwnTimesheetEntry[];
+  items: TimesheetEntry[];
   periodFrom: string;
   periodTo: string;
   totalHours: string;
+}
+
+export interface LocationTimesheet {
+  location: LocationBrief;
+  items: TimesheetEntry[];
+  totalHours: string;
+}
+
+export interface TimesheetImportError {
+  row?: number | null;
+  column?: string | null;
+  message: string;
+}
+
+export interface TimesheetUploadResult {
+  uploadId: number;
+  status: string;
+  rowsCount: number;
+  errors: TimesheetImportError[];
+}
+
+export interface UpdateTimeEntryData {
+  activityCode?: string;
+  hours?: string;
+  shiftType?: ShiftType;
+  comment?: string;
 }

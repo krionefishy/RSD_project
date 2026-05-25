@@ -3,7 +3,11 @@ import type {
   CreateEmployeeProfileData,
   CreateEmployeeProfileResult,
   EmployeeCompensation,
+  OwnTimesheetQuery,
+  TimesheetEntry,
+  TimesheetUploadResult,
   UpdateEmployeeProfileData,
+  UpdateTimeEntryData,
   UpsertEmployeeCompensationData,
   UserProfile,
 } from "../types/profile";
@@ -58,6 +62,30 @@ interface EmployeeCompensationDTO {
 
 interface ResetPasswordDTO {
   temp_password: string;
+}
+
+interface EmployeeTimeEntryDTO {
+  id: number;
+  user_id: string;
+  work_date: string;
+  activity_code: string;
+  activity_name: string;
+  hours: string;
+  shift_type: string;
+  comment?: string | null;
+}
+
+interface TimesheetImportErrorDTO {
+  row?: number | null;
+  column?: string | null;
+  message: string;
+}
+
+interface TimesheetUploadResultDTO {
+  upload_id: number;
+  status: string;
+  rows_count: number;
+  errors: TimesheetImportErrorDTO[];
 }
 
 function mapProfile(dto: UserProfileDTO): UserProfile {
@@ -206,6 +234,61 @@ class AdminStaffAPIImpl {
       },
     );
     return mapCompensation(response);
+  }
+
+  async uploadTimesheetFile(
+    file: File,
+    query: OwnTimesheetQuery,
+    locationId?: number,
+  ): Promise<TimesheetUploadResult> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await apiClient.post<TimesheetUploadResultDTO>(
+      "/admin/staff/timesheets/upload",
+      formData,
+      {
+        query: {
+          period_from: query.periodFrom,
+          period_to: query.periodTo,
+          location_id: locationId,
+        },
+      },
+    );
+    return {
+      uploadId: response.upload_id,
+      status: response.status,
+      rowsCount: response.rows_count,
+      errors: response.errors.map((error) => ({
+        row: error.row,
+        column: error.column,
+        message: error.message,
+      })),
+    };
+  }
+
+  async updateTimeEntry(entryId: number, data: UpdateTimeEntryData): Promise<TimesheetEntry> {
+    const response = await apiClient.patch<EmployeeTimeEntryDTO>(
+      `/admin/staff/timesheets/entries/${entryId}`,
+      {
+        activity_code: data.activityCode,
+        hours: data.hours,
+        shift_type: data.shiftType,
+        comment: data.comment,
+      },
+    );
+    return {
+      id: response.id,
+      workDate: response.work_date,
+      activityCode: response.activity_code,
+      activityName: response.activity_name,
+      hours: response.hours,
+      shiftType: response.shift_type as TimesheetEntry["shiftType"],
+      comment: response.comment ?? undefined,
+    };
+  }
+
+  async deleteTimeEntry(entryId: number): Promise<void> {
+    await apiClient.delete(`/admin/staff/timesheets/entries/${entryId}`);
   }
 }
 

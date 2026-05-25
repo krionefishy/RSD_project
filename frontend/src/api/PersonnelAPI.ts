@@ -1,4 +1,10 @@
-import type { EmployeeCompensation, OwnTimesheet, OwnTimesheetEntry } from "../types/profile";
+import type {
+  EmployeeCompensation,
+  LocationTimesheet,
+  OwnTimesheet,
+  OwnTimesheetQuery,
+  TimesheetEntry,
+} from "../types/profile";
 import { apiClient } from "./APIClient";
 
 interface EmployeeCompensationDTO {
@@ -13,6 +19,8 @@ interface EmployeeCompensationDTO {
 interface UserBriefDTO {
   id: string;
   name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 }
 
 interface LocationBriefDTO {
@@ -38,6 +46,33 @@ interface EmployeeTimesheetDTO {
   total_hours: string;
 }
 
+interface LocationTimesheetDTO {
+  location: LocationBriefDTO;
+  items: EmployeeTimeEntryDTO[];
+  total_hours: string;
+}
+
+function userDisplayName(user: UserBriefDTO): string {
+  if (user.name?.trim()) return user.name.trim();
+  const parts = [user.last_name, user.first_name].filter(Boolean);
+  return parts.join(" ").trim() || user.id;
+}
+
+function mapTimeEntry(dto: EmployeeTimeEntryDTO): TimesheetEntry {
+  return {
+    id: dto.id,
+    workDate: dto.work_date,
+    activityCode: dto.activity_code,
+    activityName: dto.activity_name,
+    hours: dto.hours,
+    shiftType: dto.shift_type as TimesheetEntry["shiftType"],
+    comment: dto.comment ?? undefined,
+    userId: dto.user_id,
+    userName: userDisplayName(dto.user),
+    locationName: dto.location?.name,
+  };
+}
+
 function mapCompensation(dto: EmployeeCompensationDTO): EmployeeCompensation {
   return {
     userId: dto.user_id,
@@ -46,18 +81,6 @@ function mapCompensation(dto: EmployeeCompensationDTO): EmployeeCompensation {
     nightHourlyRate: dto.night_hourly_rate ?? undefined,
     effectiveNightHourlyRate: dto.effective_night_hourly_rate,
     updatedAt: dto.updated_at,
-  };
-}
-
-function mapTimeEntry(dto: EmployeeTimeEntryDTO): OwnTimesheetEntry {
-  return {
-    id: dto.id,
-    workDate: dto.work_date,
-    activityCode: dto.activity_code,
-    activityName: dto.activity_name,
-    hours: dto.hours,
-    shiftType: dto.shift_type,
-    comment: dto.comment ?? undefined,
   };
 }
 
@@ -71,9 +94,28 @@ class PersonnelAPIImpl {
     return mapCompensation(response);
   }
 
+  async getLocationTimesheet(
+    locationId: number,
+    query: OwnTimesheetQuery,
+    signal?: AbortSignal,
+  ): Promise<LocationTimesheet> {
+    const response = await apiClient.get<LocationTimesheetDTO>(`/personnel/locations/${locationId}/timesheet`, {
+      query: {
+        period_from: query.periodFrom,
+        period_to: query.periodTo,
+      },
+      signal,
+    });
+    return {
+      location: { id: response.location.id, name: response.location.name },
+      items: response.items.map(mapTimeEntry),
+      totalHours: response.total_hours,
+    };
+  }
+
   async getEmployeeTimesheet(
     userId: string,
-    query: { periodFrom: string; periodTo: string; locationId?: number },
+    query: OwnTimesheetQuery,
     signal?: AbortSignal,
   ): Promise<OwnTimesheet> {
     const response = await apiClient.get<EmployeeTimesheetDTO>(`/personnel/users/${userId}/timesheet`, {
@@ -90,22 +132,6 @@ class PersonnelAPIImpl {
       periodTo: query.periodTo,
       totalHours: response.total_hours,
     };
-  }
-
-  async updateTimeEntry(
-    entryId: number,
-    data: { activityCode?: string; hours?: string; shiftType?: string; comment?: string },
-  ): Promise<OwnTimesheetEntry> {
-    const response = await apiClient.patch<EmployeeTimeEntryDTO>(
-      `/admin/staff/timesheets/entries/${entryId}`,
-      {
-        activity_code: data.activityCode,
-        hours: data.hours,
-        shift_type: data.shiftType,
-        comment: data.comment,
-      },
-    );
-    return mapTimeEntry(response);
   }
 }
 

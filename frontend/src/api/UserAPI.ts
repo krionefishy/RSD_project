@@ -3,6 +3,7 @@ import type {
   EmployeeCompensation,
   OwnTimesheet,
   OwnTimesheetQuery,
+  ShiftType,
   UserProfile,
 } from "../types/profile";
 import { toFrontendRole, toBackendRole } from "../utils/roleMap";
@@ -310,7 +311,7 @@ class UserAPIImpl {
         activityCode: item.activity_code,
         activityName: item.activity_name,
         hours: item.hours,
-        shiftType: item.shift_type,
+        shiftType: item.shift_type as ShiftType,
         comment: item.comment ?? undefined,
       })),
       periodFrom: response.period_from,
