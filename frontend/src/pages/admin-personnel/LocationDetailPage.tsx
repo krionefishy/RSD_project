@@ -120,6 +120,12 @@ export default function LocationDetailPage() {
         return;
       }
       if (confirmKind === "removeMember" && confirmUserId) {
+        const profile = await UserAPI.getUserProfile(confirmUserId);
+        if (profile.location?.id !== Number(locationId)) {
+          toast.error("Сотрудник уже привязан к другой точке");
+          await loadLocation();
+          return;
+        }
         await LocationsAPI.removeUserFromLocation(confirmUserId);
         toast.success("Сотрудник снят с точки");
       }

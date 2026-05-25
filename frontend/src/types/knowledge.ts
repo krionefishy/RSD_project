@@ -47,6 +47,11 @@ export interface MaterialAttachment {
   format: string;
 }
 
+export interface MaterialAttachmentLink {
+  attachmentId: number;
+  url: string;
+}
+
 export interface Material {
   id: number;
   name: string;
@@ -64,6 +69,17 @@ export interface TestTask {
   description: string | null;
   points: number;
   answerVariants: string[];
+}
+
+export interface TestTaskAdmin extends TestTask {
+  correctVariant: number;
+}
+
+export interface CourseEnrollment {
+  userId: string;
+  name: string;
+  progress: number;
+  isCompleted: boolean;
 }
 
 export interface Test {

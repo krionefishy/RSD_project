@@ -7,11 +7,13 @@ import type {
   CourseTestItem,
   Material,
   MaterialAttachment,
+  MaterialAttachmentLink,
   StartTestResult,
   SubmitAnswerResult,
   Test,
   TestResult,
   TestTask,
+  TestTaskAdmin,
 } from "../types/knowledge";
 import { apiClient } from "./APIClient";
 
@@ -695,7 +697,7 @@ class KnowledgeAPIImpl {
   // ============ COURSE CRUD ============
 
   async createCourse(data: { name: string; description?: string; ratingPoints?: number; mrp?: number }): Promise<CourseListItem> {
-    const response = await apiClient.post<CourseListItemDTO>("/kb/courses", {
+    const response = await apiClient.post<CourseListItemDTO>("/admin/education/courses", {
       name: data.name,
       description: data.description,
       rating_points: data.ratingPoints,
@@ -705,7 +707,7 @@ class KnowledgeAPIImpl {
   }
 
   async updateCourse(courseId: number, data: { name?: string; description?: string; ratingPoints?: number; mrp?: number }): Promise<CourseListItem> {
-    const response = await apiClient.put<CourseListItemDTO>(`/kb/courses/${courseId}`, {
+    const response = await apiClient.put<CourseListItemDTO>(`/admin/education/courses/${courseId}`, {
       name: data.name,
       description: data.description,
       rating_points: data.ratingPoints,
@@ -715,16 +717,18 @@ class KnowledgeAPIImpl {
   }
 
   async deleteCourse(courseId: number): Promise<void> {
-    await apiClient.delete(`/kb/courses/${courseId}`);
+    await apiClient.delete(`/admin/education/courses/${courseId}`);
   }
 
   // ============ ENROLLMENTS ============
 
-  async getEnrollments(courseId: number): Promise<Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> {
+  async listCourseEnrollments(
+    courseId: number,
+  ): Promise<Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> {
     const response = await apiClient.get<{
       items: Array<{ user_id: string; name: string; progress: number; is_completed: boolean }>;
-    }>(`/kb/courses/${courseId}/enrollments`);
-    return response.items.map(item => ({
+    }>(`/admin/education/courses/${courseId}/enrollments`);
+    return response.items.map((item) => ({
       userId: item.user_id,
       name: item.name,
       progress: item.progress,
@@ -732,31 +736,47 @@ class KnowledgeAPIImpl {
     }));
   }
 
-  async assignCourse(courseId: number, userId: string): Promise<void> {
-    await apiClient.post(`/kb/courses/${courseId}/enrollments`, { user_id: userId });
+  async assignCourseToUser(courseId: number, userId: string): Promise<void> {
+    await apiClient.post(`/admin/education/courses/${courseId}/enrollments`, { user_id: userId });
   }
 
-  async unassignCourse(courseId: number, userId: string): Promise<void> {
-    await apiClient.delete(`/kb/courses/${courseId}/enrollments/${userId}`);
+  async removeCourseFromUser(courseId: number, userId: string): Promise<void> {
+    await apiClient.delete(`/admin/education/courses/${courseId}/enrollments/${userId}`);
   }
 
-  async resetProgress(courseId: number, userId: string): Promise<void> {
-    await apiClient.post(`/kb/courses/${courseId}/enrollments/${userId}/reset`);
+  async resetCourseProgress(courseId: number, userId: string): Promise<void> {
+    await apiClient.post(`/admin/education/courses/${courseId}/enrollments/${userId}/reset`);
   }
 
   async resetTestProgress(courseId: number, userId: string, testId: number): Promise<void> {
-    await apiClient.post(`/kb/courses/${courseId}/enrollments/${userId}/reset-test/${testId}`);
+    await apiClient.post(`/admin/education/courses/${courseId}/enrollments/${userId}/reset-test/${testId}`);
+  }
+
+  async assignMaterialToCourse(courseId: number, materialId: number, order = 0): Promise<void> {
+    await apiClient.post(`/admin/education/courses/${courseId}/materials`, { material_id: materialId, order });
+  }
+
+  async removeMaterialFromCourse(courseId: number, materialId: number): Promise<void> {
+    await apiClient.delete(`/admin/education/courses/${courseId}/materials/${materialId}`);
+  }
+
+  async assignTestToCourse(courseId: number, testId: number, isFinal = false): Promise<void> {
+    await apiClient.post(`/admin/education/courses/${courseId}/tests`, { test_id: testId, is_final: isFinal });
+  }
+
+  async removeTestFromCourse(courseId: number, testId: number): Promise<void> {
+    await apiClient.delete(`/admin/education/courses/${courseId}/tests/${testId}`);
   }
 
   // ============ MATERIAL CRUD ============
 
   async listMaterials(): Promise<Material[]> {
-    const response = await apiClient.get<{ items: MaterialDTO[] }>("/kb/materials");
+    const response = await apiClient.get<{ items: MaterialDTO[] }>("/admin/education/materials");
     return response.items.map(mapMaterial);
   }
 
   async createMaterial(data: { name: string; category: string; description?: string; text: string }): Promise<Material> {
-    const response = await apiClient.post<MaterialDTO>("/kb/materials", {
+    const response = await apiClient.post<MaterialDTO>("/admin/education/materials", {
       name: data.name,
       category: data.category,
       description: data.description,
@@ -766,7 +786,7 @@ class KnowledgeAPIImpl {
   }
 
   async updateMaterial(materialId: number, data: { name?: string; category?: string; description?: string; text?: string }): Promise<Material> {
-    const response = await apiClient.put<MaterialDTO>(`/kb/materials/${materialId}`, {
+    const response = await apiClient.put<MaterialDTO>(`/admin/education/materials/${materialId}`, {
       name: data.name,
       category: data.category,
       description: data.description,
@@ -776,21 +796,38 @@ class KnowledgeAPIImpl {
   }
 
   async deleteMaterial(materialId: number): Promise<void> {
-    await apiClient.delete(`/kb/materials/${materialId}`);
+    await apiClient.delete(`/admin/education/materials/${materialId}`);
   }
 
   // ============ ATTACHMENTS ============
 
-  async uploadAttachment(materialId: number, file: File): Promise<MaterialAttachment> {
+  async uploadMaterialAttachment(materialId: number, file: File): Promise<MaterialAttachment> {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await apiClient.post<MaterialAttachmentDTO>(`/kb/materials/${materialId}/attachments`, formData);
+    const response = await apiClient.post<MaterialAttachmentDTO>(`/admin/education/materials/${materialId}/attachments`, formData);
     return mapAttachment(response);
   }
 
-  async deleteAttachment(materialId: number, attachmentId: number): Promise<void> {
-    await apiClient.delete(`/kb/materials/${materialId}/attachments/${attachmentId}`);
+  async deleteMaterialAttachment(materialId: number, attachmentId: number): Promise<void> {
+    await apiClient.delete(`/admin/education/materials/${materialId}/attachments/${attachmentId}`);
+  }
+
+  async resolveMaterialAttachments(
+    materialId: number,
+    courseId: number,
+    attachmentIds: number[],
+  ): Promise<MaterialAttachmentLink[]> {
+    const response = await apiClient.post<{
+      items: Array<{ attachment_id: number; url: string }>;
+    }>(`/kb/materials/${materialId}/attachments/resolve`, {
+      course_id: courseId,
+      attachment_ids: attachmentIds,
+    });
+    return response.items.map((item) => ({
+      attachmentId: item.attachment_id,
+      url: item.url,
+    }));
   }
 
   // ============ TEST CRUD ============
@@ -809,7 +846,7 @@ class KnowledgeAPIImpl {
         course_id: number;
         created_at: string;
       }>;
-    }>("/kb/tests");
+    }>("/admin/education/tests");
     return response.items.map(item => ({
       id: item.id,
       name: item.name,
@@ -836,7 +873,7 @@ class KnowledgeAPIImpl {
       total_points: number;
       course_id: number;
       created_at: string;
-    }>("/kb/tests", {
+    }>("/admin/education/tests", {
       name: data.name,
       category: data.category,
       description: data.description,
@@ -869,7 +906,7 @@ class KnowledgeAPIImpl {
       total_points: number;
       course_id: number;
       created_at: string;
-    }>(`/kb/tests/${testId}`, {
+    }>(`/admin/education/tests/${testId}`, {
       name: data.name,
       category: data.category,
       description: data.description,
@@ -891,45 +928,88 @@ class KnowledgeAPIImpl {
   }
 
   async deleteTest(testId: number): Promise<void> {
-    await apiClient.delete(`/kb/tests/${testId}`);
+    await apiClient.delete(`/admin/education/tests/${testId}`);
   }
 
   // ============ TEST TASKS ============
 
-  async createTask(data: { name: string; description?: string; points?: number; answerVariants: string[]; correctVariant: number }): Promise<TestTask> {
-    const response = await apiClient.post<TestTaskDTO>("/kb/test-tasks", {
+  async createTestTask(data: {
+    name: string;
+    description?: string;
+    points?: number;
+    answerVariants: string[];
+    correctVariant: number;
+  }): Promise<TestTaskAdmin> {
+    const response = await apiClient.post<{
+      id: number;
+      name: string;
+      description: string | null;
+      points: number;
+      answer_variants: string[];
+      correct_variant: number;
+    }>("/admin/education/test-tasks", {
       name: data.name,
       description: data.description,
       points: data.points,
       answer_variants: data.answerVariants,
       correct_variant: data.correctVariant,
     });
-    return mapTask(response);
+    return {
+      id: response.id,
+      name: response.name,
+      description: response.description,
+      points: response.points,
+      answerVariants: response.answer_variants,
+      correctVariant: response.correct_variant,
+    };
   }
 
-  async updateTask(taskId: number, data: { name?: string; description?: string; points?: number; answerVariants?: string[]; correctVariant?: number }): Promise<TestTask> {
-    const response = await apiClient.put<TestTaskDTO>(`/kb/test-tasks/${taskId}`, {
+  async updateTestTask(
+    taskId: number,
+    data: {
+      name?: string;
+      description?: string;
+      points?: number;
+      answerVariants?: string[];
+      correctVariant?: number;
+    },
+  ): Promise<TestTaskAdmin> {
+    const response = await apiClient.put<{
+      id: number;
+      name: string;
+      description: string | null;
+      points: number;
+      answer_variants: string[];
+      correct_variant: number;
+    }>(`/admin/education/test-tasks/${taskId}`, {
       name: data.name,
       description: data.description,
       points: data.points,
       answer_variants: data.answerVariants,
       correct_variant: data.correctVariant,
     });
-    return mapTask(response);
+    return {
+      id: response.id,
+      name: response.name,
+      description: response.description,
+      points: response.points,
+      answerVariants: response.answer_variants,
+      correctVariant: response.correct_variant,
+    };
   }
 
-  async deleteTask(taskId: number): Promise<void> {
-    await apiClient.delete(`/kb/test-tasks/${taskId}`);
+  async deleteTestTask(taskId: number): Promise<void> {
+    await apiClient.delete(`/admin/education/test-tasks/${taskId}`);
   }
 
-  async attachTaskToTest(testId: number, taskId: number, order: number): Promise<void> {
-    await apiClient.post(`/kb/tests/${testId}/tasks`, null, {
+  async assignTaskToTest(testId: number, taskId: number, order: number): Promise<void> {
+    await apiClient.post(`/admin/education/tests/${testId}/tasks`, undefined, {
       query: { task_id: taskId, order },
     });
   }
 
-  async detachTaskFromTest(testId: number, taskId: number): Promise<void> {
-    await apiClient.delete(`/kb/tests/${testId}/tasks/${taskId}`);
+  async removeTaskFromTest(testId: number, taskId: number): Promise<void> {
+    await apiClient.delete(`/admin/education/tests/${testId}/tasks/${taskId}`);
   }
 }
 

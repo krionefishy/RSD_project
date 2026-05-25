@@ -44,9 +44,9 @@ import ManagerProfilePage from "../pages/manager/ProfilePage";
 // Pages - Admin Edu
 import AdminEduDashboardPage from "../pages/admin-edu/DashboardPage";
 import AdminEduManagePage from "../pages/admin-edu/ManagePage";
+import CourseEnrollmentsPage from "../pages/admin-edu/CourseEnrollmentsPage";
 import AdminEduAssignmentsPage from "../pages/admin-edu/AssignmentsPage";
 import AdminEduReportsPage from "../pages/admin-edu/ReportsPage";
-import CreateTestPage from "../pages/admin-edu/CreateTestPage";
 import EditMaterialPage from "../pages/admin-edu/EditMaterialPage";
 
 // Pages - Admin Sales
@@ -166,8 +166,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminEduDashboardPage /> },
       { path: "manage", element: <AdminEduManagePage /> },
-      { path: "manage/:courseId", element: <AdminEduManagePage /> },
-      { path: "manage/create-test", element: <CreateTestPage /> },
+      { path: "manage/:courseId", element: <CourseEnrollmentsPage /> },
       { path: "manage/edit-material/:materialId", element: <EditMaterialPage /> },
       { path: "assignments", element: <AdminEduAssignmentsPage /> },
       { path: "reports", element: <AdminEduReportsPage /> },

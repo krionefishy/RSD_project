@@ -45,6 +45,7 @@ export default function BlockDetailPage() {
 
   const [allLocations, setAllLocations] = useState<{ id: string; name: string; code: string }[]>([]);
   const [assignLocationId, setAssignLocationId] = useState("");
+  const [managers, setManagers] = useState<{ id: string; label: string }[]>([]);
   const [managerId, setManagerId] = useState("");
 
   const loadBlock = useCallback(async (signal?: AbortSignal) => {
@@ -74,6 +75,22 @@ export default function BlockDetailPage() {
     const controller = new AbortController();
     LocationsAPI.listLocations(undefined, controller.signal)
       .then((locations) => setAllLocations(locations.map((l) => ({ id: l.id, name: l.name, code: l.code }))))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [canEdit]);
+
+  useEffect(() => {
+    if (!canEdit) return;
+    const controller = new AbortController();
+    UserAPI.listUsers({ role: "manager", isActive: true }, controller.signal)
+      .then((items) =>
+        setManagers(
+          items.map((item) => ({
+            id: item.id,
+            label: `${item.lastName || ""} ${item.firstName || ""}`.trim() || item.externalSystemId,
+          })),
+        ),
+      )
       .catch(() => undefined);
     return () => controller.abort();
   }, [canEdit]);
@@ -142,15 +159,7 @@ export default function BlockDetailPage() {
   const handleAssignManager = async () => {
     if (!blockId || !managerId.trim()) return;
     try {
-      const managers = await UserAPI.listUsers({ role: "manager", isActive: true });
-      const manager = managers.find(
-        (item) => item.id === managerId.trim() || item.externalSystemId === managerId.trim(),
-      );
-      if (!manager) {
-        toast.error("Менеджер не найден");
-        return;
-      }
-      await LocationsAPI.assignManagerToBlock(manager.id, blockId);
+      await LocationsAPI.assignManagerToBlock(managerId.trim(), blockId);
       setManagerId("");
       toast.success("Менеджер назначен");
       await loadBlock();
@@ -225,17 +234,30 @@ export default function BlockDetailPage() {
           <p style={{ fontSize: 13, color: "#64748B" }}>{block.managerName || "Не назначен"}</p>
           {canEdit && (
             <div className="flex gap-2 mt-3">
-              <input
+              <select
                 value={managerId}
                 onChange={(e) => setManagerId(e.target.value)}
-                placeholder="UUID или ID менеджера"
                 className="flex-1 h-9 px-3 rounded-lg border text-sm"
                 style={{ borderColor: "#E2E8F0" }}
-              />
+              >
+                <option value="">Выбрать менеджера</option>
+                {managers.map((manager) => (
+                  <option key={manager.id} value={manager.id}>
+                    {manager.label}
+                  </option>
+                ))}
+              </select>
               <button
                 onClick={() => void handleAssignManager()}
+                disabled={!managerId}
                 className="h-9 px-3 rounded-lg flex items-center gap-1"
-                style={{ background: "#E8F5E9", color: "#2E7D32", fontSize: 12, fontWeight: 600 }}
+                style={{
+                  background: "#E8F5E9",
+                  color: "#2E7D32",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  opacity: managerId ? 1 : 0.5,
+                }}
               >
                 <UserPlus size={14} />
                 Назначить

@@ -54,13 +54,13 @@ export default function LocationsListPage() {
     }
     setCreating(true);
     try {
-      const location = await LocationsAPI.createLocation({
+      await LocationsAPI.createLocation({
         code: form.code.trim(),
         name: form.name.trim(),
         address: form.address.trim(),
         city: form.city.trim() || undefined,
       });
-      setLocations((prev) => [...prev, location].sort((a, b) => a.name.localeCompare(b.name)));
+      await loadData();
       setShowCreate(false);
       setForm({ code: "", name: "", address: "", city: "" });
       toast.success("Точка создана");
