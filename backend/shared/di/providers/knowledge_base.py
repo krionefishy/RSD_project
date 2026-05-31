@@ -1,5 +1,3 @@
-from typing import Optional
-
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +39,6 @@ class KnowledgeBaseUsecaseProvider(Provider):
     def resolve_material_attachments(
         self,
         session: AsyncSession,
-        s3_client: Optional[S3Client],
+        s3_client: S3Client,
     ) -> ResolveMaterialAttachmentsUseCase:
         return ResolveMaterialAttachmentsUseCase(session, s3_client)

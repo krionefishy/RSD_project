@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.admin.educ_admin.domain import AssignTestToCourseRequest
 from app.knowledge_base.access import KB_ADMIN_ROLES
-from app.knowledge_base.db_models import CourseModel, CourseTestModel, TestModel
+from app.knowledge_base.db_models import CourseModel, CourseTestModel, TestModel, TestTaskAssignmentModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import CourseTestItemDTO
 
@@ -32,7 +32,7 @@ class AssignTestToCourseUseCase:
             await self.session.execute(
                 select(TestModel)
                 .where(TestModel.id == request.test_id)
-                .options(selectinload(TestModel.task_assignments))
+                .options(selectinload(TestModel.task_assignments).selectinload(TestTaskAssignmentModel.task))
             )
         ).scalar_one_or_none()
         if course is None or test is None:

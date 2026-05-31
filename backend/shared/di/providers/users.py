@@ -1,5 +1,3 @@
-from typing import Optional
-
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,6 +37,6 @@ class UsersUsecaseProvider(Provider):
     def upload_avatar(
         self,
         session: AsyncSession,
-        s3_client: Optional[S3Client],
+        s3_client: S3Client,
     ) -> UploadAvatarUseCase:
         return UploadAvatarUseCase(session, s3_client)

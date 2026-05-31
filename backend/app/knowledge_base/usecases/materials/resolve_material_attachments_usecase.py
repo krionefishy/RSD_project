@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -16,7 +15,7 @@ from storage.s3.client import S3Client
 
 
 class ResolveMaterialAttachmentsUseCase:
-    def __init__(self, session: AsyncSession, s3_client: Optional[S3Client]):
+    def __init__(self, session: AsyncSession, s3_client: S3Client | None):
         self.session = session
         self.s3_client = s3_client
 
@@ -25,7 +24,7 @@ class ResolveMaterialAttachmentsUseCase:
         material_id: int,
         request: ResolveMaterialAttachmentsRequest,
         ctx: UserContext,
-    ) -> Optional[MaterialAttachmentLinksDTO]:
+    ) -> MaterialAttachmentLinksDTO | None:
         if ctx.role.value not in KB_CONTENT_VIEW_ALL_ROLES and ctx.role != UserRole.SELLER:
             return None
         if self.s3_client is None:

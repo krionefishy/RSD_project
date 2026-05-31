@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.admin.educ_admin.domain import UpdateTestRequest
 from app.knowledge_base.access import KB_ADMIN_ROLES
-from app.knowledge_base.db_models import TestModel
+from app.knowledge_base.db_models import TestModel, TestTaskAssignmentModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import TestDTO
 
@@ -29,7 +29,7 @@ class UpdateTestUseCase:
                 select(TestModel)
                 .where(TestModel.id == test_id)
                 .options(
-                    selectinload(TestModel.task_assignments),
+                    selectinload(TestModel.task_assignments).selectinload(TestTaskAssignmentModel.task),
                     selectinload(TestModel.course_tests),
                 )
             )

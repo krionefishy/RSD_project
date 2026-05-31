@@ -1,5 +1,3 @@
-from typing import Optional
-
 from dishka import Provider, Scope, provide
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -83,7 +81,7 @@ class EducAdminUsecaseProvider(Provider):
     def upload_material_attachment(
         self,
         session: AsyncSession,
-        s3_client: Optional[S3Client],
+        s3_client: S3Client,
     ) -> UploadMaterialAttachmentUseCase:
         return UploadMaterialAttachmentUseCase(session, s3_client)
 
@@ -91,6 +89,6 @@ class EducAdminUsecaseProvider(Provider):
     def delete_material_attachment(
         self,
         session: AsyncSession,
-        s3_client: Optional[S3Client],
+        s3_client: S3Client,
     ) -> DeleteMaterialAttachmentUseCase:
         return DeleteMaterialAttachmentUseCase(session, s3_client)

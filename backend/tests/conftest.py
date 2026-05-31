@@ -1,9 +1,9 @@
+from collections.abc import AsyncIterator
+from datetime import datetime
 import logging
 import os
 import re
-from datetime import datetime
-from collections.abc import AsyncIterator
-from typing import AsyncGenerator, Optional, Union
+from typing import AsyncGenerator, Optional
 from unittest.mock import patch
 from urllib.parse import urlparse, urlunparse
 
@@ -189,7 +189,7 @@ async def application(
         kafka_producer = from_context(KafkaProducerWrapper)
 
         @provide(scope=Scope.REQUEST)
-        def get_s3(self) -> Union[S3Client, None]:
+        def get_s3(self) -> S3Client:
             return mock_s3_client
 
     from app.auth.rsa_keys import RsaKeyProvider

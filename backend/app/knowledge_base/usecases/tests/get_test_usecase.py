@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.knowledge_base.access import KB_CONTENT_VIEW_ALL_ROLES
-from app.knowledge_base.db_models import CourseTestModel, CourseUserModel, TestModel
+from app.knowledge_base.db_models import CourseTestModel, CourseUserModel, TestModel, TestTaskAssignmentModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import TestDTO
 from app.users.db_models import UserRole
@@ -32,7 +32,7 @@ class GetTestByIdUseCase:
                 CourseTestModel.course_id == course_id,
                 CourseTestModel.test_id == test_id,
             )
-            .options(selectinload(TestModel.task_assignments))
+            .options(selectinload(TestModel.task_assignments).selectinload(TestTaskAssignmentModel.task))
         )
 
         if ctx.role == UserRole.SELLER:

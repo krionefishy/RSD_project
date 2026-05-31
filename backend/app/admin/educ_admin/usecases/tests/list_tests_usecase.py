@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.knowledge_base.access import KB_ADMIN_ROLES
-from app.knowledge_base.db_models import TestModel
+from app.knowledge_base.db_models import TestModel, TestTaskAssignmentModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import TestDTO, TestsListDTO
 
@@ -21,7 +21,7 @@ class ListTestsUseCase:
         result = await self.session.execute(
             select(TestModel)
             .options(
-                selectinload(TestModel.task_assignments),
+                selectinload(TestModel.task_assignments).selectinload(TestTaskAssignmentModel.task),
                 selectinload(TestModel.course_tests),
             )
             .order_by(TestModel.name)
