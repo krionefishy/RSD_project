@@ -1,21 +1,39 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${DB_USER:-app}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-appsecret}
-      POSTGRES_DB: ${DB_NAME:-audit_trail_db}
+      POSTGRES_DB: ${DB_NAME:-rsd_db}
     ports:
       - "5432:5432"
     volumes:
       - pgdata_local:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app} -d ${DB_NAME:-audit_trail_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app} -d ${DB_NAME:-rsd_db}"]
       interval: 3s
       timeout: 5s
       retries: 5
+    networks:
+      - rsd-local
+
+  db_test:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-appsecret}
+      POSTGRES_DB: ${TEST_DB_NAME:-rsd_test_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_test_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app} -d ${TEST_DB_NAME:-rsd_test_db}"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rsd-local
 
   kafka:
     image: apache/kafka:latest
@@ -37,6 +55,29 @@ services:
       timeout: 10s
       retries: 5
       start_period: 15s
+    networks:
+      - rsd-local
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_local:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rsd-local
 
 volumes:
   pgdata_local:
+  pgdata_test_local:
+  redis_local:
+
+networks:
+  rsd-local:
+    driver: bridge

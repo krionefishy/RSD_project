@@ -1,3 +1,3 @@
-S3_UPLOAD_CONSUMERS: list = []
+s3_consumers: list = []
 
-__all__ = ["S3_UPLOAD_CONSUMERS"]
+__all__ = ["s3_consumers"]

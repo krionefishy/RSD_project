@@ -1,6 +1,82 @@
-version: "3.8"
-
 services:
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./deploy/nginx/local-http.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - rsd
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_DEMO_MODE: "true"
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      - rsd
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      CONFIG_PATH: /backend/shared/settings/config.docker.yaml
+      DATABASE_URL: postgresql+asyncpg://app:appsecret@db:5432/rsd_db
+      RUN_MIGRATIONS: "true"
+      RUN_DEMO_SEED: "true"
+      CORS_ORIGINS: "*"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    networks:
+      - rsd
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: appsecret
+      POSTGRES_DB: rsd_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d rsd_db"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rsd
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rsd
+
   kafka:
     image: apache/kafka:latest
     environment:
@@ -13,128 +89,15 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_MESSAGE_MAX_BYTES: 10485760
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
-      interval: 5s
-      timeout: 10s
-      retries: 5
-      start_period: 15s
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${DB_USER:-app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-appsecret}
-      POSTGRES_DB: ${DB_NAME:-audit_trail_db}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-app} -d ${DB_NAME:-audit_trail_db}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  users_service:
-    build:
-      context: backend
-      dockerfile: users_service/Dockerfile
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-audit_trail_db}
-      CONFIG_PATH: /app/config.yaml
-    volumes:
-      - ./backend/users_service/config.yaml:/app/config.yaml
-    depends_on:
-      db:
-        condition: service_healthy
-
-  checklists_service:
-    build:
-      context: backend
-      dockerfile: checklists_service/Dockerfile
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-audit_trail_db}
-      CONFIG_PATH: /app/config.yaml
-    volumes:
-      - ./backend/checklists_service/config.yaml:/app/config.yaml
-    depends_on:
-      db:
-        condition: service_healthy
-
-  reports_service:
-    build:
-      context: backend
-      dockerfile: reports_service/Dockerfile
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-audit_trail_db}
-      CONFIG_PATH: /app/config.yaml
-    volumes:
-      - ./backend/reports_service/config.yaml:/app/config.yaml
-    depends_on:
-      db:
-        condition: service_healthy
-
-  organizations_service:
-    build:
-      context: backend
-      dockerfile: organizations_service/Dockerfile
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-audit_trail_db}
-      CONFIG_PATH: /app/config.yaml
-    volumes:
-      - ./backend/organizations_service/config.yaml:/app/config.yaml
-    depends_on:
-      db:
-        condition: service_healthy
-
-  admin_service:
-    build:
-      context: backend
-      dockerfile: admin_service/Dockerfile
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-appsecret}@${DB_HOST:-db}:${DB_PORT:-5432}/${DB_NAME:-audit_trail_db}
-      CONFIG_PATH: /app/config.yaml
-    volumes:
-      - ./backend/admin_service/config.yaml:/app/config.yaml
-    depends_on:
-      db:
-        condition: service_healthy
-
-  storage_service:
-    build:
-      context: backend
-      dockerfile: storage_service/Dockerfile
-    environment:
-      CONFIG_PATH: /app/config.yaml
-      SHARED_CONFIG_PATH: /app/shared_config.yaml
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    volumes:
-      - ./backend/storage_service/config.yaml:/app/config.yaml
-      - ./backend/shared/config/default.yaml:/app/shared_config.yaml
-    depends_on:
-      kafka:
-        condition: service_healthy
-
-  api_gateway:
-    build:
-      context: backend
-      dockerfile: api_gateway/Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      CONFIG_PATH: /app/config.yaml
-      USERS_SERVICE_URL: http://users_service:8000
-      CHECKLISTS_SERVICE_URL: http://checklists_service:8000
-      REPORTS_SERVICE_URL: http://reports_service:8000
-      ORGANIZATIONS_SERVICE_URL: http://organizations_service:8000
-      ADMIN_SERVICE_URL: http://admin_service:8000
-    volumes:
-      - ./backend/api_gateway/config.yaml:/app/config.yaml
-    depends_on:
-      - users_service
-      - checklists_service
-      - reports_service
-      - organizations_service
-      - admin_service
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+      KAFKA_LOG4J_LOGGERS: "org.apache.kafka=WARN,kafka=WARN,state.change.logger=WARN"
+    networks:
+      - rsd
 
 volumes:
-  pgdata:
+  postgres_data:
+  redis_data:
+
+networks:
+  rsd:
+    driver: bridge

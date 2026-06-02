@@ -1,33 +1,23 @@
 import asyncio
 import os
 import sys
-
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), "..")))
-
 from logging.config import fileConfig
 
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
-from alembic import context
 
-from backend.shared.base import Base
+from storage.pg.database import Base
 
-try:
-    from backend.users_service.app.repository.models import User  # noqa: F401
-except Exception:
-    pass
-try:
-    from backend.checklists_service.app.repository.models import ChecklistPlaceholder  # noqa: F401
-except Exception:
-    pass
-try:
-    from backend.reports_service.app.repository.models import ReportPlaceholder  # noqa: F401
-except Exception:
-    pass
-try:
-    from backend.organizations_service.app.repository.models import OKKPlaceholder, CheckObjectPlaceholder  # noqa: F401
-except Exception:
-    pass
+import app.knowledge_base.db_models  # noqa: F401 - register tables with Base.metadata
+import app.locations.db_models  # noqa: F401 - register tables with Base.metadata
+import app.personnel.db_models  # noqa: F401 - register tables with Base.metadata
+import app.reports.db_models  # noqa: F401 - register tables with Base.metadata
+import app.sellings.db_models  # noqa: F401 - register tables with Base.metadata
+import app.users.db_models  # noqa: F401 - register tables with Base.metadata
 
 try:
     from dotenv import load_dotenv
@@ -36,27 +26,16 @@ except ImportError:
     pass
 
 config = context.config
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
-
+fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 
 
-def get_url():
-    """URL для миграций: из DATABASE_URL или из alembic.ini."""
-    url = os.getenv("DATABASE_URL")
-    if not url:
-        url = config.get_main_option("sqlalchemy.url")
-    if not url:
-        raise RuntimeError("DATABASE_URL is not set in environment or alembic.ini")
-    if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
-
-
 def run_migrations_offline():
-    """Run migrations in 'offline' mode (как в Barista)."""
-    url = get_url()
+    """Run migrations in 'offline' mode."""
+    url = config.get_main_option("sqlalchemy.url")
+    if not url:
+        raise RuntimeError("DATABASE_URL is not set in alembic.ini or environment")
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -69,13 +48,19 @@ def run_migrations_offline():
 
 
 async def run_async_migrations():
-    """Run migrations in 'online' mode with async engine (как в Barista)."""
-    database_url = get_url()
+    """Run migrations in 'online' mode with async engine."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set in environment")
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
     connectable = create_async_engine(
         database_url,
         poolclass=pool.NullPool,
     )
     async with connectable.connect() as connection:
+
         def run_migrations(conn):
             context.configure(
                 connection=conn,
