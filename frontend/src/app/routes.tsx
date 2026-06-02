@@ -51,6 +51,9 @@ import EditMaterialPage from "../pages/admin-edu/EditMaterialPage";
 
 // Pages - Admin Sales
 import AdminSalesDashboardPage from "../pages/admin-sales/DashboardPage";
+import AdminSalesManagePage from "../pages/admin-sales/ManagePage";
+import AdminSalesReportsPage from "../pages/admin-sales/ReportsPage";
+import AdminSalesProfilePage from "../pages/admin-sales/ProfilePage";
 
 // Pages - Admin Personnel
 import AdminPersonnelDashboardPage from "../pages/admin-personnel/DashboardPage";
@@ -62,9 +65,6 @@ import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
 // Pages - Admin PO
 import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
-import AdminPODataPage from "../pages/admin-po/DataPage";
-import AdminPOReportsPage from "../pages/admin-po/ReportsPage";
-import AdminPOProfilePage from "../pages/admin-po/ProfilePage";
 
 // Pages - SuperAdmin
 import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
@@ -72,7 +72,6 @@ import BlocksListPage from "../pages/admin-personnel/BlocksListPage";
 import BlockDetailPage from "../pages/admin-personnel/BlockDetailPage";
 import LocationsListPage from "../pages/admin-personnel/LocationsListPage";
 import LocationDetailPage from "../pages/admin-personnel/LocationDetailPage";
-import SuperAdminSettingsPage from "../pages/superadmin/SettingsPage";
 
 function RequireAuth({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
   const { user, setUser } = useApp();
@@ -162,7 +161,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-edu",
     element: (
-      <RequireAuth allowedRoles={["admin-edu"]}>
+      <RequireAuth allowedRoles={["admin-edu", "admin-po"]}>
         <AdminEduTemplate />
       </RequireAuth>
     ),
@@ -179,11 +178,16 @@ export const router = createBrowserRouter([
   {
     path: "/admin-sales",
     element: (
-      <RequireAuth allowedRoles={["admin-sales"]}>
+      <RequireAuth allowedRoles={["admin-sales", "admin-po"]}>
         <AdminSalesTemplate />
       </RequireAuth>
     ),
-    children: [{ index: true, element: <AdminSalesDashboardPage /> }],
+    children: [
+      { index: true, element: <AdminSalesDashboardPage /> },
+      { path: "manage", element: <AdminSalesManagePage /> },
+      { path: "reports", element: <AdminSalesReportsPage /> },
+      { path: "profile", element: <AdminSalesProfilePage /> },
+    ],
   },
 
   {
@@ -214,12 +218,7 @@ export const router = createBrowserRouter([
         <AdminPOTemplate />
       </RequireAuth>
     ),
-    children: [
-      { index: true, element: <AdminPODashboardPage /> },
-      { path: "data", element: <AdminPODataPage /> },
-      { path: "reports", element: <AdminPOReportsPage /> },
-      { path: "profile", element: <AdminPOProfilePage /> },
-    ],
+    children: [{ index: true, element: <AdminPODashboardPage /> }],
   },
 
   {
@@ -235,7 +234,6 @@ export const router = createBrowserRouter([
       { path: "structure/blocks/:blockId", element: <BlockDetailPage /> },
       { path: "structure/locations", element: <LocationsListPage /> },
       { path: "structure/locations/:locationId", element: <LocationDetailPage /> },
-      { path: "settings", element: <SuperAdminSettingsPage /> },
       { path: "profile", element: <SuperAdminDashboardPage /> },
     ],
   },

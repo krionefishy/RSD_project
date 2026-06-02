@@ -262,7 +262,7 @@ class UserAPIImpl {
 
   async listManagedUsers(filters?: Omit<UsersListFilters, "role">, signal?: AbortSignal): Promise<AppUser[]> {
     if (useMockAuth()) {
-      let users = listMockManagedUsers();
+      let users = listMockManagedUsers(filters?.blockId);
       if (filters?.isActive !== undefined) {
         users = users.filter((u) => (u.isActive ?? true) === filters.isActive);
       }

@@ -284,6 +284,36 @@ const MOCK_TEST_RESULTS: Record<number, TestResult> = {
   205: { testId: 205, testName: "Повторный тест: Хранение", score: 10, maxScore: 12, percentage: 83, isPassed: true },
 };
 
+const MOCK_ADMIN_TESTS: Test[] = [
+  { id: 201, name: "Итоговый тест: Базовый курс", category: "Итоговый", description: "Финальный тест курса", isFinal: true, passScorePercent: 70, tasksCount: 3, totalPoints: 3, courseId: 1, createdAt: "2024-01-15T00:00:00Z" },
+  { id: 202, name: "Проверка знаний: Касса", category: "Касса", description: null, isFinal: false, passScorePercent: 80, tasksCount: 1, totalPoints: 1, courseId: 1, createdAt: "2024-01-20T00:00:00Z" },
+  { id: 203, name: "Тест: Стандарты обслуживания", category: "Сервис", description: null, isFinal: true, passScorePercent: 75, tasksCount: 1, totalPoints: 1, courseId: 2, createdAt: "2024-02-01T00:00:00Z" },
+  { id: 204, name: "Тест: Ассортимент", category: "Итоговый", description: null, isFinal: true, passScorePercent: 70, tasksCount: 1, totalPoints: 1, courseId: 3, createdAt: "2024-03-01T00:00:00Z" },
+  { id: 205, name: "Повторный тест: Хранение", category: "Повторный", description: null, isFinal: false, passScorePercent: 80, tasksCount: 1, totalPoints: 1, courseId: 3, createdAt: "2024-03-10T00:00:00Z" },
+];
+
+const MOCK_COURSE_ENROLLMENTS: Record<number, Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> = {
+  1: [
+    { userId: "mock-seller_anna_001", name: "Анна Иванова", progress: 72, isCompleted: false },
+    { userId: "mock-seller_maria_001", name: "Мария Петрова", progress: 100, isCompleted: true },
+    { userId: "mock-seller_ivan_001", name: "Иван Сидоров", progress: 45, isCompleted: false },
+  ],
+  2: [
+    { userId: "mock-seller_anna_001", name: "Анна Иванова", progress: 30, isCompleted: false },
+  ],
+  3: [
+    { userId: "mock-seller_maria_001", name: "Мария Петрова", progress: 88, isCompleted: false },
+  ],
+};
+
+function mockMaterialsList(): Material[] {
+  return Object.values(MOCK_MATERIALS);
+}
+
+let mockAdminMaterialId = 200;
+let mockAdminTestId = 300;
+let mockAdminTaskId = 400;
+
 // Track mock state in memory
 let mockCompletedMaterials = new Set<number>([101, 102]);
 let mockTestProgress: Record<number, { currentTaskIndex: number; answers: Record<number, number> }> = {};
@@ -698,6 +728,18 @@ class KnowledgeAPIImpl {
   // ============ COURSE CRUD ============
 
   async createCourse(data: { name: string; description?: string; ratingPoints?: number; mrp?: number }): Promise<CourseListItem> {
+    if (isMockKB()) {
+      const id = MOCK_COURSES_LIST.length + 1;
+      const item: CourseListItem = {
+        id,
+        name: data.name,
+        description: data.description ?? null,
+        materialsCount: 0,
+        testsCount: 0,
+      };
+      MOCK_COURSES_LIST.push(item);
+      return item;
+    }
     const response = await apiClient.post<CourseListItemDTO>("/admin/education/courses", {
       name: data.name,
       description: data.description,
@@ -708,6 +750,13 @@ class KnowledgeAPIImpl {
   }
 
   async updateCourse(courseId: number, data: { name?: string; description?: string; ratingPoints?: number; mrp?: number }): Promise<CourseListItem> {
+    if (isMockKB()) {
+      const item = MOCK_COURSES_LIST.find((c) => c.id === courseId);
+      if (!item) throw new Error("Course not found");
+      if (data.name) item.name = data.name;
+      if (data.description !== undefined) item.description = data.description ?? null;
+      return item;
+    }
     const response = await apiClient.put<CourseListItemDTO>(`/admin/education/courses/${courseId}`, {
       name: data.name,
       description: data.description,
@@ -718,6 +767,7 @@ class KnowledgeAPIImpl {
   }
 
   async deleteCourse(courseId: number): Promise<void> {
+    if (isMockKB()) return;
     await apiClient.delete(`/admin/education/courses/${courseId}`);
   }
 
@@ -726,6 +776,9 @@ class KnowledgeAPIImpl {
   async listCourseEnrollments(
     courseId: number,
   ): Promise<Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> {
+    if (isMockKB()) {
+      return MOCK_COURSE_ENROLLMENTS[courseId] ?? [];
+    }
     const response = await apiClient.get<{
       items: Array<{ user_id: string; name: string; progress: number; is_completed: boolean }>;
     }>(`/admin/education/courses/${courseId}/enrollments`);
@@ -738,45 +791,127 @@ class KnowledgeAPIImpl {
   }
 
   async assignCourseToUser(courseId: number, userId: string): Promise<void> {
+    if (isMockKB()) {
+      const list = MOCK_COURSE_ENROLLMENTS[courseId] ?? (MOCK_COURSE_ENROLLMENTS[courseId] = []);
+      if (!list.some((e) => e.userId === userId)) {
+        list.push({ userId, name: userId, progress: 0, isCompleted: false });
+      }
+      return;
+    }
     await apiClient.post(`/admin/education/courses/${courseId}/enrollments`, { user_id: userId });
   }
 
   async removeCourseFromUser(courseId: number, userId: string): Promise<void> {
+    if (isMockKB()) {
+      const list = MOCK_COURSE_ENROLLMENTS[courseId];
+      if (list) MOCK_COURSE_ENROLLMENTS[courseId] = list.filter((e) => e.userId !== userId);
+      return;
+    }
     await apiClient.delete(`/admin/education/courses/${courseId}/enrollments/${userId}`);
   }
 
   async resetCourseProgress(courseId: number, userId: string): Promise<void> {
+    if (isMockKB()) {
+      const entry = MOCK_COURSE_ENROLLMENTS[courseId]?.find((e) => e.userId === userId);
+      if (entry) {
+        entry.progress = 0;
+        entry.isCompleted = false;
+      }
+      return;
+    }
     await apiClient.post(`/admin/education/courses/${courseId}/enrollments/${userId}/reset`);
   }
 
   async resetTestProgress(courseId: number, userId: string, testId: number): Promise<void> {
+    if (isMockKB()) return;
     await apiClient.post(`/admin/education/courses/${courseId}/enrollments/${userId}/reset-test/${testId}`);
   }
 
   async assignMaterialToCourse(courseId: number, materialId: number, order = 0): Promise<void> {
+    if (isMockKB()) {
+      const course = MOCK_COURSES[courseId];
+      const material = MOCK_MATERIALS[materialId];
+      if (course && material && !course.materials.some((m) => m.materialId === materialId)) {
+        course.materials.push({
+          id: course.materials.length + 1,
+          materialId,
+          name: material.name,
+          category: material.category,
+          description: material.description,
+          isCompleted: false,
+        });
+      }
+      void order;
+      return;
+    }
     await apiClient.post(`/admin/education/courses/${courseId}/materials`, { material_id: materialId, order });
   }
 
   async removeMaterialFromCourse(courseId: number, materialId: number): Promise<void> {
+    if (isMockKB()) {
+      const course = MOCK_COURSES[courseId];
+      if (course) course.materials = course.materials.filter((m) => m.materialId !== materialId);
+      return;
+    }
     await apiClient.delete(`/admin/education/courses/${courseId}/materials/${materialId}`);
   }
 
   async assignTestToCourse(courseId: number, testId: number, isFinal = false): Promise<void> {
+    if (isMockKB()) {
+      const course = MOCK_COURSES[courseId];
+      const test = MOCK_ADMIN_TESTS.find((t) => t.id === testId);
+      if (course && test && !course.tests.some((t) => t.testId === testId)) {
+        course.tests.push({
+          id: course.tests.length + 1,
+          testId,
+          name: test.name,
+          category: test.category,
+          isFinal,
+          tasksCount: test.tasksCount,
+          isPassed: false,
+          score: 0,
+        });
+      }
+      return;
+    }
     await apiClient.post(`/admin/education/courses/${courseId}/tests`, { test_id: testId, is_final: isFinal });
   }
 
   async removeTestFromCourse(courseId: number, testId: number): Promise<void> {
+    if (isMockKB()) {
+      const course = MOCK_COURSES[courseId];
+      if (course) course.tests = course.tests.filter((t) => t.testId !== testId);
+      return;
+    }
     await apiClient.delete(`/admin/education/courses/${courseId}/tests/${testId}`);
   }
 
   // ============ MATERIAL CRUD ============
 
   async listMaterials(): Promise<Material[]> {
+    if (isMockKB()) {
+      return mockMaterialsList();
+    }
     const response = await apiClient.get<{ items: MaterialDTO[] }>("/admin/education/materials");
     return response.items.map(mapMaterial);
   }
 
   async createMaterial(data: { name: string; category: string; description?: string; text: string }): Promise<Material> {
+    if (isMockKB()) {
+      mockAdminMaterialId += 1;
+      const material: Material = {
+        id: mockAdminMaterialId,
+        name: data.name,
+        category: data.category,
+        description: data.description ?? null,
+        text: data.text,
+        attachments: [],
+        courseId: 0,
+        createdAt: new Date().toISOString(),
+      };
+      MOCK_MATERIALS[material.id] = material;
+      return material;
+    }
     const response = await apiClient.post<MaterialDTO>("/admin/education/materials", {
       name: data.name,
       category: data.category,
@@ -787,6 +922,15 @@ class KnowledgeAPIImpl {
   }
 
   async updateMaterial(materialId: number, data: { name?: string; category?: string; description?: string; text?: string }): Promise<Material> {
+    if (isMockKB()) {
+      const material = MOCK_MATERIALS[materialId];
+      if (!material) throw new Error("Material not found");
+      if (data.name) material.name = data.name;
+      if (data.category) material.category = data.category;
+      if (data.description !== undefined) material.description = data.description ?? null;
+      if (data.text) material.text = data.text;
+      return material;
+    }
     const response = await apiClient.put<MaterialDTO>(`/admin/education/materials/${materialId}`, {
       name: data.name,
       category: data.category,
@@ -797,12 +941,26 @@ class KnowledgeAPIImpl {
   }
 
   async deleteMaterial(materialId: number): Promise<void> {
+    if (isMockKB()) {
+      delete MOCK_MATERIALS[materialId];
+      return;
+    }
     await apiClient.delete(`/admin/education/materials/${materialId}`);
   }
 
   // ============ ATTACHMENTS ============
 
   async uploadMaterialAttachment(materialId: number, file: File): Promise<MaterialAttachment> {
+    if (isMockKB()) {
+      const material = MOCK_MATERIALS[materialId];
+      const attachment: MaterialAttachment = {
+        id: (material?.attachments.length ?? 0) + 1,
+        name: file.name,
+        format: file.name.split(".").pop() ?? "file",
+      };
+      if (material) material.attachments.push(attachment);
+      return attachment;
+    }
     const formData = new FormData();
     formData.append("file", file);
 
@@ -811,6 +969,11 @@ class KnowledgeAPIImpl {
   }
 
   async deleteMaterialAttachment(materialId: number, attachmentId: number): Promise<void> {
+    if (isMockKB()) {
+      const material = MOCK_MATERIALS[materialId];
+      if (material) material.attachments = material.attachments.filter((a) => a.id !== attachmentId);
+      return;
+    }
     await apiClient.delete(`/admin/education/materials/${materialId}/attachments/${attachmentId}`);
   }
 
@@ -834,6 +997,9 @@ class KnowledgeAPIImpl {
   // ============ TEST CRUD ============
 
   async listTests(): Promise<Test[]> {
+    if (isMockKB()) {
+      return [...MOCK_ADMIN_TESTS];
+    }
     const response = await apiClient.get<{
       items: Array<{
         id: number;
@@ -863,6 +1029,23 @@ class KnowledgeAPIImpl {
   }
 
   async createTest(data: { name: string; category: string; description?: string; isFinal?: boolean; passScorePercent?: number }): Promise<Test> {
+    if (isMockKB()) {
+      mockAdminTestId += 1;
+      const test: Test = {
+        id: mockAdminTestId,
+        name: data.name,
+        category: data.category,
+        description: data.description ?? null,
+        isFinal: data.isFinal ?? false,
+        passScorePercent: data.passScorePercent ?? 70,
+        tasksCount: 0,
+        totalPoints: 0,
+        courseId: 0,
+        createdAt: new Date().toISOString(),
+      };
+      MOCK_ADMIN_TESTS.push(test);
+      return test;
+    }
     const response = await apiClient.post<{
       id: number;
       name: string;
@@ -896,6 +1079,16 @@ class KnowledgeAPIImpl {
   }
 
   async updateTest(testId: number, data: { name?: string; category?: string; description?: string; isFinal?: boolean; passScorePercent?: number }): Promise<Test> {
+    if (isMockKB()) {
+      const test = MOCK_ADMIN_TESTS.find((t) => t.id === testId);
+      if (!test) throw new Error("Test not found");
+      if (data.name) test.name = data.name;
+      if (data.category) test.category = data.category;
+      if (data.description !== undefined) test.description = data.description ?? null;
+      if (data.isFinal !== undefined) test.isFinal = data.isFinal;
+      if (data.passScorePercent !== undefined) test.passScorePercent = data.passScorePercent;
+      return test;
+    }
     const response = await apiClient.put<{
       id: number;
       name: string;
@@ -929,6 +1122,11 @@ class KnowledgeAPIImpl {
   }
 
   async deleteTest(testId: number): Promise<void> {
+    if (isMockKB()) {
+      const idx = MOCK_ADMIN_TESTS.findIndex((t) => t.id === testId);
+      if (idx >= 0) MOCK_ADMIN_TESTS.splice(idx, 1);
+      return;
+    }
     await apiClient.delete(`/admin/education/tests/${testId}`);
   }
 
@@ -941,6 +1139,17 @@ class KnowledgeAPIImpl {
     answerVariants: string[];
     correctVariant: number;
   }): Promise<TestTaskAdmin> {
+    if (isMockKB()) {
+      mockAdminTaskId += 1;
+      return {
+        id: mockAdminTaskId,
+        name: data.name,
+        description: data.description ?? null,
+        points: data.points ?? 1,
+        answerVariants: data.answerVariants,
+        correctVariant: data.correctVariant,
+      };
+    }
     const response = await apiClient.post<{
       id: number;
       name: string;
@@ -975,6 +1184,16 @@ class KnowledgeAPIImpl {
       correctVariant?: number;
     },
   ): Promise<TestTaskAdmin> {
+    if (isMockKB()) {
+      return {
+        id: taskId,
+        name: data.name ?? "Задание",
+        description: data.description ?? null,
+        points: data.points ?? 1,
+        answerVariants: data.answerVariants ?? [],
+        correctVariant: data.correctVariant ?? 0,
+      };
+    }
     const response = await apiClient.put<{
       id: number;
       name: string;
@@ -1000,16 +1219,38 @@ class KnowledgeAPIImpl {
   }
 
   async deleteTestTask(taskId: number): Promise<void> {
+    if (isMockKB()) return;
     await apiClient.delete(`/admin/education/test-tasks/${taskId}`);
   }
 
   async assignTaskToTest(testId: number, taskId: number, order: number): Promise<void> {
+    if (isMockKB()) {
+      const tasks = MOCK_TEST_TASKS[testId] ?? (MOCK_TEST_TASKS[testId] = []);
+      if (!tasks.some((t) => t.id === taskId)) {
+        tasks.push({
+          id: taskId,
+          name: "Задание",
+          description: "",
+          points: 1,
+          answerVariants: ["A", "B", "C", "D"],
+        });
+      }
+      const test = MOCK_ADMIN_TESTS.find((t) => t.id === testId);
+      if (test) test.tasksCount = tasks.length;
+      void order;
+      return;
+    }
     await apiClient.post(`/admin/education/tests/${testId}/tasks`, undefined, {
       query: { task_id: taskId, order },
     });
   }
 
   async removeTaskFromTest(testId: number, taskId: number): Promise<void> {
+    if (isMockKB()) {
+      const tasks = MOCK_TEST_TASKS[testId];
+      if (tasks) MOCK_TEST_TASKS[testId] = tasks.filter((t) => t.id !== taskId);
+      return;
+    }
     await apiClient.delete(`/admin/education/tests/${testId}/tasks/${taskId}`);
   }
 }

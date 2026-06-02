@@ -10,9 +10,9 @@ export default function AdminEduDashboardPage() {
   if (!user) return null;
 
   const counters = [
-    { label: "Курсов в системе", value: 6, icon: BookOpen, color: "#C41E3A", bg: "#FCE4EC" },
-    { label: "Активных тестов", value: 5, icon: TestTube2, color: "#2E7D32", bg: "#E8F5E9" },
-    { label: "Назначено курсов", value: 148, icon: Users, color: "#059669", bg: "#ECFDF5" },
+    { label: "Курсов в системе", value: 6, icon: BookOpen, color: "#C41E3A", bg: "#FCE4EC", path: "/admin-edu/manage" },
+    { label: "Активных тестов", value: 5, icon: TestTube2, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-edu/manage?tab=tests" },
+    { label: "Назначено курсов", value: 148, icon: Users, color: "#059669", bg: "#ECFDF5", path: "/admin-edu/assignments" },
   ];
 
   return (
@@ -45,13 +45,19 @@ export default function AdminEduDashboardPage() {
         {/* Counters */}
         <div className="grid grid-cols-2 gap-3">
           {counters.map((c, i) => (
-            <div key={i} className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <button
+              key={i}
+              type="button"
+              onClick={() => navigate(c.path)}
+              className="rounded-2xl p-4 text-left w-full"
+              style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", cursor: "pointer" }}
+            >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: c.bg }}>
                 <c.icon size={20} color={c.color} />
               </div>
               <p style={{ color: "#1E293B", fontSize: 28, fontWeight: 800, lineHeight: 1 }}>{c.value}</p>
               <p style={{ color: "#64748B", fontSize: 12, marginTop: 3 }}>{c.label}</p>
-            </div>
+            </button>
           ))}
         </div>
 

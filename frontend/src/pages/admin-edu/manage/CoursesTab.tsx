@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
 import type { Course, CourseListItem, Material, Test } from "../../../types/knowledge";
 import { getErrorMessage } from "../../../utils/errors";
+import { AppSelect } from "../../../components/AppSelect";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 export function CoursesTab() {
@@ -217,20 +218,16 @@ export function CoursesTab() {
                     </div>
                   ))}
                   <div className="flex gap-2 mt-2">
-                    <select
+                    <AppSelect
                       value={assignMaterialId[course.id] ?? ""}
-                      onChange={(e) => setAssignMaterialId((prev) => ({ ...prev, [course.id]: e.target.value }))}
-                      className="flex-1 h-9 px-2 rounded-lg border text-sm"
-                    >
-                      <option value="">Добавить материал...</option>
-                      {materials
+                      onValueChange={(v) => setAssignMaterialId((prev) => ({ ...prev, [course.id]: v }))}
+                      placeholder="Добавить материал..."
+                      emptyOption={{ value: "__pick_material__", label: "Добавить материал..." }}
+                      className="flex-1 h-9"
+                      options={materials
                         .filter((m) => !linkedMaterialIds.has(m.id))
-                        .map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                    </select>
+                        .map((m) => ({ value: String(m.id), label: m.name }))}
+                    />
                     <button
                       type="button"
                       onClick={() => void assignMaterial(course.id)}
@@ -252,20 +249,16 @@ export function CoursesTab() {
                     </div>
                   ))}
                   <div className="flex gap-2 mt-2">
-                    <select
+                    <AppSelect
                       value={assignTestId[course.id] ?? ""}
-                      onChange={(e) => setAssignTestId((prev) => ({ ...prev, [course.id]: e.target.value }))}
-                      className="flex-1 h-9 px-2 rounded-lg border text-sm"
-                    >
-                      <option value="">Добавить тест...</option>
-                      {tests
+                      onValueChange={(v) => setAssignTestId((prev) => ({ ...prev, [course.id]: v }))}
+                      placeholder="Добавить тест..."
+                      emptyOption={{ value: "__pick_test__", label: "Добавить тест..." }}
+                      className="flex-1 h-9"
+                      options={tests
                         .filter((t) => !linkedTestIds.has(t.id))
-                        .map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                    </select>
+                        .map((t) => ({ value: String(t.id), label: t.name }))}
+                    />
                     <button
                       type="button"
                       onClick={() => void assignTest(course.id)}

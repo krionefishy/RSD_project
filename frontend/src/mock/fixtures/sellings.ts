@@ -1,6 +1,12 @@
 import type { MotivationRating, SellingStats } from "../../api/SellingsAPI";
 import { ratingData, salesData } from "../mockData";
 
+const COFFEE_BONUS_RULES = [
+  { fromQuantity: 1, toQuantity: 10, bonusPerUnit: 5 },
+  { fromQuantity: 11, toQuantity: 20, bonusPerUnit: 10 },
+  { fromQuantity: 21, toQuantity: null, bonusPerUnit: 15 },
+];
+
 export function mockSellingStatsDaily(): SellingStats {
   const d = salesData.daily;
   return {
@@ -11,6 +17,10 @@ export function mockSellingStatsDaily(): SellingStats {
     bonus: d.bonus,
     chart: d.chart,
     positions: d.positions,
+    productName: "Кофе (чашки)",
+    targetQuantity: 30,
+    factQuantity: 27,
+    bonusRules: COFFEE_BONUS_RULES,
   };
 }
 
@@ -24,6 +34,10 @@ export function mockSellingStatsPeriodic(): SellingStats {
     bonus: p.bonus,
     chart: p.chart,
     positions: p.positions,
+    productName: "Кофе (чашки)",
+    targetQuantity: 600,
+    factQuantity: 516,
+    bonusRules: COFFEE_BONUS_RULES,
   };
 }
 

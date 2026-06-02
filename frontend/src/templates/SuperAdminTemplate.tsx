@@ -1,10 +1,9 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { LayoutDashboard, Building, Settings, User } from "lucide-react";
+import { LayoutDashboard, Building, User } from "lucide-react";
 
 const TABS = [
   { path: "/superadmin", label: "Обзор", Icon: LayoutDashboard, exact: true },
   { path: "/superadmin/structure", label: "Структура", Icon: Building },
-  { path: "/superadmin/settings", label: "Настройки", Icon: Settings },
   { path: "/superadmin/profile", label: "Профиль", Icon: User },
 ];
 

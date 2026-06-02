@@ -6,6 +6,7 @@ import { UserAPI } from "../../api/UserAPI";
 import { AppUser } from "../../types/user";
 import { SellingsAPI } from "../../api/SellingsAPI";
 import { useApp } from "../../context/AppContext";
+import { useMockAuth } from "../../config/presentationMode";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
 
@@ -34,13 +35,14 @@ export default function EmployeesPage() {
     const controller = new AbortController();
     async function loadEmployees() {
       try {
-        if (!user?.block) {
+        const blockId = user?.block ?? (useMockAuth() ? "1" : undefined);
+        if (!blockId) {
           setLoading(false);
           return;
         }
 
         const users = await UserAPI.listManagedUsers({
-          blockId: user.block,
+          blockId,
           isActive: true,
         }, controller.signal);
 

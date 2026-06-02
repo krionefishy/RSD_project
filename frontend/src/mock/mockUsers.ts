@@ -41,6 +41,7 @@ const PROFILE_BY_EXTERNAL_ID: Record<string, Omit<AppUser, "id" | "role" | "exte
     firstName: "Павел",
     lastName: "Орлов",
     position: "Региональный менеджер",
+    block: "1",
     blockName: "Север",
     storeName: "ТЦ Метрополис",
   },
@@ -51,7 +52,28 @@ const PROFILE_BY_EXTERNAL_ID: Record<string, Omit<AppUser, "id" | "role" | "exte
     position: "Продавец",
     store: "ТЦ Метрополис",
     storeName: "ТЦ Метрополис",
-    blockName: "Центр",
+    block: "1",
+    blockName: "Север",
+  },
+  seller_maria_001: {
+    name: "Мария Петрова",
+    firstName: "Мария",
+    lastName: "Петрова",
+    position: "Продавец",
+    store: "ТЦ Метрополис",
+    storeName: "ТЦ Метрополис",
+    block: "1",
+    blockName: "Север",
+  },
+  seller_ivan_001: {
+    name: "Иван Сидоров",
+    firstName: "Иван",
+    lastName: "Сидоров",
+    position: "Продавец",
+    store: "ТЦ Авиапарк",
+    storeName: "ТЦ Авиапарк",
+    block: "1",
+    blockName: "Север",
   },
 };
 
@@ -100,6 +122,16 @@ export function listAllMockUsers(): AppUser[] {
   return [...ALL_MOCK_USERS];
 }
 
-export function listMockManagedUsers(): AppUser[] {
-  return ALL_MOCK_USERS.filter((u) => u.role === "seller" || u.role === "manager");
+const EXTRA_DEMO_SELLER_IDS = ["seller_maria_001", "seller_ivan_001"];
+
+export function listMockManagedUsers(blockId?: string): AppUser[] {
+  const extraSellers = EXTRA_DEMO_SELLER_IDS.map((id) => getMockUserByExternalId(id));
+  const sellers = [
+    ...ALL_MOCK_USERS.filter((u) => u.role === "seller"),
+    ...extraSellers.filter((u) => !ALL_MOCK_USERS.some((m) => m.externalSystemId === u.externalSystemId)),
+  ];
+  if (blockId) {
+    return sellers.filter((u) => u.block === blockId);
+  }
+  return sellers;
 }

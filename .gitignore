@@ -59,3 +59,5 @@ docs/
 config.yaml
 .env*
 deploy/production-secrets.txt
+deploy/.env.production
+deploy/certbot/

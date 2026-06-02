@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router";
+import { AppSelect } from "../../components/AppSelect";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import type { BlockMemberStatus } from "../../types/profile";
 import { getErrorMessage } from "../../utils/errors";
@@ -104,51 +105,34 @@ export default function CreateEmployeePage() {
 
         <label className="flex flex-col gap-1">
           <span style={{ color: "#64748B", fontSize: 12 }}>Блок</span>
-          <select
+          <AppSelect
             value={form.blockId}
-            onChange={(e) => setForm({ ...form, blockId: e.target.value, locationId: "" })}
-            className="w-full h-10 px-3 rounded-lg border"
-            style={inputStyle}
-          >
-            <option value="">Не назначен</option>
-            {structureBlocks.map((block) => (
-              <option key={block.id} value={block.id}>
-                {block.name}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setForm({ ...form, blockId: v, locationId: "" })}
+            emptyOption={{ value: "__none_block__", label: "Не назначен" }}
+            options={structureBlocks.map((block) => ({ value: block.id, label: block.name }))}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span style={{ color: "#64748B", fontSize: 12 }}>Точка</span>
-          <select
+          <AppSelect
             value={form.locationId}
-            onChange={(e) => setForm({ ...form, locationId: e.target.value })}
-            className="w-full h-10 px-3 rounded-lg border"
-            style={inputStyle}
-          >
-            <option value="">Не назначена</option>
-            {locationOptions.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
+            onValueChange={(v) => setForm({ ...form, locationId: v })}
+            emptyOption={{ value: "__none_location__", label: "Не назначена" }}
+            options={locationOptions.map((location) => ({ value: location.id, label: location.name }))}
+          />
         </label>
 
         <label className="flex flex-col gap-1">
           <span style={{ color: "#64748B", fontSize: 12 }}>Статус в блоке</span>
-          <select
+          <AppSelect
             value={form.blockMemberStatus}
-            onChange={(e) =>
-              setForm({ ...form, blockMemberStatus: e.target.value as BlockMemberStatus })
-            }
-            className="w-full h-10 px-3 rounded-lg border"
-            style={inputStyle}
-          >
-            <option value="primary">Основа</option>
-            <option value="reserve">Резерв</option>
-          </select>
+            onValueChange={(v) => setForm({ ...form, blockMemberStatus: v as BlockMemberStatus })}
+            options={[
+              { value: "primary", label: "Основа" },
+              { value: "reserve", label: "Резерв" },
+            ]}
+          />
         </label>
 
         {tempPassword && (

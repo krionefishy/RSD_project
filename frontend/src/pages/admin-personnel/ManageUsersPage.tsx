@@ -11,6 +11,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { AppSelect } from "../../components/AppSelect";
 import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
@@ -241,36 +242,24 @@ export default function ManageUsersPage() {
           ))}
         </div>
         <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-          <select
+          <AppSelect
             value={filterBlockId}
-            onChange={(e) => {
-              setFilterBlockId(e.target.value);
+            onValueChange={(v) => {
+              setFilterBlockId(v);
               setFilterLocationId("");
             }}
-            className="min-w-0 h-9 px-3 rounded-lg border text-sm"
-            style={{ borderColor: "#E2E8F0" }}
-          >
-            <option value="">Все блоки</option>
-            {structureBlocks.map((block) => (
-              <option key={block.id} value={block.id}>
-                {block.name}
-              </option>
-            ))}
-          </select>
-          <select
+            emptyOption={{ value: "__all_blocks__", label: "Все блоки" }}
+            options={structureBlocks.map((block) => ({ value: block.id, label: block.name }))}
+            className="min-w-0 h-9"
+          />
+          <AppSelect
             value={filterLocationId}
-            onChange={(e) => setFilterLocationId(e.target.value)}
+            onValueChange={setFilterLocationId}
             disabled={locationOptions.length === 0}
-            className="min-w-0 h-9 px-3 rounded-lg border text-sm"
-            style={{ borderColor: "#E2E8F0" }}
-          >
-            <option value="">Все точки</option>
-            {locationOptions.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
+            emptyOption={{ value: "__all_locations__", label: "Все точки" }}
+            options={locationOptions.map((location) => ({ value: location.id, label: location.name }))}
+            className="min-w-0 h-9"
+          />
           <button
             type="button"
             onClick={resetStructureFilters}

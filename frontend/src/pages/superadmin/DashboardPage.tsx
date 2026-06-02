@@ -1,4 +1,5 @@
 import { Globe, Building2, Users, Crown, BarChart3, Shield, LogOut } from "lucide-react";
+import { showDemoActionToast } from "../../utils/demoToast";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
@@ -87,16 +88,15 @@ export default function SuperAdminDashboardPage() {
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <h3 style={{ fontSize: 15, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>Быстрые действия</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button className="p-4 rounded-xl text-center" style={{ background: "#E8F5E9" }}>
-              <Shield size={24} color="#2E7D32" className="mx-auto mb-2" />
-              <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>Создать админа ПО</p>
-            </button>
-            <button className="p-4 rounded-xl text-center" style={{ background: "#F0FDF4" }}>
-              <Users size={24} color="#22C55E" className="mx-auto mb-2" />
-              <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>Управление ролями</p>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => showDemoActionToast("Создание админа ПО")}
+            className="w-full p-4 rounded-xl text-center"
+            style={{ background: "#E8F5E9" }}
+          >
+            <Shield size={24} color="#2E7D32" className="mx-auto mb-2" />
+            <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>Создать админа ПО</p>
+          </button>
         </div>
       </div>
     </div>

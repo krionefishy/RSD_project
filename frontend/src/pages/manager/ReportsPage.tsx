@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FileBarChart, Download, ChevronRight, Filter } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
+import { AppSelect } from "../../components/AppSelect";
 
 const reports = [
   { id: "r1", title: "Мотивация — ежедневный стакан", desc: "План/факт и бонус за ежедневные продажи", period: "Апрель 2026", updated: "14.04.2026", color: "#2E7D32", bg: "#E8F5E9" },
@@ -29,16 +30,16 @@ export default function ReportsPage() {
         {/* Period selector */}
         <div className="px-4 py-4">
           <div className="flex items-center gap-2 mb-4">
-            <select
+            <AppSelect
               value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="flex-1 h-11 rounded-[10px] border px-3"
-              style={{ border: "1.5px solid #E2E8F0", background: "#fff", color: "#1E293B", fontSize: 14 }}
-            >
-              <option value="2026-03">Март 2026</option>
-              <option value="2026-04">Апрель 2026</option>
-              <option value="2026-05">Май 2026</option>
-            </select>
+              onValueChange={setPeriod}
+              className="flex-1 h-11"
+              options={[
+                { value: "2026-03", label: "Март 2026" },
+                { value: "2026-04", label: "Апрель 2026" },
+                { value: "2026-05", label: "Май 2026" },
+              ]}
+            />
             <button className="h-11 w-11 rounded-[10px] flex items-center justify-center" style={{ border: "1.5px solid #E2E8F0", background: "#fff" }}>
               <Filter size={18} color="#64748B" />
             </button>

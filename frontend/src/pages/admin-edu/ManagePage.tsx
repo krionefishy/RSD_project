@@ -3,33 +3,23 @@ import { useSearchParams } from "react-router";
 import { CoursesTab } from "./manage/CoursesTab";
 import { MaterialsTab } from "./manage/MaterialsTab";
 import { TestsTab } from "./manage/TestsTab";
-import { AssignmentsTab } from "./manage/AssignmentsTab";
-
-type TabKey = "courses" | "materials" | "tests" | "assignments";
+type TabKey = "courses" | "materials" | "tests";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "courses", label: "Курсы" },
   { key: "materials", label: "Материалы" },
   { key: "tests", label: "Тесты" },
-  { key: "assignments", label: "Назначения" },
 ];
 
 export default function AdminEduManagePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab: TabKey =
-    tabParam === "materials" || tabParam === "tests" || tabParam === "assignments"
-      ? tabParam
-      : "courses";
+    tabParam === "materials" || tabParam === "tests" ? tabParam : "courses";
   const [tab, setTab] = useState<TabKey>(initialTab);
 
   useEffect(() => {
-    if (
-      tabParam === "courses" ||
-      tabParam === "materials" ||
-      tabParam === "tests" ||
-      tabParam === "assignments"
-    ) {
+    if (tabParam === "courses" || tabParam === "materials" || tabParam === "tests") {
       setTab(tabParam);
     }
   }, [tabParam]);
@@ -51,7 +41,7 @@ export default function AdminEduManagePage() {
       >
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>База знаний</h1>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
-          Курсы, материалы, тесты и назначения
+          Курсы, материалы и тесты
         </p>
       </div>
 
@@ -77,7 +67,6 @@ export default function AdminEduManagePage() {
         {tab === "courses" && <CoursesTab />}
         {tab === "materials" && <MaterialsTab />}
         {tab === "tests" && <TestsTab />}
-        {tab === "assignments" && <AssignmentsTab />}
       </div>
     </div>
   );

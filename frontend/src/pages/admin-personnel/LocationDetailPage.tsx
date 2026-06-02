@@ -5,8 +5,7 @@ import { useStructureBasePath } from "../../hooks/useStructureBasePath";
 import { LocationsAPI } from "../../api/LocationsAPI";
 import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
-import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
-import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
+import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
 import type { TimesheetEntry } from "../../types/profile";
 import { monthPeriodQuery } from "../../utils/timesheet";
 import type { LocationDetail } from "../../types/location";
@@ -237,16 +236,13 @@ export default function LocationDetailPage() {
 
         <div className="rounded-2xl p-4" style={{ background: "#fff" }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>Табель точки</p>
-          <div className="mb-3">
-            <TimesheetMonthFilter monthDate={monthDate} onChange={setMonthDate} />
-          </div>
-          <TimesheetEntriesList
+          <TimesheetCalendar
             entries={timesheetEntries}
             totalHours={timesheetTotalHours}
             loading={timesheetLoading}
             error={timesheetError}
-            showEmployee
-            emptyMessage="Нет записей за период или нет доступа"
+            monthDate={monthDate}
+            onMonthChange={setMonthDate}
           />
         </div>
 

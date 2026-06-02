@@ -4,7 +4,8 @@ import { AppHeader } from "../../components/AppHeader";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
-import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
+import { AppSelect } from "../../components/AppSelect";
+import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
 import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
 import type { TimesheetEntry, TimesheetUploadResult } from "../../types/profile";
 import { AppUser } from "../../types/user";
@@ -34,8 +35,6 @@ export default function TimesheetsPage() {
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
 
-  const [savingEntryId, setSavingEntryId] = useState<number | null>(null);
-  const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [lastUpload, setLastUpload] = useState<TimesheetUploadResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -143,43 +142,6 @@ export default function TimesheetsPage() {
     }
   };
 
-  const handleSaveEntry = async (entry: TimesheetEntry) => {
-    setSavingEntryId(entry.id);
-    try {
-      const updated = await AdminStaffAPI.updateTimeEntry(entry.id, {
-        activityCode: entry.activityCode,
-        hours: entry.hours,
-        shiftType: entry.shiftType,
-        comment: entry.comment,
-      });
-      const applyUpdate = (items: TimesheetEntry[]) =>
-        items.map((item) => (item.id === entry.id ? { ...item, ...updated } : item));
-      setEmployeeEntries(applyUpdate);
-      setLocationEntries(applyUpdate);
-      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
-      toast.success("Запись табеля сохранена");
-    } catch (error) {
-      toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось сохранить запись")));
-    } finally {
-      setSavingEntryId(null);
-    }
-  };
-
-  const handleDeleteEntry = async (entryId: number) => {
-    setDeletingEntryId(entryId);
-    try {
-      await AdminStaffAPI.deleteTimeEntry(entryId);
-      setEmployeeEntries((items) => items.filter((item) => item.id !== entryId));
-      setLocationEntries((items) => items.filter((item) => item.id !== entryId));
-      toast.success("Запись удалена");
-      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
-    } catch (error) {
-      toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось удалить запись")));
-    } finally {
-      setDeletingEntryId(null);
-    }
-  };
-
   const onFileSelected = (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
@@ -260,64 +222,51 @@ export default function TimesheetsPage() {
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по точке</p>
-          <select
-            value={selectedLocationId}
-            onChange={(e) => setSelectedLocationId(e.target.value)}
-            disabled={structureLoading}
-            className="w-full h-10 px-3 rounded-lg border mb-3"
-            style={{ borderColor: "#E2E8F0", fontSize: 14 }}
-          >
-            {structureLocations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
-          <TimesheetEntriesList
+          <div className="mb-3">
+            <AppSelect
+              value={selectedLocationId}
+              onValueChange={setSelectedLocationId}
+              disabled={structureLoading}
+              placeholder="Выберите точку"
+              options={structureLocations.map((location) => ({
+                value: location.id,
+                label: location.name,
+              }))}
+            />
+          </div>
+          <TimesheetCalendar
             entries={locationEntries}
             totalHours={locationTotalHours}
             loading={locationLoading}
             error={locationError}
-            showEmployee
-            editable
-            savingEntryId={savingEntryId}
-            deletingEntryId={deletingEntryId}
-            onChangeEntry={(entry) =>
-              setLocationEntries((items) => items.map((item) => (item.id === entry.id ? entry : item)))
-            }
-            onSaveEntry={(entry) => void handleSaveEntry(entry)}
-            onDeleteEntry={(id) => void handleDeleteEntry(id)}
+            monthDate={monthDate}
+            onMonthChange={setMonthDate}
+            showSummary={false}
           />
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по сотруднику</p>
-          <select
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            disabled={employeesLoading}
-            className="w-full h-10 px-3 rounded-lg border mb-3"
-            style={{ borderColor: "#E2E8F0", fontSize: 14 }}
-          >
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.name} ({employee.externalSystemId})
-              </option>
-            ))}
-          </select>
-          <TimesheetEntriesList
+          <div className="mb-3">
+            <AppSelect
+              value={selectedUserId}
+              onValueChange={setSelectedUserId}
+              disabled={employeesLoading}
+              placeholder="Выберите сотрудника"
+              options={employees.map((employee) => ({
+                value: employee.id,
+                label: `${employee.name} (${employee.externalSystemId})`,
+              }))}
+            />
+          </div>
+          <TimesheetCalendar
             entries={employeeEntries}
             totalHours={employeeTotalHours}
             loading={employeeLoading}
             error={employeeError}
-            editable
-            savingEntryId={savingEntryId}
-            deletingEntryId={deletingEntryId}
-            onChangeEntry={(entry) =>
-              setEmployeeEntries((items) => items.map((item) => (item.id === entry.id ? entry : item)))
-            }
-            onSaveEntry={(entry) => void handleSaveEntry(entry)}
-            onDeleteEntry={(id) => void handleDeleteEntry(id)}
+            monthDate={monthDate}
+            onMonthChange={setMonthDate}
+            showSummary={false}
           />
         </div>
 

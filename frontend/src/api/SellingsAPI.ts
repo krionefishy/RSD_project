@@ -1,6 +1,16 @@
 import { useMockAuth } from "../config/presentationMode";
-import { mockMotivationRating, mockSellingStatsDaily } from "../mock/fixtures/sellings";
+import {
+  mockMotivationRating,
+  mockSellingStatsDaily,
+  mockSellingStatsPeriodic,
+} from "../mock/fixtures/sellings";
 import { apiClient } from "./APIClient";
+
+export interface PlanBonusRule {
+  fromQuantity: number;
+  toQuantity: number | null;
+  bonusPerUnit: number;
+}
 
 export interface SellingStats {
   userId: string;
@@ -10,7 +20,13 @@ export interface SellingStats {
   bonus: number;
   chart: Array<{ day: string; plan: number; fact: number }>;
   positions: Array<{ name: string; plan: number; fact: number }>;
+  productName?: string;
+  targetQuantity?: number;
+  factQuantity?: number;
+  bonusRules?: PlanBonusRule[];
 }
+
+export type SalesPlanPeriod = "daily" | "periodic";
 
 export interface MotivationProgram {
   userId: string;
@@ -130,12 +146,22 @@ function mapMotivationRating(dto: MotivationRatingDTO): MotivationRating {
 }
 
 class SellingsAPIImpl {
-  async getStats(userIdOrSignal?: string | AbortSignal, signal?: AbortSignal): Promise<SellingStats> {
+  async getStats(
+    userIdOrPeriodOrSignal?: string | SalesPlanPeriod | AbortSignal,
+    signal?: AbortSignal,
+  ): Promise<SellingStats> {
     if (useMockAuth()) {
+      if (userIdOrPeriodOrSignal === "periodic") return mockSellingStatsPeriodic();
+      if (userIdOrPeriodOrSignal === "daily") return mockSellingStatsDaily();
       return mockSellingStatsDaily();
     }
-    const userId = typeof userIdOrSignal === "string" ? userIdOrSignal : undefined;
-    const requestSignal = userIdOrSignal instanceof AbortSignal ? userIdOrSignal : signal;
+    const userId =
+      typeof userIdOrPeriodOrSignal === "string" &&
+      userIdOrPeriodOrSignal !== "daily" &&
+      userIdOrPeriodOrSignal !== "periodic"
+        ? userIdOrPeriodOrSignal
+        : undefined;
+    const requestSignal = userIdOrPeriodOrSignal instanceof AbortSignal ? userIdOrPeriodOrSignal : signal;
     const query: Record<string, string> = {};
     if (userId) query.user_id = userId;
     const response = await apiClient.get<SellingStatsDTO>("/sales/stats", {

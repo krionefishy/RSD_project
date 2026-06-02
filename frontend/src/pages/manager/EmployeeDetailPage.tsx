@@ -8,8 +8,7 @@ import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { AppUser } from "../../types/user";
 import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
 import { KnowledgeAPI, type Course } from "../../api/KnowledgeAPI";
-import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
-import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
+import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
 import type { TimesheetEntry } from "../../types/profile";
 import { monthPeriodQuery } from "../../utils/timesheet";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -216,15 +215,13 @@ export default function EmployeeDetailPage() {
         {tab === "schedule" && (
           <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Табель сотрудника</p>
-            <div className="mb-3">
-              <TimesheetMonthFilter monthDate={monthDate} onChange={setMonthDate} />
-            </div>
-            <TimesheetEntriesList
+            <TimesheetCalendar
               entries={timesheetEntries}
               totalHours={timesheetTotalHours}
               loading={timesheetLoading}
               error={timesheetError}
-              emptyMessage="Нет записей за период или нет доступа"
+              monthDate={monthDate}
+              onMonthChange={setMonthDate}
             />
           </div>
         )}
