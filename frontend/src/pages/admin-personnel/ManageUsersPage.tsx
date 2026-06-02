@@ -10,7 +10,8 @@ import {
   UserCheck,
   RotateCcw,
 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { AppSelect } from "../../components/AppSelect";
 import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
@@ -46,6 +47,7 @@ const ROLE_FILTERS: Array<UserRole | "all"> = [
 
 export default function ManageUsersPage() {
   const navigate = useNavigate();
+  const isPoPreview = useLocation().pathname.startsWith("/admin-po/preview");
   const [query, setQuery] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "all">("all");
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
@@ -179,6 +181,7 @@ export default function ManageUsersPage() {
         className="px-4 pt-6 pb-5"
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
+        {!isPoPreview && <ScreenBackButton to="/admin-personnel" light className="mb-3" />}
         <div className="flex items-center justify-between mb-1">
           <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>
             Управление пользователями

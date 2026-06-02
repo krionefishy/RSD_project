@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { AppSelect } from "../../../components/AppSelect";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
 import type { CourseListItem } from "../../../types/knowledge";
 import { getErrorMessage } from "../../../utils/errors";
 
-export function AssignmentsTab() {
+interface AssignmentsTabProps {
+  enrollmentsBasePath?: string;
+}
+
+export function AssignmentsTab({ enrollmentsBasePath = "/admin-edu/manage" }: AssignmentsTabProps) {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
@@ -40,21 +45,16 @@ export function AssignmentsTab() {
         Выберите курс и перейдите на страницу назначений для управления сотрудниками, сбросом прогресса и
         попыток тестов.
       </p>
-      <select
+      <AppSelect
         value={selectedCourseId}
-        onChange={(e) => setSelectedCourseId(e.target.value)}
-        className="h-10 px-3 rounded-lg border text-sm"
-      >
-        {courses.map((course) => (
-          <option key={course.id} value={course.id}>
-            {course.name}
-          </option>
-        ))}
-      </select>
+        onValueChange={setSelectedCourseId}
+        placeholder="Выберите курс"
+        options={courses.map((course) => ({ value: String(course.id), label: course.name }))}
+      />
       {selectedCourseId && (
         <button
           type="button"
-          onClick={() => navigate(`/admin-edu/manage/${selectedCourseId}`)}
+          onClick={() => navigate(`${enrollmentsBasePath}/${selectedCourseId}`)}
           className="h-10 rounded-lg bg-[#2E7D32] text-white text-sm font-semibold flex items-center justify-center"
         >
           Открыть назначения курса

@@ -30,6 +30,8 @@ export interface TimesheetCalendarProps {
   onMonthChange: (date: Date) => void;
   totalHours?: string;
   showSummary?: boolean;
+  /** Показывать ФИО сотрудника (табель точки) */
+  showEmployees?: boolean;
   className?: string;
 }
 
@@ -41,6 +43,7 @@ export function TimesheetCalendar({
   onMonthChange,
   totalHours = "0",
   showSummary = true,
+  showEmployees = false,
   className = "",
 }: TimesheetCalendarProps) {
   const today = new Date();
@@ -170,8 +173,13 @@ export function TimesheetCalendar({
                     >
                       <span style={{ color: cfg.color, fontSize: 14, fontWeight: 700 }}>{entry.hours}</span>
                     </div>
-                    <div>
-                      <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>
+                    <div className="flex-1 min-w-0">
+                      {showEmployees && entry.userName && (
+                        <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
+                          {entry.userName}
+                        </p>
+                      )}
+                      <p style={{ color: showEmployees ? "#64748B" : "#1E293B", fontSize: 14, fontWeight: showEmployees ? 400 : 500 }}>
                         {entry.activityName} ({entry.activityCode})
                       </p>
                       <p style={{ color: "#64748B", fontSize: 12 }}>

@@ -65,9 +65,15 @@ import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
 // Pages - Admin PO
 import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
+import AdminPOPersonnelPreviewPage from "../pages/admin-po/preview/PersonnelPreviewPage";
+import AdminPOEduPreviewPage from "../pages/admin-po/preview/EduPreviewPage";
+import AdminPOEduAssignmentsPreviewPage from "../pages/admin-po/preview/EduAssignmentsPreviewPage";
+import AdminPOCourseEnrollmentsPreviewPage from "../pages/admin-po/preview/CourseEnrollmentsPreviewPage";
+import AdminPOSalesPreviewPage from "../pages/admin-po/preview/SalesPreviewPage";
 
 // Pages - SuperAdmin
 import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
+import SuperAdminProfilePage from "../pages/superadmin/ProfilePage";
 import BlocksListPage from "../pages/admin-personnel/BlocksListPage";
 import BlockDetailPage from "../pages/admin-personnel/BlockDetailPage";
 import LocationsListPage from "../pages/admin-personnel/LocationsListPage";
@@ -161,7 +167,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-edu",
     element: (
-      <RequireAuth allowedRoles={["admin-edu", "admin-po"]}>
+      <RequireAuth allowedRoles={["admin-edu"]}>
         <AdminEduTemplate />
       </RequireAuth>
     ),
@@ -178,7 +184,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-sales",
     element: (
-      <RequireAuth allowedRoles={["admin-sales", "admin-po"]}>
+      <RequireAuth allowedRoles={["admin-sales"]}>
         <AdminSalesTemplate />
       </RequireAuth>
     ),
@@ -193,7 +199,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-personnel",
     element: (
-      <RequireAuth allowedRoles={["admin-personnel", "admin-po", "superadmin"]}>
+      <RequireAuth allowedRoles={["admin-personnel", "superadmin"]}>
         <AdminPersonnelTemplate />
       </RequireAuth>
     ),
@@ -218,7 +224,14 @@ export const router = createBrowserRouter([
         <AdminPOTemplate />
       </RequireAuth>
     ),
-    children: [{ index: true, element: <AdminPODashboardPage /> }],
+    children: [
+      { index: true, element: <AdminPODashboardPage /> },
+      { path: "preview/personnel", element: <AdminPOPersonnelPreviewPage /> },
+      { path: "preview/edu", element: <AdminPOEduPreviewPage /> },
+      { path: "preview/edu/assignments", element: <AdminPOEduAssignmentsPreviewPage /> },
+      { path: "preview/edu/manage/:courseId", element: <AdminPOCourseEnrollmentsPreviewPage /> },
+      { path: "preview/sales", element: <AdminPOSalesPreviewPage /> },
+    ],
   },
 
   {
@@ -234,7 +247,7 @@ export const router = createBrowserRouter([
       { path: "structure/blocks/:blockId", element: <BlockDetailPage /> },
       { path: "structure/locations", element: <LocationsListPage /> },
       { path: "structure/locations/:locationId", element: <LocationDetailPage /> },
-      { path: "profile", element: <SuperAdminDashboardPage /> },
+      { path: "profile", element: <SuperAdminProfilePage /> },
     ],
   },
 

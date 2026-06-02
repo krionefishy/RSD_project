@@ -1,6 +1,13 @@
-import { Navigate } from "react-router";
+import { AppHeader } from "../../components/AppHeader";
+import { AssignmentsTab } from "./manage/AssignmentsTab";
 
-/** Legacy nav target — assignments live on ManagePage. */
 export default function AdminEduAssignmentsPage() {
-  return <Navigate to="/admin-edu/manage?tab=assignments" replace />;
+  return (
+    <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
+      <AppHeader title="Назначения" showBack backTo="/admin-edu" white />
+      <div className="px-4 py-4">
+        <AssignmentsTab enrollmentsBasePath="/admin-edu/manage" />
+      </div>
+    </div>
+  );
 }

@@ -33,12 +33,12 @@ export function SalesPlanDetailSheet({ period, stats, onClose }: SalesPlanDetail
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex flex-col justify-end"
+      className="fixed inset-0 z-[200] flex justify-center items-end"
       style={{ background: "rgba(15, 23, 42, 0.5)" }}
       onClick={onClose}
     >
       <div
-        className="rounded-t-3xl overflow-y-auto max-h-[92vh]"
+        className="w-full max-w-[430px] rounded-t-3xl overflow-y-auto max-h-[85vh] mb-2 mx-auto"
         style={{ background: "#F8FAFC" }}
         onClick={(e) => e.stopPropagation()}
       >

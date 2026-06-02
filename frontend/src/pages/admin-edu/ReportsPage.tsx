@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookOpen, TrendingUp, Download, ChevronDown } from "lucide-react";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 
 export default function AdminEduReportsPage() {
   const [period] = useState("Апрель 2026");
@@ -28,6 +29,7 @@ export default function AdminEduReportsPage() {
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
+        <ScreenBackButton to="/admin-edu" light className="mb-3" />
         <div className="flex items-center justify-between">
           <div>
             <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Отчёты</h1>

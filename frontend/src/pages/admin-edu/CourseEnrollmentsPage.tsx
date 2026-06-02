@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import type { Course, CourseEnrollment, CourseTestItem } from "../../types/knowledge";
@@ -10,7 +10,11 @@ import { ConfirmDialog } from "./manage/ConfirmDialog";
 export default function CourseEnrollmentsPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const id = Number(courseId);
+  const backTo = location.pathname.startsWith("/admin-po/preview")
+    ? "/admin-po/preview/edu/assignments"
+    : "/admin-edu/manage";
 
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
@@ -96,7 +100,7 @@ export default function CourseEnrollmentsPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="px-4 pt-4 pb-5 bg-gradient-to-br from-[#2E7D32] to-[#1B5E20]">
         <button
-          onClick={() => navigate("/admin-edu/manage")}
+          onClick={() => navigate(backTo)}
           className="flex items-center gap-1 mb-3 text-white/80 text-sm"
         >
           <ChevronLeft size={18} />

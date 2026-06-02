@@ -1,4 +1,6 @@
 import { Target, MapPin } from "lucide-react";
+import { useLocation } from "react-router";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 
 const blocks = [
   { name: "Центр", plan: "4.5M ₽", fact: "4.2M ₽", percent: 93 },
@@ -14,12 +16,15 @@ const locations = [
 ];
 
 export default function AdminSalesManagePage() {
+  const isPoPreview = useLocation().pathname.startsWith("/admin-po/preview");
+
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div
         className="px-4 pt-6 pb-5"
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
+        {!isPoPreview && <ScreenBackButton to="/admin-sales" light className="mb-3" />}
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Управление</h1>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
           Планы и факт продаж по сети

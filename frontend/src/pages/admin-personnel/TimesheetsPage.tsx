@@ -150,7 +150,7 @@ export default function TimesheetsPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <AppHeader title="Табели учёта" showBack white />
+      <AppHeader title="Табели учёта" showBack backTo="/admin-personnel" white />
 
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
@@ -242,6 +242,7 @@ export default function TimesheetsPage() {
             monthDate={monthDate}
             onMonthChange={setMonthDate}
             showSummary={false}
+            showEmployees
           />
         </div>
 

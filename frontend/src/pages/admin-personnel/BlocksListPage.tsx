@@ -6,6 +6,7 @@ import { LocationsAPI } from "../../api/LocationsAPI";
 import type { BlockSummary } from "../../types/location";
 import { useApp } from "../../context/AppContext";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { canManageStructure } from "../../utils/structureAccess";
 import { toast } from "sonner";
 
@@ -69,6 +70,7 @@ export default function BlocksListPage() {
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
+        <ScreenBackButton to={paths.home} light className="mb-3" />
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Блоки</h1>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, marginTop: 4 }}>
           {loading ? "Загрузка..." : `${blocks.length} блоков · ${totalStores} точек`}

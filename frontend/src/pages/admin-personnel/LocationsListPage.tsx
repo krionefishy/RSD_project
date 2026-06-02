@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Building2, ChevronRight, MapPin, Plus } from "lucide-react";
+import { ChevronRight, MapPin, Plus } from "lucide-react";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { useNavigate } from "react-router";
 import { useStructureBasePath } from "../../hooks/useStructureBasePath";
 import { LocationsAPI } from "../../api/LocationsAPI";
@@ -74,14 +75,7 @@ export default function LocationsListPage() {
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
-        <button
-          onClick={() => navigate(paths.blocks)}
-          className="flex items-center gap-1 mb-3"
-          style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}
-        >
-          <Building2 size={16} />
-          Блоки
-        </button>
+        <ScreenBackButton to={paths.blocks} light className="mb-3" />
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Точки</h1>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, marginTop: 4 }}>
           {loading ? "Загрузка..." : `${locations.length} точек`}

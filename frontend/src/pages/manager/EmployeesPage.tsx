@@ -8,6 +8,7 @@ import { SellingsAPI } from "../../api/SellingsAPI";
 import { useApp } from "../../context/AppContext";
 import { useMockAuth } from "../../config/presentationMode";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { toast } from "sonner";
 
 const statusBadge = {
@@ -94,6 +95,7 @@ export default function EmployeesPage() {
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       {/* Header */}
       <div className="px-4 pt-6 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
+        <ScreenBackButton to="/manager" light className="mb-3" />
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{user?.blockName ?? user?.block ?? "Блок не назначен"}</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Сотрудники</h1>
         {/* Search */}

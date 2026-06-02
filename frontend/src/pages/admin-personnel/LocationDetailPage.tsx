@@ -243,6 +243,7 @@ export default function LocationDetailPage() {
             error={timesheetError}
             monthDate={monthDate}
             onMonthChange={setMonthDate}
+            showEmployees
           />
         </div>
 

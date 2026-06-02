@@ -1,4 +1,5 @@
 import { FileText, Download } from "lucide-react";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { showDemoActionToast } from "../../utils/demoToast";
 
 const reports = [
@@ -15,6 +16,7 @@ export default function AdminSalesReportsPage() {
         className="px-4 pt-6 pb-5"
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
+        <ScreenBackButton to="/admin-sales" light className="mb-3" />
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Отчёты</h1>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
           Сводные отчёты по продажам

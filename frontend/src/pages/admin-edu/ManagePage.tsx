@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
+import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { CoursesTab } from "./manage/CoursesTab";
 import { MaterialsTab } from "./manage/MaterialsTab";
 import { TestsTab } from "./manage/TestsTab";
@@ -12,6 +13,8 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function AdminEduManagePage() {
+  const location = useLocation();
+  const isPoPreview = location.pathname.startsWith("/admin-po/preview");
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab: TabKey =
@@ -39,6 +42,7 @@ export default function AdminEduManagePage() {
         className="px-4 pt-6 pb-5"
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
+        {!isPoPreview && <ScreenBackButton to="/admin-edu" light className="mb-3" />}
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>База знаний</h1>
         <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, marginTop: 4 }}>
           Курсы, материалы и тесты
