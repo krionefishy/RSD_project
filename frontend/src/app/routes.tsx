@@ -62,6 +62,9 @@ import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
 // Pages - Admin PO
 import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
+import AdminPODataPage from "../pages/admin-po/DataPage";
+import AdminPOReportsPage from "../pages/admin-po/ReportsPage";
+import AdminPOProfilePage from "../pages/admin-po/ProfilePage";
 
 // Pages - SuperAdmin
 import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
@@ -213,9 +216,9 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminPODashboardPage /> },
-      { path: "data", element: <AdminPODashboardPage /> },
-      { path: "reports", element: <AdminPODashboardPage /> },
-      { path: "profile", element: <AdminPODashboardPage /> },
+      { path: "data", element: <AdminPODataPage /> },
+      { path: "reports", element: <AdminPOReportsPage /> },
+      { path: "profile", element: <AdminPOProfilePage /> },
     ],
   },
 

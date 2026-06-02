@@ -91,8 +91,10 @@ frontend/
 
 ## 4. Инфраструктура
 
-- Production: `docker-compose.prod.yaml` (Traefik + SSL)
-- Local: `docker-compose.local.yml` (Postgres, Kafka, Redis, MinIO)
+- Production: `deploy/docker-compose.yaml` (nginx + TLS + full stack)
+- Demo (presentation): `deploy/docker-compose.demo.yaml` (nginx + frontend only, mock data)
+- Local infra: `docker-compose.local.yml` (Postgres, Kafka, Redis)
+- CI: `docker-compose.ci.yaml` (Postgres for tests)
 - Сети: `proxy` (внешняя) / `internal` (изолированная)
 
 ---

@@ -1,3 +1,5 @@
+import { useMockAuth } from "../config/presentationMode";
+import { mockMotivationRating, mockSellingStatsDaily } from "../mock/fixtures/sellings";
 import { apiClient } from "./APIClient";
 
 export interface SellingStats {
@@ -129,6 +131,9 @@ function mapMotivationRating(dto: MotivationRatingDTO): MotivationRating {
 
 class SellingsAPIImpl {
   async getStats(userIdOrSignal?: string | AbortSignal, signal?: AbortSignal): Promise<SellingStats> {
+    if (useMockAuth()) {
+      return mockSellingStatsDaily();
+    }
     const userId = typeof userIdOrSignal === "string" ? userIdOrSignal : undefined;
     const requestSignal = userIdOrSignal instanceof AbortSignal ? userIdOrSignal : signal;
     const query: Record<string, string> = {};
@@ -141,11 +146,17 @@ class SellingsAPIImpl {
   }
 
   async getMotivation(signal?: AbortSignal): Promise<MotivationRating> {
+    if (useMockAuth()) {
+      return mockMotivationRating();
+    }
     const response = await apiClient.get<MotivationRatingDTO>("/sales/motivation", { signal });
     return mapMotivationRating(response);
   }
 
   async getBlockStats(blockId: string, from?: string, to?: string): Promise<SellingStats> {
+    if (useMockAuth()) {
+      return mockSellingStatsDaily();
+    }
     const query: Record<string, string> = { block_id: blockId };
     if (from) query.from = from;
     if (to) query.to = to;

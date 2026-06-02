@@ -6,22 +6,11 @@ import type {
   ShiftType,
   UserProfile,
 } from "../types/profile";
+import { useMockAuth } from "../config/presentationMode";
+import { getCurrentMockUser, listAllMockUsers, listMockManagedUsers } from "../mock/mockUsers";
+import { mockOwnTimesheet } from "../mock/fixtures/personnel";
 import { toFrontendRole, toBackendRole } from "../utils/roleMap";
 import { apiClient } from "./APIClient";
-
-function isMockAuth(): boolean {
-  return import.meta.env.VITE_MOCK_AUTH === "true";
-}
-
-const MOCK_USER: AppUser = {
-  id: "mock-seller-uuid",
-  name: "Seller User",
-  firstName: "Seller",
-  lastName: "User",
-  role: "seller",
-  externalSystemId: "seller_001",
-  isActive: true,
-};
 
 function buildDisplayName(
   first?: string | null,
@@ -193,8 +182,8 @@ interface UsersListDTO {
 
 class UserAPIImpl {
   async fetchMe(signal?: AbortSignal): Promise<AppUser> {
-    if (isMockAuth()) {
-      return MOCK_USER;
+    if (useMockAuth()) {
+      return getCurrentMockUser();
     }
 
     const response = await apiClient.get<UserResponse>("/users/me", { signal });
@@ -202,15 +191,19 @@ class UserAPIImpl {
   }
 
   async getOwnProfile(signal?: AbortSignal): Promise<UserProfile> {
-    if (isMockAuth()) {
+    if (useMockAuth()) {
+      const user = getCurrentMockUser();
       return {
-        id: MOCK_USER.id,
-        externalSystemId: MOCK_USER.externalSystemId,
-        role: MOCK_USER.role,
-        firstName: MOCK_USER.firstName,
-        lastName: MOCK_USER.lastName,
+        id: user.id,
+        externalSystemId: user.externalSystemId,
+        role: user.role,
+        firstName: user.firstName ?? undefined,
+        lastName: user.lastName ?? undefined,
+        position: user.position ?? undefined,
         isActive: true,
         isTempPassword: false,
+        location: user.storeName ? { id: 1, name: user.storeName } : undefined,
+        block: user.blockName ? { id: 1, name: user.blockName } : undefined,
       };
     }
     const response = await apiClient.get<UserProfileDTO>("/users/me/profile", { signal });
@@ -218,12 +211,15 @@ class UserAPIImpl {
   }
 
   async getUserProfile(userId: string, signal?: AbortSignal): Promise<UserProfile> {
-    if (isMockAuth()) {
+    if (useMockAuth()) {
+      const user = listAllMockUsers().find((u) => u.id === userId) ?? getCurrentMockUser();
       return {
-        id: userId,
-        externalSystemId: "mock_001",
-        role: "seller",
-        firstName: "Mock",
+        id: user.id,
+        externalSystemId: user.externalSystemId,
+        role: user.role,
+        firstName: user.firstName ?? undefined,
+        lastName: user.lastName ?? undefined,
+        position: user.position ?? undefined,
         isActive: true,
         isTempPassword: false,
       };
@@ -233,16 +229,23 @@ class UserAPIImpl {
   }
 
   async getUser(userId: string, signal?: AbortSignal): Promise<AppUser> {
-    if (isMockAuth()) {
-      return { ...MOCK_USER, id: userId, name: `User ${userId}` };
+    if (useMockAuth()) {
+      return listAllMockUsers().find((u) => u.id === userId) ?? { ...getCurrentMockUser(), id: userId };
     }
     const response = await apiClient.get<UserResponse>(`/users/${userId}`, { signal });
     return mapUserResponse(response);
   }
 
   async listUsers(filters?: UsersListFilters, signal?: AbortSignal): Promise<AppUser[]> {
-    if (isMockAuth()) {
-      return [MOCK_USER];
+    if (useMockAuth()) {
+      let users = listAllMockUsers();
+      if (filters?.role && filters.role !== "all") {
+        users = users.filter((u) => u.role === filters.role);
+      }
+      if (filters?.isActive !== undefined) {
+        users = users.filter((u) => (u.isActive ?? true) === filters.isActive);
+      }
+      return users;
     }
 
     const query: Record<string, string | boolean> = {};
@@ -258,8 +261,12 @@ class UserAPIImpl {
   }
 
   async listManagedUsers(filters?: Omit<UsersListFilters, "role">, signal?: AbortSignal): Promise<AppUser[]> {
-    if (isMockAuth()) {
-      return [MOCK_USER];
+    if (useMockAuth()) {
+      let users = listMockManagedUsers();
+      if (filters?.isActive !== undefined) {
+        users = users.filter((u) => (u.isActive ?? true) === filters.isActive);
+      }
+      return users;
     }
 
     const query: Record<string, string | boolean> = {};
@@ -272,6 +279,9 @@ class UserAPIImpl {
   }
 
   async uploadOwnAvatar(file: File): Promise<{ avatarUrl: string }> {
+    if (useMockAuth()) {
+      return { avatarUrl: URL.createObjectURL(file) };
+    }
     const formData = new FormData();
     formData.append("file", file);
     const response = await apiClient.post<{ avatar_url: string }>("/users/me/avatar", formData);
@@ -279,7 +289,15 @@ class UserAPIImpl {
   }
 
   async getOwnCompensation(signal?: AbortSignal): Promise<EmployeeCompensation | null> {
-    if (isMockAuth()) return null;
+    if (useMockAuth()) {
+      return {
+        userId: getCurrentMockUser().id,
+        baseSalary: "45000",
+        hourlyRate: "350",
+        effectiveNightHourlyRate: "420",
+        updatedAt: new Date().toISOString(),
+      };
+    }
     const response = await apiClient.get<EmployeeCompensationDTO | null>("/users/me/compensation", {
       signal,
     });
@@ -288,13 +306,8 @@ class UserAPIImpl {
   }
 
   async getOwnTimesheet(query: OwnTimesheetQuery, signal?: AbortSignal): Promise<OwnTimesheet> {
-    if (isMockAuth()) {
-      return {
-        items: [],
-        periodFrom: query.periodFrom,
-        periodTo: query.periodTo,
-        totalHours: "0",
-      };
+    if (useMockAuth()) {
+      return mockOwnTimesheet(query);
     }
     const response = await apiClient.get<OwnTimesheetDTO>("/users/me/timesheet", {
       query: {

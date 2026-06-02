@@ -5,6 +5,8 @@ import type {
   OwnTimesheetQuery,
   TimesheetEntry,
 } from "../types/profile";
+import { useMockAuth } from "../config/presentationMode";
+import { mockEmployeeTimesheet, mockLocationTimesheet } from "../mock/fixtures/personnel";
 import { apiClient } from "./APIClient";
 
 interface EmployeeCompensationDTO {
@@ -86,6 +88,15 @@ function mapCompensation(dto: EmployeeCompensationDTO): EmployeeCompensation {
 
 class PersonnelAPIImpl {
   async getEmployeeCompensation(userId: string, signal?: AbortSignal): Promise<EmployeeCompensation | null> {
+    if (useMockAuth()) {
+      return {
+        userId,
+        baseSalary: "45000",
+        hourlyRate: "350",
+        effectiveNightHourlyRate: "420",
+        updatedAt: new Date().toISOString(),
+      };
+    }
     const response = await apiClient.get<EmployeeCompensationDTO | null>(
       `/personnel/users/${userId}/compensation`,
       { signal },
@@ -99,6 +110,9 @@ class PersonnelAPIImpl {
     query: OwnTimesheetQuery,
     signal?: AbortSignal,
   ): Promise<LocationTimesheet> {
+    if (useMockAuth()) {
+      return mockLocationTimesheet(query);
+    }
     const response = await apiClient.get<LocationTimesheetDTO>(`/personnel/locations/${locationId}/timesheet`, {
       query: {
         period_from: query.periodFrom,
@@ -118,6 +132,9 @@ class PersonnelAPIImpl {
     query: OwnTimesheetQuery,
     signal?: AbortSignal,
   ): Promise<OwnTimesheet> {
+    if (useMockAuth()) {
+      return mockEmployeeTimesheet(userId, query);
+    }
     const response = await apiClient.get<EmployeeTimesheetDTO>(`/personnel/users/${userId}/timesheet`, {
       query: {
         period_from: query.periodFrom,

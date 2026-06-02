@@ -14,6 +14,8 @@ import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
 import { getErrorMessage } from "../../utils/errors";
 import { toast } from "sonner";
+import { isPresentationMode } from "../../config/presentationMode";
+import { showDemoActionToast } from "../../utils/demoToast";
 
 const menuItems = [
   { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#2E7D32" },
@@ -35,7 +37,7 @@ export default function ProfilePage() {
     try {
       const result = await UserAPI.uploadOwnAvatar(file);
       setUser({ ...user, avatar: result.avatarUrl });
-      toast.success("Аватар обновлён");
+      toast.success(isPresentationMode() ? "Демо: аватар обновлён локально" : "Аватар обновлён");
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось загрузить аватар"));
     } finally {
@@ -106,12 +108,17 @@ export default function ProfilePage() {
           className="rounded-2xl overflow-hidden"
           style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
         >
-          {menuItems.map((item, i) => (
+          {menuItems
+            .filter((item) => !isPresentationMode() || item.path)
+            .map((item, i, arr) => (
             <button
               key={i}
-              onClick={() => item.path && navigate(item.path)}
+              onClick={() => {
+                if (item.path) navigate(item.path);
+                else showDemoActionToast();
+              }}
               className="w-full flex items-center gap-3 px-4 py-4"
-              style={{ borderBottom: i < menuItems.length - 1 ? "1px solid #F1F5F9" : "none" }}
+              style={{ borderBottom: i < arr.length - 1 ? "1px solid #F1F5F9" : "none" }}
             >
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"

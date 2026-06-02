@@ -1,4 +1,7 @@
+import { useMockAuth } from "../config/presentationMode";
+import { getMockUserByExternalId } from "../mock/mockUsers";
 import { authStorage } from "../utils/authStorage";
+import { toBackendRole } from "../utils/roleMap";
 import { importRsaPublicKey, rsaEncryptToBase64 } from "../utils/rsaEncrypt";
 import { apiClient } from "./APIClient";
 
@@ -23,29 +26,17 @@ export interface LoginResult {
   role: string;
 }
 
-const MOCK_USER = {
-  id: "mock-seller-uuid",
-  external_system_id: "seller_001",
-  role: "seller",
-  first_name: "Seller",
-  last_name: "User",
-};
-
 const MOCK_TOKENS = {
   access_token: "mock_access_token_for_development_only",
   refresh_token: "mock_refresh_token_for_development_only",
   expires_in: 3600,
 };
 
-function isMockAuth(): boolean {
-  return import.meta.env.VITE_MOCK_AUTH === "true";
-}
-
 class AuthAPIImpl {
   private publicKeyPromise: Promise<CryptoKey> | null = null;
 
   async fetchPublicKey(): Promise<CryptoKey> {
-    if (isMockAuth()) {
+    if (useMockAuth()) {
       throw new Error("Mock auth: no public key needed");
     }
     if (!this.publicKeyPromise) {
@@ -70,8 +61,8 @@ class AuthAPIImpl {
   }
 
   async login(externalSystemId: string, _rawPassword: string): Promise<LoginResult> {
-    if (isMockAuth()) {
-      // Mock login - accept any credentials
+    if (useMockAuth()) {
+      const user = getMockUserByExternalId(externalSystemId.trim());
       authStorage.setAuthSession({
         accessToken: MOCK_TOKENS.access_token,
         refreshToken: MOCK_TOKENS.refresh_token,
@@ -80,8 +71,8 @@ class AuthAPIImpl {
         accessToken: MOCK_TOKENS.access_token,
         refreshToken: MOCK_TOKENS.refresh_token,
         expiresIn: MOCK_TOKENS.expires_in,
-        userId: MOCK_USER.id,
-        role: MOCK_USER.role,
+        userId: user.id,
+        role: toBackendRole(user.role),
       };
     }
 
@@ -107,7 +98,7 @@ class AuthAPIImpl {
   }
 
   async refresh(): Promise<string | null> {
-    if (isMockAuth()) {
+    if (useMockAuth()) {
       return MOCK_TOKENS.access_token;
     }
 
@@ -132,7 +123,7 @@ class AuthAPIImpl {
   }
 
   async logout(): Promise<void> {
-    if (isMockAuth()) {
+    if (useMockAuth()) {
       authStorage.clear();
       return;
     }

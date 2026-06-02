@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { accounts } from "../../mock/mockData";
+import { showDemoActionToast } from "../../utils/demoToast";
 
 export default function AdminPODashboardPage() {
   const { user, logout } = useApp();
@@ -77,11 +78,21 @@ export default function AdminPODashboardPage() {
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Системные функции</p>
           <div className="grid grid-cols-2 gap-3">
-            <button className="p-4 rounded-xl text-center" style={{ background: "#E8F5E9" }}>
+            <button
+              type="button"
+              onClick={() => showDemoActionToast()}
+              className="p-4 rounded-xl text-center"
+              style={{ background: "#E8F5E9" }}
+            >
               <Database size={24} color="#2E7D32" className="mx-auto mb-2" />
               <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>Резервное копирование</p>
             </button>
-            <button className="p-4 rounded-xl text-center" style={{ background: "#F0FDF4" }}>
+            <button
+              type="button"
+              onClick={() => showDemoActionToast()}
+              className="p-4 rounded-xl text-center"
+              style={{ background: "#F0FDF4" }}
+            >
               <FileText size={24} color="#22C55E" className="mx-auto mb-2" />
               <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>Журнал событий</p>
             </button>
