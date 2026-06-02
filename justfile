@@ -3,6 +3,10 @@ set dotenv-load
 compose_file := "docker-compose.local.yml"
 compose := "docker compose -f " + compose_file
 
+deploy_env_file := "deploy/.env.production"
+compose_prod := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.yaml"
+compose_demo := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo.yaml"
+
 backend_dir := "backend"
 app_module := "app.main:app"
 config_path := "shared/settings/config.yaml"
@@ -183,3 +187,60 @@ lint-fix:
 [doc('Run mypy type checks')]
 mypy:
     {{ python }} -m mypy backend/app backend/tests --show-traceback
+
+
+# --- Deploy (server / production-like Docker stacks) ---
+
+[doc('Generate deploy/production-secrets.txt for .env.production')]
+deploy-secrets:
+    ./deploy/generate-production-secrets.sh
+
+[doc('Start presentation demo on server (nginx + frontend, mock data)')]
+deploy-demo-up: _docker
+    {{ compose_demo }} up -d --build
+
+[doc('Stop presentation demo stack (project rsd-demo)')]
+deploy-demo-down: _docker
+    {{ compose_demo }} down --remove-orphans
+
+[doc('Show presentation demo stack status')]
+deploy-demo-status: _docker
+    {{ compose_demo }} ps
+
+[doc('Follow presentation demo logs (optional service: nginx, frontend)')]
+deploy-demo-logs service="":
+    {{ compose_demo }} logs -f {{ service }}
+
+[doc('Rebuild and restart presentation demo')]
+deploy-demo-rebuild: _docker
+    {{ compose_demo }} up -d --build --force-recreate
+
+[doc('Start full production stack (nginx + frontend + backend + db + redis + kafka)')]
+deploy-prod-up: _docker
+    {{ compose_prod }} up -d --build
+
+[doc('Stop full production stack')]
+deploy-prod-down: _docker
+    {{ compose_prod }} down --remove-orphans
+
+[doc('Show production stack status')]
+deploy-prod-status: _docker
+    {{ compose_prod }} ps
+
+[doc('Follow production logs (optional service: nginx, backend, db, ...)')]
+deploy-prod-logs service="":
+    {{ compose_prod }} logs -f {{ service }}
+
+[doc('Rebuild and restart production stack')]
+deploy-prod-rebuild: _docker
+    {{ compose_prod }} up -d --build --force-recreate
+
+[doc('Stop both demo and production deploy stacks (free ports 80/443)')]
+deploy-down-all: _docker
+    {{ compose_prod }} down --remove-orphans 2>/dev/null || true
+    {{ compose_demo }} down --remove-orphans 2>/dev/null || true
+    @echo "Deploy stacks stopped."
+
+[doc('Run frontend locally in presentation mode (Vite, mock APIs)')]
+frontend-demo:
+    cd frontend && npm run dev:demo

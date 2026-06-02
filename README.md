@@ -31,7 +31,16 @@
 
 ## Запуск
 
-- Локальная инфраструктура: `docker compose -f docker-compose.local.yml up -d` (см. `justfile`)
-- Демо UI (моки, без backend): `cd frontend && npm run dev:demo`
-- Production на сервере: `docs/NGINX_DEPLOY.md`
-- Демо на сервере (nginx + frontend): `deploy/docker-compose.demo.yaml` — см. `docs/NGINX_DEPLOY.md`
+Список команд: `just` (или `just --list`).
+
+| Задача | Команда |
+|--------|---------|
+| Локальная инфра (Postgres, Redis, Kafka) | `just infra-up` |
+| Backend на хосте | `just backend` |
+| Демо UI на ноутбуке (моки) | `just frontend-demo` |
+| Демо на сервере (nginx + frontend) | `just deploy-demo-up` |
+| Production на сервере (полный стек) | `just deploy-prod-up` |
+| Остановить оба deploy-стека | `just deploy-down-all` |
+
+Перед deploy на сервере: `deploy/.env.production`, certbot — см. `docs/NGINX_DEPLOY.md`.
+Секреты для `.env`: `just deploy-secrets`.
