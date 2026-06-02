@@ -1,16 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { ProgressCircle } from "../../components/ProgressCircle";
-import { salesData } from "../../mock/mockData";
+import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useAtom } from "jotai";
 import { activeTabAtom } from "../../store/atoms";
+import { formatMonthYear } from "../../utils/date";
+import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { toast } from "sonner";
 
 export default function SalesPage() {
   const [tab, setTab] = useAtom(activeTabAtom);
   const [openAccordion, setOpenAccordion] = useState(false);
+  const [stats, setStats] = useState<SellingStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const data = tab === "daily" ? salesData.daily : salesData.periodic;
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadStats() {
+      try {
+        const data = await SellingsAPI.getStats(undefined, controller.signal);
+        setStats(data);
+      } catch (error) {
+        if (isAbortError(error)) return;
+        toast.error(getErrorMessage(error, "Не удалось загрузить статистику продаж"));
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStats();
+    return () => controller.abort();
+  }, []);
+
+  const data = stats ?? { plan: 0, fact: 0, percent: 0, bonus: 0, chart: [], positions: [] };
   const color = data.percent >= 100 ? "#22C55E" : data.percent >= 70 ? "#2E7D32" : "#F59E0B";
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -36,7 +58,7 @@ export default function SalesPage() {
         className="px-4 pt-6 pb-4"
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
-        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Апрель 2026</p>
+        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{formatMonthYear()}</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Мои продажи</h1>
 
         {/* Tabs */}
@@ -70,9 +92,9 @@ export default function SalesPage() {
           style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
         >
           <div className="flex items-center gap-5">
-            <ProgressCircle value={data.percent} size={120} strokeWidth={12} color={color}>
+            <ProgressCircle value={loading ? 0 : data.percent} size={120} strokeWidth={12} color={color}>
               <div className="text-center">
-                <span style={{ fontSize: 24, fontWeight: 800, color: "#1E293B" }}>{data.percent}%</span>
+                <span style={{ fontSize: 24, fontWeight: 800, color: "#1E293B" }}>{loading ? "—" : `${data.percent}%`}</span>
                 <p style={{ color: "#94A3B8", fontSize: 10, marginTop: 1 }}>выполнено</p>
               </div>
             </ProgressCircle>
@@ -81,13 +103,13 @@ export default function SalesPage() {
                 <div>
                   <p style={{ color: "#64748B", fontSize: 12 }}>Факт</p>
                   <p style={{ color: "#1E293B", fontSize: 18, fontWeight: 700 }}>
-                    {data.fact.toLocaleString("ru")} ₽
+                    {loading ? "—" : `${data.fact.toLocaleString("ru")} ₽`}
                   </p>
                 </div>
                 <div>
                   <p style={{ color: "#64748B", fontSize: 12 }}>План</p>
                   <p style={{ color: "#94A3B8", fontSize: 15, fontWeight: 500 }}>
-                    {data.plan.toLocaleString("ru")} ₽
+                    {loading ? "—" : `${data.plan.toLocaleString("ru")} ₽`}
                   </p>
                 </div>
                 <div
@@ -96,7 +118,7 @@ export default function SalesPage() {
                 >
                   <p style={{ color: "#64748B", fontSize: 11 }}>Осталось</p>
                   <p style={{ color, fontSize: 14, fontWeight: 600 }}>
-                    {Math.max(data.plan - data.fact, 0).toLocaleString("ru")} ₽
+                    {loading ? "—" : `${Math.max(data.plan - data.fact, 0).toLocaleString("ru")} ₽`}
                   </p>
                 </div>
               </div>
@@ -113,7 +135,7 @@ export default function SalesPage() {
             {tab === "daily" ? "Динамика за 7 дней" : "По неделям"}
           </p>
           <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={data.chart} barGap={4}>
+            <BarChart data={loading ? [] : data.chart} barGap={4}>
               <XAxis
                 dataKey="day"
                 tick={{ fontSize: 11, fill: "#94A3B8" }}
@@ -145,10 +167,10 @@ export default function SalesPage() {
         >
           <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Расчётная мотивация</p>
           <p style={{ color: "#fff", fontSize: 28, fontWeight: 800, lineHeight: 1.2, marginTop: 2 }}>
-            {data.bonus.toLocaleString("ru")} ₽
+            {loading ? "—" : `${data.bonus.toLocaleString("ru")} ₽`}
           </p>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 4 }}>
-            При текущем выполнении плана ({data.percent}%)
+            При текущем выполнении плана ({loading ? "—" : `${data.percent}%`})
           </p>
           <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.2)" }}>
             <div
@@ -176,33 +198,43 @@ export default function SalesPage() {
           </button>
           {openAccordion && (
             <div style={{ borderTop: "1px solid #F1F5F9" }}>
-              {data.positions.map((pos, i) => {
-                const pct = Math.round((pos.fact / pos.plan) * 100);
-                const c = pct >= 100 ? "#22C55E" : pct >= 70 ? "#2E7D32" : "#F59E0B";
-                return (
-                  <div
-                    key={i}
-                    className="px-4 py-3"
-                    style={{ borderBottom: i < data.positions.length - 1 ? "1px solid #F1F5F9" : "none" }}
-                  >
-                    <div className="flex justify-between mb-1">
-                      <span style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{pos.name}</span>
-                      <span style={{ color: c, fontSize: 13, fontWeight: 600 }}>{pct}%</span>
+              {loading ? (
+                <div className="px-4 py-3 text-center" style={{ color: "#64748B", fontSize: 13 }}>
+                  Загрузка данных...
+                </div>
+              ) : data.positions.length === 0 ? (
+                <div className="px-4 py-3 text-center" style={{ color: "#64748B", fontSize: 13 }}>
+                  Нет данных по позициям
+                </div>
+              ) : (
+                data.positions.map((pos, i) => {
+                  const pct = Math.round((pos.fact / pos.plan) * 100);
+                  const c = pct >= 100 ? "#22C55E" : pct >= 70 ? "#2E7D32" : "#F59E0B";
+                  return (
+                    <div
+                      key={i}
+                      className="px-4 py-3"
+                      style={{ borderBottom: i < data.positions.length - 1 ? "1px solid #F1F5F9" : "none" }}
+                    >
+                      <div className="flex justify-between mb-1">
+                        <span style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{pos.name}</span>
+                        <span style={{ color: c, fontSize: 13, fontWeight: 600 }}>{pct}%</span>
+                      </div>
+                      <div className="flex justify-between mb-2">
+                        <span style={{ color: "#94A3B8", fontSize: 11 }}>
+                          {pos.fact.toLocaleString("ru")} / {pos.plan.toLocaleString("ru")} ₽
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${Math.min(pct, 100)}%`, background: c }}
+                        />
+                      </div>
                     </div>
-                    <div className="flex justify-between mb-2">
-                      <span style={{ color: "#94A3B8", fontSize: 11 }}>
-                        {pos.fact.toLocaleString("ru")} / {pos.plan.toLocaleString("ru")} ₽
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${Math.min(pct, 100)}%`, background: c }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           )}
         </div>

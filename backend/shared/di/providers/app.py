@@ -7,6 +7,7 @@ from shared.kafka_streams.producer import KafkaProducerWrapper
 from shared.settings.config import Settings
 from storage.pg.database import Database
 from storage.redis.client import RedisClient
+from storage.s3.client import S3Client
 
 
 class AppProvider(Provider):
@@ -16,6 +17,7 @@ class AppProvider(Provider):
     db = from_context(Database)
     redis = from_context(RedisClient)
     kafka_producer = from_context(KafkaProducerWrapper)
+    s3_client = from_context(S3Client)
 
 
 class SessionProvider(Provider):

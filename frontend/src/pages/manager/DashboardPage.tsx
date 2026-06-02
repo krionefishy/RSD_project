@@ -31,7 +31,7 @@ export default function ManagerDashboardPage() {
           style={{ background: "rgba(255,255,255,0.15)" }}
         >
           <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>📍</span>
-          <span style={{ color: "#fff", fontSize: 13, fontWeight: 500 }}>{user.block}</span>
+          <span style={{ color: "#fff", fontSize: 13, fontWeight: 500 }}>{user.blockName ?? user.block ?? "Блок не назначен"}</span>
         </div>
       </div>
 

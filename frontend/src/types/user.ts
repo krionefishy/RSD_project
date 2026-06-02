@@ -7,16 +7,24 @@ export type UserRole =
   | "admin-po"
   | "superadmin";
 
+import type { BlockMemberStatus } from "./profile";
+
 export interface AppUser {
   id: string;
   name: string;
   firstName: string;
+  middleName?: string;
+  lastName?: string;
   role: UserRole;
-  position: string;
-  store: string;
-  block: string;
-  email: string;
-  phone: string;
+  externalSystemId: string;
+  phone?: string;
   avatar?: string;
-  joinDate: string;
+  position?: string | null;
+  store?: string;
+  storeName?: string;
+  block?: string;
+  blockName?: string;
+  blockMemberStatus?: BlockMemberStatus;
+  isActive?: boolean;
+  joinDate?: string;
 }

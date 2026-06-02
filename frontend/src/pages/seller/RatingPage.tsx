@@ -1,11 +1,40 @@
-import { useState } from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Avatar } from "../../components/Avatar";
-import { ratingData } from "../../mock/mockData";
+import { SellingsAPI, MotivationRating } from "../../api/SellingsAPI";
+import { formatMonthYear } from "../../utils/date";
+import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { toast } from "sonner";
 
 export default function RatingPage() {
   const [tab, setTab] = useState<"sales" | "learning">("sales");
-  const data = tab === "sales" ? ratingData.sales : ratingData.learning;
+  const [rating, setRating] = useState<MotivationRating | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadRating() {
+      try {
+        const data = await SellingsAPI.getMotivation(controller.signal);
+        setRating(data);
+      } catch (error) {
+        if (isAbortError(error)) return;
+        toast.error(getErrorMessage(error, "Не удалось загрузить рейтинг"));
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadRating();
+    return () => controller.abort();
+  }, []);
+
+  const emptyData = {
+    myPosition: 0,
+    change: 0,
+    myValue: "—",
+    total: 0,
+    list: [],
+  };
+  const data = rating ? (tab === "sales" ? rating.sales : rating.learning) : emptyData;
 
   const medals = ["🥇", "🥈", "🥉"];
 
@@ -16,7 +45,7 @@ export default function RatingPage() {
         className="px-4 pt-6 pb-4"
         style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}
       >
-        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Апрель 2026</p>
+        <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{formatMonthYear()}</p>
         <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700, marginTop: 2 }}>Рейтинг</h1>
 
         {/* Tabs */}
@@ -55,33 +84,14 @@ export default function RatingPage() {
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginBottom: 8 }}>Моя позиция</p>
           <div className="flex items-center gap-4">
             <span style={{ color: "#fff", fontSize: 52, fontWeight: 800, lineHeight: 1 }}>
-              #{data.myPosition}
+              #{loading ? "—" : data.myPosition}
             </span>
             <div>
-              <div className="flex items-center gap-1 mb-1">
-                {data.change > 0 ? (
-                  <>
-                    <TrendingUp size={16} color="#86EFAC" />
-                    <span style={{ color: "#86EFAC", fontSize: 14, fontWeight: 600 }}>
-                      ↑{data.change} позиция
-                    </span>
-                  </>
-                ) : data.change < 0 ? (
-                  <>
-                    <TrendingDown size={16} color="#FCA5A5" />
-                    <span style={{ color: "#FCA5A5", fontSize: 14, fontWeight: 600 }}>
-                      ↓{Math.abs(data.change)} позиция
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 14 }}>Без изменений</span>
-                )}
-              </div>
               <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>
-                Среди {data.total} {tab === "sales" ? "продавцов блока" : "сотрудников"}
+                {loading ? "Загрузка..." : `Среди ${data.total} ${tab === "sales" ? "продавцов блока" : "сотрудников"}`}
               </p>
               <p style={{ color: "#fff", fontSize: 14, fontWeight: 600, marginTop: 2 }}>
-                {data.myValue}
+                {loading ? "—" : data.myValue}
               </p>
             </div>
           </div>
@@ -97,74 +107,84 @@ export default function RatingPage() {
               {tab === "sales" ? "Топ продавцов блока" : "Топ по обучению"}
             </p>
           </div>
-          {data.list.map((item, i) => {
-            const isTop3 = item.rank <= 3;
-            return (
-              <div
-                key={item.rank}
-                className="flex items-center gap-3 px-4 py-3"
-                style={{
-                  background: item.isMe ? "#E8F5E9" : "#fff",
-                  borderBottom: i < data.list.length - 1 ? "1px solid #F1F5F9" : "none",
-                  borderLeft: item.isMe ? "3px solid #2E7D32" : "3px solid transparent",
-                }}
-              >
-                {/* Rank */}
-                <div className="w-8 text-center flex-shrink-0">
-                  {isTop3 ? (
-                    <span style={{ fontSize: 20 }}>{medals[item.rank - 1]}</span>
-                  ) : (
-                    <span
-                      style={{
-                        color: item.isMe ? "#2E7D32" : "#94A3B8",
-                        fontSize: 14,
-                        fontWeight: item.isMe ? 700 : 400,
-                      }}
-                    >
-                      {item.rank}
-                    </span>
-                  )}
-                </div>
-
-                {/* Avatar */}
-                <Avatar name={item.name} size={36} />
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p
-                    style={{
-                      color: "#1E293B",
-                      fontSize: 14,
-                      fontWeight: item.isMe ? 600 : 400,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {item.name}
-                    {item.isMe && (
-                      <span
-                        className="ml-1.5 px-1.5 py-0.5 rounded"
-                        style={{ background: "#2E7D32", color: "#fff", fontSize: 9, fontWeight: 700 }}
-                      >
-                        Я
-                      </span>
-                    )}
-                  </p>
-                  <p style={{ color: "#94A3B8", fontSize: 11 }}>{item.store}</p>
-                </div>
-
-                {/* Value */}
-                <span
+          {loading ? (
+            <div className="px-4 py-8 text-center" style={{ color: "#64748B", fontSize: 14 }}>
+              Загрузка рейтинга...
+            </div>
+          ) : data.list.length === 0 ? (
+            <div className="px-4 py-8 text-center" style={{ color: "#64748B", fontSize: 14 }}>
+              Нет данных для отображения
+            </div>
+          ) : (
+            data.list.map((item, i) => {
+              const isTop3 = item.rank <= 3;
+              return (
+                <div
+                  key={item.rank}
+                  className="flex items-center gap-3 px-4 py-3"
                   style={{
-                    color: item.isMe ? "#2E7D32" : "#1E293B",
-                    fontSize: 13,
-                    fontWeight: item.isMe ? 700 : 500,
+                    background: item.isMe ? "#E8F5E9" : "#fff",
+                    borderBottom: i < data.list.length - 1 ? "1px solid #F1F5F9" : "none",
+                    borderLeft: item.isMe ? "3px solid #2E7D32" : "3px solid transparent",
                   }}
                 >
-                  {item.value}
-                </span>
-              </div>
-            );
-          })}
+                  {/* Rank */}
+                  <div className="w-8 text-center flex-shrink-0">
+                    {isTop3 ? (
+                      <span style={{ fontSize: 20 }}>{medals[item.rank - 1]}</span>
+                    ) : (
+                      <span
+                        style={{
+                          color: item.isMe ? "#2E7D32" : "#94A3B8",
+                          fontSize: 14,
+                          fontWeight: item.isMe ? 700 : 400,
+                        }}
+                      >
+                        {item.rank}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Avatar */}
+                  <Avatar name={item.name} size={36} />
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p
+                      style={{
+                        color: "#1E293B",
+                        fontSize: 14,
+                        fontWeight: item.isMe ? 600 : 400,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {item.name}
+                      {item.isMe && (
+                        <span
+                          className="ml-1.5 px-1.5 py-0.5 rounded"
+                          style={{ background: "#2E7D32", color: "#fff", fontSize: 9, fontWeight: 700 }}
+                        >
+                          Я
+                        </span>
+                      )}
+                    </p>
+                    <p style={{ color: "#94A3B8", fontSize: 11 }}>{item.store}</p>
+                  </div>
+
+                  {/* Value */}
+                  <span
+                    style={{
+                      color: item.isMe ? "#2E7D32" : "#1E293B",
+                      fontSize: 13,
+                      fontWeight: item.isMe ? 700 : 500,
+                    }}
+                  >
+                    {item.value}
+                  </span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

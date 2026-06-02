@@ -6,7 +6,7 @@ Python 3.12+ / FastAPI / dishka / SQLAlchemy / Kafka / Redis / S3
 
 ```bash
 # Инфраструктура
-docker-compose -f ../docker-compose.local.yml up -d
+docker compose -f ../docker-compose.local.yml up -d
 
 # Python
 python3 -m venv .venv && source .venv/bin/activate
@@ -34,7 +34,7 @@ app/                        # Бизнес-логика (домены)
 │   ├── dto.py              #   Выходные модели (Pydantic)
 │   └── db_models.py        #   ORM (SQLAlchemy)
 ├── users/
-├── sellings/
+├── sellings/              # Техническое имя модуля (API: /sales)
 └── admin/
 
 shared/                     # Общие модули
@@ -64,7 +64,7 @@ class MyUseCase:
 
 Провайдеры в `shared/di/providers/`:
 - `app.py` — инфраструктура (APP scope) + AsyncSession (REQUEST scope)
-- `knowledge_base.py`, `users.py`, `sellings.py`, `admin.py` — usecases (REQUEST scope, `provide_all`)
+- `knowledge_base.py`, `users.py`, `sellings.py`, `admin.py` — usecases (REQUEST scope)
 - `provider.py` — `ALL_PROVIDERS` (сборка)
 
 ## API Endpoints
@@ -73,5 +73,5 @@ class MyUseCase:
 - Docs: `GET /docs`
 - Knowledge Base: `/api/v1/tests`, `/api/v1/materials`, `/api/v1/courses`
 - Users: `/api/v1/users`
-- Sellings: `/api/v1/sellings`
+- Sales: `/api/v1/sales`
 - Admin: `/api/v1/admin`

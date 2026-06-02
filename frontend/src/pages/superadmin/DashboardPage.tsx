@@ -1,9 +1,11 @@
-import { Globe, Building2, Users, Crown, BarChart3, Shield } from "lucide-react";
+import { Globe, Building2, Users, Crown, BarChart3, Shield, LogOut } from "lucide-react";
+import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 
 export default function SuperAdminDashboardPage() {
-  const { user } = useApp();
+  const { user, logout } = useApp();
+  const navigate = useNavigate();
   if (!user) return null;
 
   const globalStats = [
@@ -35,6 +37,17 @@ export default function SuperAdminDashboardPage() {
               <p style={{ color: "#fff", fontSize: 17, fontWeight: 600 }}>{user.name}</p>
             </div>
           </div>
+          <button
+            onClick={() => {
+              logout();
+              navigate("/");
+            }}
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: "rgba(255,255,255,0.16)" }}
+            aria-label="Выйти из аккаунта"
+          >
+            <LogOut size={18} color="#fff" />
+          </button>
         </div>
       </div>
 

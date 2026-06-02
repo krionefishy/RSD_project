@@ -1,0 +1,23 @@
+environment: demo
+log_level: INFO
+
+database:
+  url: postgresql+asyncpg://app:appsecret@db:5432/rsd_db
+  echo: false
+
+backend:
+  jwt:
+    secret: docker-dev-secret-change-me
+    algorithm: HS256
+    access_expire_seconds: 3600
+    refresh_expire_seconds: 604800
+    rsa_private_key_pem: null
+    rsa_key_size: 2048
+  redis:
+    host: redis
+    port: 6379
+    db: 0
+  kafka:
+    bootstrap_servers: kafka:9092
+    consumer_group: rsd-backend-docker-group
+    max_request_size: 10485760

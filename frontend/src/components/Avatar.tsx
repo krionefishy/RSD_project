@@ -5,6 +5,7 @@ interface AvatarProps {
   size?: number;
   className?: string;
   bgColor?: string;
+  src?: string;
 }
 
 const COLORS = [
@@ -27,10 +28,21 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export function Avatar({ name, size = 40, className = "", bgColor }: AvatarProps) {
+export function Avatar({ name, size = 40, className = "", bgColor, src }: AvatarProps) {
   const bg = bgColor || getColor(name);
   const initials = getInitials(name);
   const fontSize = Math.round(size * 0.36);
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`rounded-full flex-shrink-0 object-cover ${className}`}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
 
   return (
     <div

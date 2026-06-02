@@ -1,58 +1,78 @@
-from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from app.users.db_models import UserRole
 
 
-# ===== Tests Domain =====
+class UserContext(BaseModel):
+    user_id: UUID
+    role: UserRole
 
-class AssignTestRequest(BaseModel):
-    """Request to assign test to employee."""
-    test_id: UUID
-    employee_id: UUID
-    deadline: Optional[datetime] = None
+
+class CompleteMaterialRequest(BaseModel):
+    course_id: int
+    material_id: int
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        if self.course_id <= 0:
+            raise ValueError("course_id должен быть положительным")
+        if self.material_id <= 0:
+            raise ValueError("material_id должен быть положительным")
+        return self
+
+
+class StartTestRequest(BaseModel):
+    course_id: int
+    test_id: int
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        if self.course_id <= 0:
+            raise ValueError("course_id должен быть положительным")
+        if self.test_id <= 0:
+            raise ValueError("test_id должен быть положительным")
+        return self
 
 
 class SubmitAnswerRequest(BaseModel):
-    """Request to submit test answer."""
-    assignment_id: UUID
-    question_id: UUID
-    answer: str = Field(min_length=1, max_length=1000)
+    course_id: int
+    test_id: int
+    task_id: int
+    selected_variant: int
+
+    @model_validator(mode="after")
+    def validate_request(self):
+        if self.course_id <= 0:
+            raise ValueError("course_id должен быть положительным")
+        if self.test_id <= 0:
+            raise ValueError("test_id должен быть положительным")
+        if self.task_id <= 0:
+            raise ValueError("task_id должен быть положительным")
+        if self.selected_variant < 0:
+            raise ValueError("selected_variant не может быть отрицательным")
+        return self
 
 
-class GetTestResultRequest(BaseModel):
-    """Request to get test result."""
-    test_id: UUID
+class CompleteCourseRequest(BaseModel):
+    course_id: int
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        if self.course_id <= 0:
+            raise ValueError("course_id должен быть положительным")
+        return self
 
 
-# ===== Materials Domain =====
+class ResolveMaterialAttachmentsRequest(BaseModel):
+    course_id: int
+    attachment_ids: list[int] = Field(default_factory=list)
 
-class CreateMaterialRequest(BaseModel):
-    """Request to create educational material."""
-    title: str = Field(min_length=1, max_length=255)
-    content: str = Field(min_length=1)
-    category: Optional[str] = None
-    course_ids: List[UUID] = []
-
-
-class GetMaterialRequest(BaseModel):
-    """Request to get material."""
-    material_id: UUID
-
-
-# ===== Courses Domain =====
-
-class CreateCourseRequest(BaseModel):
-    """Request to create course."""
-    title: str = Field(min_length=1, max_length=255)
-    description: Optional[str] = None
-    category_ids: List[str] = []
-    material_ids: List[UUID] = []
-    test_ids: List[UUID] = []
-
-
-class EnrollCourseRequest(BaseModel):
-    """Request to enroll employee to course."""
-    course_id: UUID
-    employee_id: UUID
+    @model_validator(mode="after")
+    def validate_request(self):
+        if self.course_id <= 0:
+            raise ValueError("course_id должен быть положительным")
+        if any(attachment_id <= 0 for attachment_id in self.attachment_ids):
+            raise ValueError("attachment_ids должен содержать только положительные id")
+        return self

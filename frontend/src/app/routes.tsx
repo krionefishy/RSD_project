@@ -1,5 +1,12 @@
+import { useEffect } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
+import { useAtom } from "jotai";
+import { UserAPI } from "../api/UserAPI";
 import { useApp } from "../context/AppContext";
+import { authStatusAtom } from "../store/atoms";
+import { PageLoader } from "../components/PageLoader";
+import { authStorage } from "../utils/authStorage";
+import { roleRoutes } from "../utils/roleMap";
 import { UserRole } from "../types/user";
 
 // Templates
@@ -31,15 +38,15 @@ import SellerProfilePage from "../pages/seller/ProfilePage";
 import ManagerDashboardPage from "../pages/manager/DashboardPage";
 import ManagerReportsPage from "../pages/manager/ReportsPage";
 import EmployeesPage from "../pages/manager/EmployeesPage";
-import EmployeeDetailPage from "../pages/manager/EmployeeDetailPage";
+import ManagerEmployeeDetailPage from "../pages/manager/EmployeeDetailPage";
 import ManagerProfilePage from "../pages/manager/ProfilePage";
 
 // Pages - Admin Edu
 import AdminEduDashboardPage from "../pages/admin-edu/DashboardPage";
 import AdminEduManagePage from "../pages/admin-edu/ManagePage";
+import CourseEnrollmentsPage from "../pages/admin-edu/CourseEnrollmentsPage";
 import AdminEduAssignmentsPage from "../pages/admin-edu/AssignmentsPage";
 import AdminEduReportsPage from "../pages/admin-edu/ReportsPage";
-import CreateTestPage from "../pages/admin-edu/CreateTestPage";
 import EditMaterialPage from "../pages/admin-edu/EditMaterialPage";
 
 // Pages - Admin Sales
@@ -47,6 +54,10 @@ import AdminSalesDashboardPage from "../pages/admin-sales/DashboardPage";
 
 // Pages - Admin Personnel
 import AdminPersonnelDashboardPage from "../pages/admin-personnel/DashboardPage";
+import ManageUsersPage from "../pages/admin-personnel/ManageUsersPage";
+import CreateEmployeePage from "../pages/admin-personnel/CreateEmployeePage";
+import AdminEmployeeDetailPage from "../pages/admin-personnel/EmployeeDetailPage";
+import AdminPersonnelProfilePage from "../pages/admin-personnel/ProfilePage";
 import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
 // Pages - Admin PO
@@ -54,32 +65,57 @@ import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
 
 // Pages - SuperAdmin
 import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
-import SuperAdminStructurePage from "../pages/superadmin/StructurePage";
+import BlocksListPage from "../pages/admin-personnel/BlocksListPage";
+import BlockDetailPage from "../pages/admin-personnel/BlockDetailPage";
+import LocationsListPage from "../pages/admin-personnel/LocationsListPage";
+import LocationDetailPage from "../pages/admin-personnel/LocationDetailPage";
 import SuperAdminSettingsPage from "../pages/superadmin/SettingsPage";
 
-// Auth guard component
 function RequireAuth({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
-  const { user } = useApp();
+  const { user, setUser } = useApp();
+  const [status, setStatus] = useAtom(authStatusAtom);
+
+  useEffect(() => {
+    if (user) return;
+    if (status === "loading") return;
+    if (!authStorage.hasTokens()) {
+      if (status !== "unauthenticated") setStatus("unauthenticated");
+      return;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    UserAPI.fetchMe()
+      .then((me) => {
+        if (!cancelled) setUser(me);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        authStorage.clear();
+        setStatus("unauthenticated");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, status, setStatus, setUser]);
+
+  if (status === "loading") {
+    return <PageLoader fullScreen message="Загрузка профиля..." />;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={roleRoutes[user.role] ?? "/login"} replace />;
   }
 
   return <>{children}</>;
 }
 
 export const router = createBrowserRouter([
-  // Public routes
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
+  { path: "/login", element: <LoginPage /> },
 
-  // Seller routes
   {
     path: "/seller",
     element: (
@@ -102,7 +138,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Manager routes
   {
     path: "/manager",
     element: (
@@ -114,12 +149,13 @@ export const router = createBrowserRouter([
       { index: true, element: <ManagerDashboardPage /> },
       { path: "reports", element: <ManagerReportsPage /> },
       { path: "employees", element: <EmployeesPage /> },
-      { path: "employees/:employeeId", element: <EmployeeDetailPage /> },
+      { path: "employees/:employeeId", element: <ManagerEmployeeDetailPage /> },
+      { path: "locations", element: <LocationsListPage /> },
+      { path: "locations/:locationId", element: <LocationDetailPage /> },
       { path: "profile", element: <ManagerProfilePage /> },
     ],
   },
 
-  // Admin Edu routes
   {
     path: "/admin-edu",
     element: (
@@ -130,14 +166,13 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminEduDashboardPage /> },
       { path: "manage", element: <AdminEduManagePage /> },
-      { path: "manage/create-test", element: <CreateTestPage /> },
+      { path: "manage/:courseId", element: <CourseEnrollmentsPage /> },
       { path: "manage/edit-material/:materialId", element: <EditMaterialPage /> },
       { path: "assignments", element: <AdminEduAssignmentsPage /> },
       { path: "reports", element: <AdminEduReportsPage /> },
     ],
   },
 
-  // Admin Sales routes
   {
     path: "/admin-sales",
     element: (
@@ -145,28 +180,30 @@ export const router = createBrowserRouter([
         <AdminSalesTemplate />
       </RequireAuth>
     ),
-    children: [
-      { index: true, element: <AdminSalesDashboardPage /> },
-    ],
+    children: [{ index: true, element: <AdminSalesDashboardPage /> }],
   },
 
-  // Admin Personnel routes
   {
     path: "/admin-personnel",
     element: (
-      <RequireAuth allowedRoles={["admin-personnel"]}>
+      <RequireAuth allowedRoles={["admin-personnel", "admin-po", "superadmin"]}>
         <AdminPersonnelTemplate />
       </RequireAuth>
     ),
     children: [
       { index: true, element: <AdminPersonnelDashboardPage /> },
-      { path: "manage", element: <AdminPersonnelDashboardPage /> },
+      { path: "manage", element: <ManageUsersPage /> },
+      { path: "manage/create", element: <CreateEmployeePage /> },
+      { path: "manage/:userId", element: <AdminEmployeeDetailPage /> },
+      { path: "blocks", element: <BlocksListPage /> },
+      { path: "blocks/:blockId", element: <BlockDetailPage /> },
+      { path: "locations", element: <LocationsListPage /> },
+      { path: "locations/:locationId", element: <LocationDetailPage /> },
       { path: "timesheets", element: <TimesheetsPage /> },
-      { path: "profile", element: <AdminPersonnelDashboardPage /> },
+      { path: "profile", element: <AdminPersonnelProfilePage /> },
     ],
   },
 
-  // Admin PO routes
   {
     path: "/admin-po",
     element: (
@@ -182,7 +219,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // SuperAdmin routes
   {
     path: "/superadmin",
     element: (
@@ -192,21 +228,15 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <SuperAdminDashboardPage /> },
-      { path: "structure", element: <SuperAdminStructurePage /> },
+      { path: "structure", element: <BlocksListPage /> },
+      { path: "structure/blocks/:blockId", element: <BlockDetailPage /> },
+      { path: "structure/locations", element: <LocationsListPage /> },
+      { path: "structure/locations/:locationId", element: <LocationDetailPage /> },
       { path: "settings", element: <SuperAdminSettingsPage /> },
       { path: "profile", element: <SuperAdminDashboardPage /> },
     ],
   },
 
-  // Root redirect
-  {
-    path: "/",
-    element: <Navigate to="/login" replace />,
-  },
-
-  // 404
-  {
-    path: "*",
-    element: <Navigate to="/login" replace />,
-  },
+  { path: "/", element: <Navigate to="/login" replace /> },
+  { path: "*", element: <Navigate to="/login" replace /> },
 ]);

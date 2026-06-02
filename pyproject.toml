@@ -1,0 +1,70 @@
+[tool.mypy]
+python_version = "3.13"
+exclude = ['.venv/', 'venv/', '__pycache__/', '.git/', 'migrations/']
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+follow_imports = "normal"
+ignore_missing_imports = true
+check_untyped_defs = false
+warn_redundant_casts = false
+warn_unused_ignores = false
+show_error_codes = true
+disallow_any_generics = false
+
+[[tool.mypy.overrides]]
+module = ["yaml", "yaml.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+output-format = "full"
+target-version = "py313"
+exclude = [
+    ".bzr", ".direnv", ".eggs", ".git", ".git-rewrite", ".hg", ".mypy_cache", ".nox", ".pants.d",
+    ".pytype", ".ruff_cache", ".svn", ".tox", ".venv", "venv", "env", ".env", "__pypackages__",
+    "_build", "buck-out", "dist", "node_modules", "migrations"
+]
+src = ["backend/app", "backend/tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "ASYNC", "C4", "ISC", "SIM", "ARG", "TC", "RET", "PTH", "PERF", "UP",
+]
+ignore = [
+    "E501",
+    "B008",
+    "SIM108",
+    "ARG001",
+    "ARG002",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**" = ["S101", "SLF001", "ARG001"]
+"backend/scripts/**" = ["INP001", "T201", "S311"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_test_loop_scope = "session"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["backend/tests"]
+pythonpath = ["backend", "."]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["backend/app"]
+omit = ["*/tests/*", "*/test_*", "*/venv/*", "*/migrations/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

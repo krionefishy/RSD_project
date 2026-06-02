@@ -1,19 +1,48 @@
-// React import not needed in React 18+
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { TrendingUp, ChevronRight, BookOpen, Trophy } from "lucide-react";
+import { ChevronRight, BookOpen, Trophy } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { ProgressCircle } from "../../components/ProgressCircle";
 import { Avatar } from "../../components/Avatar";
-import { salesData, ratingData } from "../../mock/mockData";
+import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
+import { KnowledgeAPI, type CourseListItem } from "../../api/KnowledgeAPI";
+import { formatFullDate } from "../../utils/date";
+import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const { user } = useApp();
   const navigate = useNavigate();
+  const [stats, setStats] = useState<SellingStats | null>(null);
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadData() {
+      try {
+        const [statsData, coursesData] = await Promise.all([
+          SellingsAPI.getStats(controller.signal),
+          KnowledgeAPI.listCourses(controller.signal),
+        ]);
+        setStats(statsData);
+        setCourses(coursesData);
+      } catch (error) {
+        if (isAbortError(error)) return;
+        toast.error(getErrorMessage(error, "Не удалось загрузить данные"));
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+    return () => controller.abort();
+  }, []);
 
   if (!user) return null;
 
-  const planPercent = salesData.daily.percent;
+  const planPercent = stats?.percent ?? 0;
   const planColor = planPercent >= 100 ? "#22C55E" : planPercent >= 70 ? "#2E7D32" : "#F59E0B";
+  const remainingCourses = courses.length;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -33,7 +62,7 @@ export default function DashboardPage() {
         </div>
 
         <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 12 }}>
-          Вторник, 14 апреля 2026
+          {formatFullDate()}
         </p>
       </div>
 
@@ -62,13 +91,13 @@ export default function DashboardPage() {
               <div className="flex justify-between mb-1.5">
                 <p style={{ color: "#64748B", fontSize: 12 }}>Факт</p>
                 <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600 }}>
-                  {salesData.daily.fact.toLocaleString("ru")} ₽
+                  {loading ? "—" : `${(stats?.fact ?? 0).toLocaleString("ru")} ₽`}
                 </p>
               </div>
               <div className="flex justify-between mb-1.5">
                 <p style={{ color: "#64748B", fontSize: 12 }}>План</p>
                 <p style={{ color: "#64748B", fontSize: 14 }}>
-                  {salesData.daily.plan.toLocaleString("ru")} ₽
+                  {loading ? "—" : `${(stats?.plan ?? 0).toLocaleString("ru")} ₽`}
                 </p>
               </div>
               <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
@@ -80,7 +109,7 @@ export default function DashboardPage() {
               <p style={{ color: "#64748B", fontSize: 11, marginTop: 6 }}>
                 До плана:{" "}
                 <span style={{ color: "#1E293B", fontWeight: 600 }}>
-                  {(salesData.daily.plan - salesData.daily.fact).toLocaleString("ru")} ₽
+                  {loading ? "—" : `${Math.max((stats?.plan ?? 0) - (stats?.fact ?? 0), 0).toLocaleString("ru")} ₽`}
                 </span>
               </p>
             </div>
@@ -99,7 +128,9 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600 }}>Обучение</p>
-                <p style={{ color: "#64748B", fontSize: 12 }}>Осталось 3 курса · 1 тест</p>
+                <p style={{ color: "#64748B", fontSize: 12 }}>
+                  {loading ? "Загрузка..." : `${remainingCourses} ${remainingCourses === 1 ? "курс" : remainingCourses < 5 ? "курса" : "курсов"}`}
+                </p>
               </div>
             </div>
             <button
@@ -140,21 +171,15 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <div className="text-center">
               <span style={{ fontSize: 44, fontWeight: 800, color: "#1E293B", lineHeight: 1 }}>
-                #{ratingData.sales.myPosition}
+                #{loading ? "—" : stats?.positions?.find(p => p.name === "Моя позиция") ? "?" : "—"}
               </span>
             </div>
             <div>
-              <div className="flex items-center gap-1 mb-1">
-                <TrendingUp size={14} color="#22C55E" />
-                <span style={{ color: "#22C55E", fontSize: 13, fontWeight: 600 }}>
-                  ↑{ratingData.sales.change} позиция
-                </span>
-              </div>
               <p style={{ color: "#64748B", fontSize: 12 }}>
-                Среди {ratingData.sales.total} продавцов блока
+                {loading ? "Загрузка данных..." : "Данные рейтинга обновляются"}
               </p>
               <p style={{ color: "#64748B", fontSize: 12 }}>
-                Продажи: <span style={{ color: "#1E293B", fontWeight: 600 }}>{ratingData.sales.myValue}</span>
+                Продажи: <span style={{ color: "#1E293B", fontWeight: 600 }}>{loading ? "—" : `${(stats?.fact ?? 0).toLocaleString("ru")} ₽`}</span>
               </p>
             </div>
           </div>

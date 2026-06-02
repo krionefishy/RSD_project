@@ -1,140 +1,185 @@
-# BOWSell Audit Trail — сценарии (just)
-# Требуется: https://github.com/casey/just
+set dotenv-load
 
-Установка just:
+compose_file := "docker-compose.local.yml"
+compose := "docker compose -f " + compose_file
 
-linux: sudo apt install just
-
-macos: brew install just
-
-Windows: не уважаемо
-
-
-# Переменные по умолчанию (переопределяются через .env или export)
 backend_dir := "backend"
-db_url := env_var_or_default("DATABASE_URL", "postgresql+asyncpg://app:appsecret@localhost:5432/audit_trail_db")
-compose_file := env_var_or_default("COMPOSE_FILE", "docker-compose.yml")
-compose_local := "docker-compose.local.yml"
+app_module := "app.main:app"
+config_path := "shared/settings/config.yaml"
+test_config_path := "shared/settings/config.test.yaml"
+python := env_var_or_default("PYTHON", "python")
 
-# Список микросервисов (кроме api_gateway — без БД; storage — без БД, только S3+Kafka)
-services := ["users", "checklists", "reports", "organizations", "admin", "storage"]
-services_with_deps := ["users", "checklists", "reports", "organizations", "admin", "storage", "api_gateway"]
+export PGHOST := env_var_or_default("LOCAL_PGHOST", "localhost")
+export PGPORT := env_var_or_default("LOCAL_PGPORT", "5432")
+export PGUSER := env_var_or_default("DB_USER", "app")
+export PGPASSWORD := env_var_or_default("DB_PASSWORD", "appsecret")
+export PGDATABASE := env_var_or_default("DB_NAME", "rsd_db")
+export TEST_PGHOST := env_var_or_default("LOCAL_TEST_PGHOST", "localhost")
+export TEST_PGPORT := env_var_or_default("LOCAL_TEST_PGPORT", "5433")
+export TEST_PGDATABASE := env_var_or_default("LOCAL_TEST_PGDATABASE", "rsd_test_db")
 
-# Запуск тестов по одному сервису (PYTHONPATH: backend + backend/<service>_service для app и shared)
-# Использует .venv сервиса, если есть (pytest оттуда)
-test service:
-    set -euo pipefail
-    SVC="{{service}}_service"
-    DIR="{{backend_dir}}/$SVC"
-    CONFIG="$DIR/config.test.yaml"
-    [ -f "$CONFIG" ] || CONFIG="$DIR/config.yaml"
-    if [ -x "$DIR/.venv/bin/pytest" ]; then
-      PYTEST="$DIR/.venv/bin/pytest"
-    else
-      PYTEST=pytest
-    fi
-    cd {{backend_dir}} && \
-    PYTHONPATH=.:$SVC CONFIG_PATH="$CONFIG" DATABASE_URL="{{db_url}}" \
-    $PYTEST $SVC/tests/ -v --tb=short
+export DATABASE_URL := env_var_or_default(
+    "LOCAL_DATABASE_URL",
+    "postgresql+asyncpg://" + PGUSER + ":" + PGPASSWORD + "@" + PGHOST + ":" + PGPORT + "/" + PGDATABASE,
+)
+export TEST_DATABASE_URL := env_var_or_default(
+    "LOCAL_TEST_DATABASE_URL",
+    "postgresql+asyncpg://" + PGUSER + ":" + PGPASSWORD + "@" + TEST_PGHOST + ":" + TEST_PGPORT + "/" + TEST_PGDATABASE,
+)
 
-# Запуск тестов по всем микросервисам
-test-all:
-    just test users
-    just test checklists
-    just test reports
-    just test organizations
-    just test admin
+[doc('Show available tasks')]
+default:
+    @just --list
 
-# Создать venv для одного микросервиса и установить зависимости
-# Для api_gateway каталог — backend/api_gateway, для остальных — backend/<service>_service
-venv service:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ "{{service}}" = "api_gateway" ]; then
-      SVC="api_gateway"
-      DIR="{{backend_dir}}/api_gateway"
-    else
-      SVC="{{service}}_service"
-      DIR="{{backend_dir}}/$SVC"
-    fi
-    VENV="$DIR/.venv"
-    if [ ! -d "$VENV" ]; then
-      python3 -m venv "$VENV"
-      echo "Создан $VENV"
-    fi
-    "$VENV/bin/pip" install -r "$DIR/requirements.txt"
-    echo "Зависимости установлены: $SVC"
+[private]
+_docker:
+    @docker info >/dev/null
 
-# Создать venv для каждого микросервиса и установить зависимости
-venv-all:
-    just venv users
-    just venv checklists
-    just venv reports
-    just venv organizations
-    just venv admin
-    just venv api_gateway
+[doc('Start Postgres container')]
+pg-up: _docker
+    {{ compose }} up -d db
 
-# Обновление зависимостей одного сервиса (в текущее окружение или в venv сервиса)
-deps service:
-    pip install -r {{backend_dir}}/{{service}}_service/requirements.txt
+[doc('Start test Postgres container')]
+pg-up-test: _docker
+    {{ compose }} up -d db_test
 
-# Обновление зависимостей всех сервисов
-deps-all:
-    for svc in {{services_with_deps}}; do just deps $$svc; done
+[doc('Start local infrastructure: Postgres, Redis and Kafka')]
+infra-up: _docker
+    {{ compose }} up -d
 
-# Пересоздание БД: остановить контейнеры, удалить volume, поднять db, применить миграции
-db-recreate:
-    docker compose -f {{compose_file}} down -v
-    docker compose -f {{compose_file}} up -d db
-    @sleep 5
-    DATABASE_URL="{{db_url}}" alembic upgrade head
-    @echo "БД пересоздана, миграции применены."
+[doc('Stop local infrastructure')]
+infra-down: _docker
+    {{ compose }} down
 
-# Локальный запуск: поднять только db (и при необходимости kafka) по docker-compose.local
-local-up:
-    docker compose -f {{compose_local}} up -d
+[doc('Stop local infrastructure and remove volumes')]
+infra-clean: _docker
+    {{ compose }} down -v
 
-local-down:
-    docker compose -f {{compose_local}} down
+[doc('Show local infrastructure status')]
+infra-status: _docker
+    {{ compose }} ps
 
-# Запуск одного микросервиса локально (без Docker). Для сервисов с БД — ожидается db (local-up). storage — ожидается kafka.
-# Использует .venv сервиса, если есть (после just venv <service>)
-run service:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    SVC="{{service}}_service"
-    DIR="{{backend_dir}}/$SVC"
-    CONFIG="$DIR/config.yaml"
-    [ -f "$CONFIG" ] || { echo "Создайте $CONFIG из config.example.yaml"; exit 1; }
-    if [ -x "$DIR/.venv/bin/python" ]; then
-      PY="$DIR/.venv/bin/python"
-    else
-      PY=python
-    fi
-    cd {{backend_dir}} && \
-    PYTHONPATH=.:$SVC CONFIG_PATH="$CONFIG" DATABASE_URL="{{db_url}}" \
-    $PY $SVC/main.py
+[doc('Follow local infrastructure logs')]
+infra-logs service="":
+    {{ compose }} logs -f {{ service }}
 
-# Запуск API Gateway локально (использует api_gateway/.venv при наличии)
-run-gateway:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    DIR="{{backend_dir}}/api_gateway"
-    CONFIG="$DIR/config.yaml"
-    [ -f "$CONFIG" ] || { echo "Создайте $CONFIG из config.example.yaml"; exit 1; }
-    [ -x "$DIR/.venv/bin/python" ] && PY="$DIR/.venv/bin/python" || PY=python
-    cd {{backend_dir}} && PYTHONPATH=. CONFIG_PATH="$CONFIG" $PY api_gateway/main.py
+[doc('Wait until Postgres is ready')]
+pg-wait: pg-up
+    @for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do if {{ compose }} exec -T db pg_isready -U {{ PGUSER }} -d {{ PGDATABASE }} >/dev/null 2>&1; then echo "Postgres is ready"; exit 0; fi; sleep 1; done; {{ compose }} logs --tail=50 db; exit 1
 
-# Полный стек через основной docker-compose (production-like)
-up:
-    docker compose -f {{compose_file}} up -d
+[doc('Wait until test Postgres is ready')]
+pg-wait-test: pg-up-test
+    @for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do if {{ compose }} exec -T db_test pg_isready -U {{ PGUSER }} -d {{ TEST_PGDATABASE }} >/dev/null 2>&1; then echo "Test Postgres is ready"; exit 0; fi; sleep 1; done; {{ compose }} logs --tail=50 db_test; exit 1
 
-down:
-    docker compose -f {{compose_file}} down
 
-# Применить миграции (из корня репозитория)
-migrate:
-    DATABASE_URL="{{db_url}}" alembic upgrade head
+[doc('Create development database')]
+db-create: pg-wait
+    @{{ compose }} exec -T db createdb -U {{ PGUSER }} {{ PGDATABASE }} 2>/dev/null || true
 
-migrate-new message:
-    alembic revision --autogenerate -m "{{message}}"
+[doc('Drop development database')]
+db-drop: pg-up
+    @{{ compose }} exec -T db dropdb -U {{ PGUSER }} --if-exists --force {{ PGDATABASE }}
+
+[doc('Reset development database')]
+db-reset: db-drop db-create
+
+[doc('Create test database')]
+db-create-test: pg-wait-test
+    @{{ compose }} exec -T db_test createdb -U {{ PGUSER }} {{ TEST_PGDATABASE }} 2>/dev/null || true
+
+[doc('Drop test database')]
+db-drop-test: pg-up-test
+    @{{ compose }} exec -T db_test dropdb -U {{ PGUSER }} --if-exists --force {{ TEST_PGDATABASE }}
+
+[doc('Reset test database')]
+db-reset-test: db-drop-test db-create-test
+
+[doc('Apply migrations to development database')]
+db-migrate: db-create
+    DATABASE_URL={{ DATABASE_URL }} {{ python }} -m alembic upgrade head
+
+[doc('Apply migrations to test database (rebuilds DB if alembic revision is missing)')]
+db-migrate-test: db-create-test
+    @DATABASE_URL='{{ TEST_DATABASE_URL }}' '{{ python }}' -m alembic upgrade head || (echo "Test DB schema out of sync, rebuilding..." && just db-rebuild-test)
+
+[doc('Reset development database and apply migrations')]
+db-rebuild: db-reset db-migrate
+
+[doc('Reset test database and apply migrations')]
+db-rebuild-test: db-reset-test
+    DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m alembic upgrade head
+
+[doc('Create a new autogenerated migration')]
+migration message:
+    DATABASE_URL={{ DATABASE_URL }} {{ python }} -m alembic revision --autogenerate -m "{{ message }}"
+
+[doc('Show database connection info')]
+db-info:
+    @echo "Development DB: {{ DATABASE_URL }}"
+    @echo "Test DB:        {{ TEST_DATABASE_URL }}"
+
+
+[doc('Install backend dependencies')]
+install:
+    cd {{ backend_dir }} && pip install -r requirements.txt
+
+[doc('Run backend with auto reload')]
+backend:
+    cd {{ backend_dir }} && CONFIG_PATH={{ config_path }} {{ python }} -m uvicorn {{ app_module }} --reload --host 0.0.0.0 --port 8000
+
+[doc('Alias for backend')]
+dev: backend
+
+[doc('Run backend without reload')]
+serve:
+    cd {{ backend_dir }} && CONFIG_PATH={{ config_path }} {{ python }} -m uvicorn {{ app_module }} --host 0.0.0.0 --port 8000
+
+[doc('Run backend tests')]
+test *args: db-migrate-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
+
+[doc('Run backend tests with coverage')]
+test-cov *args: db-migrate-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest --cov=backend/app --cov-report=term-missing --cov-report=html {{ args }}
+
+[doc('Run tests matching pytest -k expression')]
+test-k pattern *args: db-migrate-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -k "{{ pattern }}" {{ args }}
+
+[doc('Reset test database and run tests')]
+test-reset *args: db-rebuild-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
+
+[doc('Apply migrations in CI (DATABASE_URL must be set in environment)')]
+ci-migrate:
+    DATABASE_URL={{ env_var("DATABASE_URL") }} {{ python }} -m alembic upgrade head
+
+[doc('Run backend tests with coverage in CI (DATABASE_URL must be set)')]
+ci-test-run:
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ env_var("DATABASE_URL") }} {{ python }} -m pytest --cov=backend --cov-report=term-missing
+
+[doc('CI pipeline: migrations then tests with coverage')]
+ci-test: ci-migrate ci-test-run
+
+[doc('Run all checks without modifying files')]
+lint: ruff format-check mypy
+
+[doc('Run ruff linter')]
+ruff:
+    {{ python }} -m ruff check backend
+
+[doc('Check formatting')]
+format-check:
+    {{ python }} -m ruff format --check backend
+
+[doc('Format backend code')]
+fmt:
+    {{ python }} -m ruff format backend
+
+[doc('Apply safe ruff fixes')]
+lint-fix:
+    {{ python }} -m ruff check backend --fix
+
+[doc('Run mypy type checks')]
+mypy:
+    {{ python }} -m mypy backend/app backend/tests --show-traceback
