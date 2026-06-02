@@ -1,3 +1,4 @@
+import { isPresentationMode } from "../config/presentationMode";
 import { authStorage } from "../utils/authStorage";
 
 export interface APIErrorDetail {
@@ -47,6 +48,14 @@ class APIClientImpl {
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
     const { method = "GET", query, body, signal, skipAuth = false, skipRefresh = false } = options;
+
+    if (isPresentationMode()) {
+      throw new APIError(
+        503,
+        `Presentation mode: no network requests (${method} ${path})`,
+        "PRESENTATION_NO_NETWORK",
+      );
+    }
 
     const url = this.buildUrl(path, query);
 

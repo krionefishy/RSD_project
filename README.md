@@ -31,4 +31,7 @@
 
 ## Запуск
 
-Рабочие команды и параметры окружения описаны в `docs/SETUP.md`.
+- Локальная инфраструктура: `docker compose -f docker-compose.local.yml up -d` (см. `justfile`)
+- Демо UI (моки, без backend): `cd frontend && npm run dev:demo`
+- Production на сервере: `docs/NGINX_DEPLOY.md`
+- Демо на сервере (nginx + frontend): `deploy/docker-compose.demo.yaml` — см. `docs/NGINX_DEPLOY.md`

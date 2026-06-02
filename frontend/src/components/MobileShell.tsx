@@ -1,4 +1,5 @@
 import React from "react";
+import { DemoBanner } from "./DemoBanner";
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ export function MobileShell({ children }: MobileShellProps) {
         className="relative w-full max-w-[430px] min-h-screen shadow-2xl overflow-hidden"
         style={{ background: "#F8FAFC" }}
       >
+        <DemoBanner />
         {children}
       </div>
     </div>

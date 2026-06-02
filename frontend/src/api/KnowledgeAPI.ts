@@ -15,12 +15,13 @@ import type {
   TestTask,
   TestTaskAdmin,
 } from "../types/knowledge";
+import { useMockKB } from "../config/presentationMode";
 import { apiClient } from "./APIClient";
 
 export type { Course, CourseListItem } from "../types/knowledge";
 
 function isMockKB(): boolean {
-  return import.meta.env.VITE_MOCK_KB === "true";
+  return useMockKB();
 }
 
 // ============ MOCK DATA ============
