@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
@@ -6,8 +6,9 @@ import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
 import { AppSelect } from "../../components/AppSelect";
 import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
+import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
 import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
-import type { TimesheetEntry, TimesheetUploadResult } from "../../types/profile";
+import type { TimesheetEntry, TimesheetUploadResult, UpdateTimeEntryData } from "../../types/profile";
 import { AppUser } from "../../types/user";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
@@ -26,16 +27,20 @@ export default function TimesheetsPage() {
   const [employeesLoading, setEmployeesLoading] = useState(true);
 
   const [locationEntries, setLocationEntries] = useState<TimesheetEntry[]>([]);
+  const [locationDraftEntries, setLocationDraftEntries] = useState<TimesheetEntry[]>([]);
   const [locationTotalHours, setLocationTotalHours] = useState("0");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const [employeeEntries, setEmployeeEntries] = useState<TimesheetEntry[]>([]);
+  const [employeeDraftEntries, setEmployeeDraftEntries] = useState<TimesheetEntry[]>([]);
   const [employeeTotalHours, setEmployeeTotalHours] = useState("0");
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
+  const [savingEntryId, setSavingEntryId] = useState<number | null>(null);
+  const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
   const [lastUpload, setLastUpload] = useState<TimesheetUploadResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -73,11 +78,13 @@ export default function TimesheetsPage() {
       try {
         const data = await PersonnelAPI.getLocationTimesheet(Number(selectedLocationId), period, signal);
         setLocationEntries(data.items);
+        setLocationDraftEntries(data.items);
         setLocationTotalHours(data.totalHours);
       } catch (error) {
         if (isAbortError(error)) return;
         setLocationError(getErrorMessage(error, "Не удалось загрузить табель точки"));
         setLocationEntries([]);
+        setLocationDraftEntries([]);
         setLocationTotalHours("0");
       } finally {
         if (!signal?.aborted) setLocationLoading(false);
@@ -94,11 +101,13 @@ export default function TimesheetsPage() {
       try {
         const data = await PersonnelAPI.getEmployeeTimesheet(selectedUserId, period, signal);
         setEmployeeEntries(data.items);
+        setEmployeeDraftEntries(data.items);
         setEmployeeTotalHours(data.totalHours);
       } catch (error) {
         if (isAbortError(error)) return;
         setEmployeeError(getErrorMessage(error, "Не удалось загрузить табель сотрудника"));
         setEmployeeEntries([]);
+        setEmployeeDraftEntries([]);
         setEmployeeTotalHours("0");
       } finally {
         if (!signal?.aborted) setEmployeeLoading(false);
@@ -146,6 +155,50 @@ export default function TimesheetsPage() {
     const file = files?.[0];
     if (!file) return;
     void handleUploadFile(file);
+  };
+
+  const toUpdatePayload = (entry: TimesheetEntry): UpdateTimeEntryData => ({
+    activityCode: entry.activityCode,
+    hours: entry.hours,
+    shiftType: entry.shiftType,
+    comment: entry.comment,
+  });
+
+  const updateEntryDraft = (
+    setter: Dispatch<SetStateAction<TimesheetEntry[]>>,
+    entry: TimesheetEntry,
+  ) => {
+    setter((prev) => prev.map((item) => (item.id === entry.id ? entry : item)));
+  };
+
+  const handleSaveEntry = async (entry: TimesheetEntry) => {
+    setSavingEntryId(entry.id);
+    try {
+      await AdminStaffAPI.updateTimeEntry(entry.id, toUpdatePayload(entry));
+      toast.success("Запись табеля сохранена");
+      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
+    } catch (error) {
+      toast.error(
+        mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось сохранить запись табеля")),
+      );
+    } finally {
+      setSavingEntryId(null);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: number) => {
+    setDeletingEntryId(entryId);
+    try {
+      await AdminStaffAPI.deleteTimeEntry(entryId);
+      toast.success("Запись табеля удалена");
+      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
+    } catch (error) {
+      toast.error(
+        mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось удалить запись табеля")),
+      );
+    } finally {
+      setDeletingEntryId(null);
+    }
   };
 
   return (
@@ -241,9 +294,26 @@ export default function TimesheetsPage() {
             error={locationError}
             monthDate={monthDate}
             onMonthChange={setMonthDate}
+            showMonthFilter={false}
             showSummary={false}
             showEmployees
           />
+          <div className="mt-3">
+            <TimesheetEntriesList
+              entries={locationDraftEntries}
+              totalHours={locationTotalHours}
+              loading={locationLoading}
+              error={locationError}
+              emptyMessage="Нет записей табеля по выбранной точке"
+              editable
+              showEmployee
+              savingEntryId={savingEntryId}
+              deletingEntryId={deletingEntryId}
+              onChangeEntry={(entry) => updateEntryDraft(setLocationDraftEntries, entry)}
+              onSaveEntry={(entry) => void handleSaveEntry(entry)}
+              onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
+            />
+          </div>
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
@@ -267,8 +337,24 @@ export default function TimesheetsPage() {
             error={employeeError}
             monthDate={monthDate}
             onMonthChange={setMonthDate}
+            showMonthFilter={false}
             showSummary={false}
           />
+          <div className="mt-3">
+            <TimesheetEntriesList
+              entries={employeeDraftEntries}
+              totalHours={employeeTotalHours}
+              loading={employeeLoading}
+              error={employeeError}
+              emptyMessage="Нет записей табеля по выбранному сотруднику"
+              editable
+              savingEntryId={savingEntryId}
+              deletingEntryId={deletingEntryId}
+              onChangeEntry={(entry) => updateEntryDraft(setEmployeeDraftEntries, entry)}
+              onSaveEntry={(entry) => void handleSaveEntry(entry)}
+              onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
+            />
+          </div>
         </div>
 
         {lastUpload && (

@@ -1,4 +1,6 @@
 import { AppUser } from "../types/user";
+import { useMockApiModule } from "../config/presentationMode";
+import { getMockUserByExternalId } from "../mock/mockUsers";
 import { toFrontendRole } from "../utils/roleMap";
 import { apiClient } from "./APIClient";
 
@@ -92,8 +94,35 @@ function mapCreateUserResult(dto: UserCreateResultDTO): CreateUserResult {
   };
 }
 
+function mockCreateUser(data: CreateUserData): CreateUserResult {
+  const user = getMockUserByExternalId(data.externalSystemId);
+  return {
+    user: {
+      ...user,
+      firstName: data.firstName ?? user.firstName,
+      lastName: data.lastName ?? user.lastName,
+      phone: data.phone ?? user.phone,
+      role: toFrontendRole(data.role),
+      block: data.blockId ?? user.block,
+      store: data.locationId ?? user.store,
+    },
+    tempPassword: data.password,
+  };
+}
+
+function mockBlockAssignment(blockId: string): BlockAssignment {
+  return {
+    blockId,
+    assignedAt: new Date().toISOString(),
+  };
+}
+
 class AdminSoftwareAPIImpl {
   async createUser(data: CreateUserData): Promise<CreateUserResult> {
+    if (useMockApiModule("adminSoftware")) {
+      return mockCreateUser(data);
+    }
+
     const body: CreateUserDTO = {
       external_system_id: data.externalSystemId,
       password: data.password,
@@ -110,24 +139,37 @@ class AdminSoftwareAPIImpl {
   }
 
   async blockUser(userId: string): Promise<void> {
+    if (useMockApiModule("adminSoftware")) return;
     await apiClient.request(`/admin/software/users/${userId}/block`, { method: "PATCH" });
   }
 
   async unblockUser(userId: string): Promise<void> {
+    if (useMockApiModule("adminSoftware")) return;
     await apiClient.request(`/admin/software/users/${userId}/unblock`, { method: "PATCH" });
   }
 
   async assignManagerBlock(managerId: string, blockId: string): Promise<BlockAssignment> {
-    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${managerId}/blocks`, { block_id: Number(blockId) });
+    if (useMockApiModule("adminSoftware")) {
+      return mockBlockAssignment(blockId);
+    }
+    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${managerId}/blocks`, {
+      block_id: Number(blockId),
+    });
     return mapBlockAssignment(response);
   }
 
   async assignUserBlock(userId: string, blockId: string): Promise<BlockAssignment> {
-    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${userId}/block`, { block_id: Number(blockId) });
+    if (useMockApiModule("adminSoftware")) {
+      return mockBlockAssignment(blockId);
+    }
+    const response = await apiClient.post<BlockAssignmentDTO>(`/admin/software/users/${userId}/block`, {
+      block_id: Number(blockId),
+    });
     return mapBlockAssignment(response);
   }
 
   async removeUserBlock(userId: string): Promise<void> {
+    if (useMockApiModule("adminSoftware")) return;
     await apiClient.delete(`/admin/software/users/${userId}/block`);
   }
 }

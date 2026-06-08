@@ -79,7 +79,7 @@ export function TimesheetEntriesList({
                   <input
                     type="text"
                     value={entry.activityCode}
-                    readOnly
+                    onChange={(e) => onChangeEntry?.({ ...entry, activityCode: e.target.value.toUpperCase() })}
                     className="h-9 px-3 rounded-lg border bg-white"
                     style={inputStyle}
                     aria-label="Код активности"

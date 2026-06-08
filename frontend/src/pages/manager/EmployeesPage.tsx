@@ -6,7 +6,7 @@ import { UserAPI } from "../../api/UserAPI";
 import { AppUser } from "../../types/user";
 import { SellingsAPI } from "../../api/SellingsAPI";
 import { useApp } from "../../context/AppContext";
-import { useMockAuth } from "../../config/presentationMode";
+import { useMockApiModule } from "../../config/presentationMode";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { ScreenBackButton } from "../../components/ScreenBackButton";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ export default function EmployeesPage() {
     const controller = new AbortController();
     async function loadEmployees() {
       try {
-        const blockId = user?.block ?? (useMockAuth() ? "1" : undefined);
+        const blockId = user?.block ?? (useMockApiModule("locations") ? "1" : undefined);
         if (!blockId) {
           setLoading(false);
           return;

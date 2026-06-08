@@ -11,6 +11,7 @@ import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { monthPeriodQuery } from "../../utils/timesheet";
 import { toast } from "sonner";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
+import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 
 function profileDisplayName(profile: UserProfile): string {
   const parts = [profile.lastName, profile.firstName, profile.middleName].filter(Boolean);
@@ -169,12 +170,17 @@ export default function EmployeeDetailPage() {
 
   const handleAvatarChange = async (file: File) => {
     if (!userId) return;
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     try {
       const result = await AdminStaffAPI.uploadEmployeeAvatar(userId, file);
       setProfile((prev) => (prev ? { ...prev, avatarUrl: result.avatarUrl } : prev));
       toast.success("Аватар обновлён");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Не удалось загрузить аватар"));
+      toast.error(mapAvatarErrorMessage(error));
     }
   };
 
@@ -210,7 +216,7 @@ export default function EmployeeDetailPage() {
             <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={AVATAR_ACCEPT}
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];

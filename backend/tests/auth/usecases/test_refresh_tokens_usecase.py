@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.domain import RefreshRequest
 from app.auth.dto import TokenPairDTO
-from app.auth.errors import RefreshInvalidError, TokenExpiredError, TokenInvalidError
+from app.auth.errors import AccountInactiveError, RefreshInvalidError, TokenExpiredError, TokenInvalidError
 from app.auth.tokens import create_refresh_token, decode_token
 from app.auth.usecases.refresh_tokens_usecase import RefreshTokensUseCase
 from app.users.db_models import UserRole
@@ -116,3 +116,25 @@ class TestRefreshTokensUseCase:
             await usecase.execute(RefreshRequest(refresh_token=refresh_token))
 
         assert user_id in refresh_store._deleted_users
+
+    async def test_raises_account_inactive_when_user_is_inactive(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        settings: Settings,
+    ) -> None:
+        user = await builder.build_user(
+            external_system_id="refresh_user_inactive",
+            role=UserRole.SELLER,
+            is_active=False,
+        )
+        refresh_store = MockRefreshTokenStore()
+        refresh_token, jti, _ = create_refresh_token(settings, user.id, user.role)
+        await refresh_store.save(user.id, jti)
+        usecase = RefreshTokensUseCase(db_session, refresh_store, settings)
+
+        with pytest.raises(AccountInactiveError):
+            await usecase.execute(RefreshRequest(refresh_token=refresh_token))
+
+        assert user.id in refresh_store._deleted_users
+        assert not await refresh_store.exists(user.id, jti)

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.domain import RefreshRequest
 from app.auth.dto import TokenPairDTO
 from app.auth.errors import (
+    AccountInactiveError,
     RefreshInvalidError,
     TokenExpiredError,
     TokenInvalidError,
@@ -54,6 +55,9 @@ class RefreshTokensUseCase:
         if user is None:
             await self.refresh_store.delete_all_for_user(user_id)
             raise RefreshInvalidError()
+        if not user.is_active:
+            await self.refresh_store.delete_all_for_user(user_id)
+            raise AccountInactiveError()
 
         await self.refresh_store.delete(user_id, jti)
 

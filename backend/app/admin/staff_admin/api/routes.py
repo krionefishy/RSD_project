@@ -16,9 +16,6 @@ from app.users.usecases.list_users_usecase import ListUsersUseCase
 
 router = APIRouter(route_class=DishkaRoute)
 
-MAX_AVATAR_SIZE = 2 * 1024 * 1024
-ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png"}
-
 
 @router.get("/users", response_model=UsersListDTO, summary="Админский список пользователей")
 async def list_users_for_admin(
@@ -61,11 +58,7 @@ async def upload_avatar(
 	auth: Annotated[AuthContext, Depends(require_staff_admin)],
 	usecase: FromDishka[UploadAvatarUseCase],
 ) -> AvatarUploadResultDTO:
-	if file.content_type not in ALLOWED_AVATAR_TYPES:
-		raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid file type")
 	payload = await file.read()
-	if len(payload) > MAX_AVATAR_SIZE:
-		raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large")
 
 	avatar_url = await usecase.execute(
 		user_id,

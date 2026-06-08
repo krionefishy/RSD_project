@@ -48,3 +48,36 @@ class TestPostAuthRefresh:
         )
 
         assert response.status_code == 401
+
+    async def test_returns_403_when_user_is_inactive(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        password_service: MockPasswordService,
+    ) -> None:
+        raw_password = "secret123"
+        hashed = password_service.hash(raw_password)
+        user = await builder.build_user(
+            external_system_id="api_refresh_inactive",
+            hashed_password=hashed,
+            is_active=True,
+        )
+        login_response = await client.post(
+            "/api/v1/auth/login",
+            json={
+                "external_system_id": "api_refresh_inactive",
+                "encrypted_password": raw_password,
+            },
+        )
+        refresh_token = login_response.json()["refresh_token"]
+        user.is_active = False
+        await builder._session.commit()
+
+        response = await client.post(
+            "/api/v1/auth/refresh",
+            json={"refresh_token": refresh_token},
+        )
+
+        assert response.status_code == 403
+        body = response.json()["detail"]
+        assert body["code"] == "ACCOUNT_INACTIVE"

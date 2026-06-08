@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:demo": "vite --mode demo",
+    "dev:demo1": "VITE_DEMO1_MODE=true VITE_DEMO_MODE=true vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

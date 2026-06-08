@@ -1,4 +1,4 @@
-import { useMockAuth } from "../config/presentationMode";
+import { useMockApiModule } from "../config/presentationMode";
 import {
   mockMotivationRating,
   mockSellingStatsDaily,
@@ -150,7 +150,7 @@ class SellingsAPIImpl {
     userIdOrPeriodOrSignal?: string | SalesPlanPeriod | AbortSignal,
     signal?: AbortSignal,
   ): Promise<SellingStats> {
-    if (useMockAuth()) {
+    if (useMockApiModule("sellings")) {
       if (userIdOrPeriodOrSignal === "periodic") return mockSellingStatsPeriodic();
       if (userIdOrPeriodOrSignal === "daily") return mockSellingStatsDaily();
       return mockSellingStatsDaily();
@@ -172,7 +172,7 @@ class SellingsAPIImpl {
   }
 
   async getMotivation(signal?: AbortSignal): Promise<MotivationRating> {
-    if (useMockAuth()) {
+    if (useMockApiModule("sellings")) {
       return mockMotivationRating();
     }
     const response = await apiClient.get<MotivationRatingDTO>("/sales/motivation", { signal });
@@ -180,7 +180,7 @@ class SellingsAPIImpl {
   }
 
   async getBlockStats(blockId: string, from?: string, to?: string): Promise<SellingStats> {
-    if (useMockAuth()) {
+    if (useMockApiModule("sellings")) {
       return mockSellingStatsDaily();
     }
     const query: Record<string, string> = { block_id: blockId };

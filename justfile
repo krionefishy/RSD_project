@@ -150,6 +150,10 @@ test-cov *args: db-migrate-test
 test-k pattern *args: db-migrate-test
     CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -k "{{ pattern }}" {{ args }}
 
+[doc('Run Demo 1 smoke tests')]
+smoke *args: db-migrate-test
+    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -m smoke {{ args }}
+
 [doc('Reset test database and run tests')]
 test-reset *args: db-rebuild-test
     CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
@@ -244,3 +248,7 @@ deploy-down-all: _docker
 [doc('Run frontend locally in presentation mode (Vite, mock APIs)')]
 frontend-demo:
     cd frontend && npm run dev:demo
+
+[doc('Run frontend in Demo 1 mode (live backend for admin-personnel only)')]
+frontend-demo1:
+    cd frontend && npm run dev:demo1

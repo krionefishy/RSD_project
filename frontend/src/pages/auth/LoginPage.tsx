@@ -35,6 +35,8 @@ export default function LoginPage() {
       if (err instanceof APIError) {
         if (err.code === "INVALID_CREDENTIALS") {
           message = "Неверный ID сотрудника или пароль";
+        } else if (err.code === "ACCOUNT_INACTIVE") {
+          message = "Ваш аккаунт заблокирован. Обратитесь к администратору.";
         } else if (err.code === "DECRYPT_FAILED") {
           message = "Ошибка шифрования пароля. Обновите страницу.";
         } else if (err.message) {

@@ -21,6 +21,11 @@ class DecryptFailedError(AuthError):
         super().__init__("DECRYPT_FAILED", message, status.HTTP_400_BAD_REQUEST)
 
 
+class AccountInactiveError(AuthError):
+    def __init__(self, message: str = "User account is inactive"):
+        super().__init__("ACCOUNT_INACTIVE", message, status.HTTP_403_FORBIDDEN)
+
+
 class TokenExpiredError(AuthError):
     def __init__(self, message: str = "Token expired"):
         super().__init__("TOKEN_EXPIRED", message, status.HTTP_401_UNAUTHORIZED)

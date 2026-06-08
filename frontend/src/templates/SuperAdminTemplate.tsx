@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { LayoutDashboard, Building, User } from "lucide-react";
+import { Demo1DesignBadge } from "../components/Demo1DesignBadge";
 
 const TABS = [
   { path: "/superadmin", label: "Обзор", Icon: LayoutDashboard, exact: true },
@@ -19,6 +20,9 @@ export default function SuperAdminTemplate() {
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "#F8FAFC" }}>
       <div className="flex-1 overflow-auto" style={{ paddingBottom: 64 }}>
+        <div className="px-4 pt-2">
+          <Demo1DesignBadge />
+        </div>
         <Outlet />
       </div>
 

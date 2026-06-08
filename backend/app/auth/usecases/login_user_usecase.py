@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.domain import LoginRequest
 from app.auth.dto import TokenPairDTO
-from app.auth.errors import DecryptFailedError, InvalidCredentialsError
+from app.auth.errors import AccountInactiveError, DecryptFailedError, InvalidCredentialsError
 from app.auth.password import DecryptError, PasswordService
 from app.auth.redis_store import RefreshTokenStore
 from app.auth.tokens import create_access_token, create_refresh_token
@@ -42,6 +42,8 @@ class LoginUserUseCase:
 
         if user is None or not self.password_service.verify(raw_password, user.hashed_password):
             raise InvalidCredentialsError()
+        if not user.is_active:
+            raise AccountInactiveError()
 
         access_token, expires_in = create_access_token(self.settings, user.id, user.role)
         refresh_token, refresh_jti, _ = create_refresh_token(self.settings, user.id, user.role)

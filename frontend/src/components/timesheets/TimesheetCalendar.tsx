@@ -28,6 +28,7 @@ export interface TimesheetCalendarProps {
   error?: string | null;
   monthDate: Date;
   onMonthChange: (date: Date) => void;
+  showMonthFilter?: boolean;
   totalHours?: string;
   showSummary?: boolean;
   /** Показывать ФИО сотрудника (табель точки) */
@@ -41,6 +42,7 @@ export function TimesheetCalendar({
   error = null,
   monthDate,
   onMonthChange,
+  showMonthFilter = true,
   totalHours = "0",
   showSummary = true,
   showEmployees = false,
@@ -70,11 +72,11 @@ export function TimesheetCalendar({
 
   return (
     <div className={className}>
-      <TimesheetMonthFilter monthDate={monthDate} onChange={onMonthChange} />
+      {showMonthFilter && <TimesheetMonthFilter monthDate={monthDate} onChange={onMonthChange} />}
 
       {error && (
         <div
-          className="rounded-xl px-3 py-3 mt-4 text-center"
+          className={`rounded-xl px-3 py-3 text-center ${showMonthFilter ? "mt-4" : ""}`}
           style={{ background: "#FEF2F2", color: "#DC2626", fontSize: 13 }}
         >
           {error}
@@ -82,7 +84,7 @@ export function TimesheetCalendar({
       )}
 
       <div
-        className="rounded-2xl p-4 mt-4"
+        className={`rounded-2xl p-4 ${showMonthFilter ? "mt-4" : ""}`}
         style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
       >
         {loading ? (

@@ -12,10 +12,10 @@ import {
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
-import { getErrorMessage } from "../../utils/errors";
 import { toast } from "sonner";
-import { isPresentationMode } from "../../config/presentationMode";
+import { isPresentationMode, useMockApiModule } from "../../config/presentationMode";
 import { showDemoActionToast } from "../../utils/demoToast";
+import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 
 const menuItems = [
   { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#2E7D32" },
@@ -26,6 +26,7 @@ const menuItems = [
 export default function ProfilePage() {
   const { user, logout, setUser } = useApp();
   const navigate = useNavigate();
+  const mockUserApi = useMockApiModule("user");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
@@ -33,13 +34,18 @@ export default function ProfilePage() {
 
   const handleAvatarChange = async (file: File) => {
     if (!user) return;
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     setAvatarUploading(true);
     try {
       const result = await UserAPI.uploadOwnAvatar(file);
       setUser({ ...user, avatar: result.avatarUrl });
-      toast.success(isPresentationMode() ? "Демо: аватар обновлён локально" : "Аватар обновлён");
+      toast.success(mockUserApi ? "Демо: аватар обновлён локально" : "Аватар обновлён");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Не удалось загрузить аватар"));
+      toast.error(mapAvatarErrorMessage(error));
     } finally {
       setAvatarUploading(false);
     }
@@ -67,7 +73,7 @@ export default function ProfilePage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={AVATAR_ACCEPT}
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];

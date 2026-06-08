@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.domain import LoginRequest
 from app.auth.dto import TokenPairDTO
-from app.auth.errors import DecryptFailedError, InvalidCredentialsError
+from app.auth.errors import AccountInactiveError, DecryptFailedError, InvalidCredentialsError
 from app.auth.password import DecryptError
 from app.auth.tokens import decode_token
 from app.auth.usecases.login_user_usecase import LoginUserUseCase
@@ -115,3 +115,31 @@ class TestLoginUserUseCase:
                     encrypted_password="encrypted",
                 )
             )
+
+    async def test_raises_account_inactive_when_user_is_inactive(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        settings: Settings,
+    ) -> None:
+        password_service = MockPasswordService()
+        refresh_store = MockRefreshTokenStore()
+        raw_password = "secret123"
+        hashed = password_service.hash(raw_password)
+        user = await builder.build_user(
+            external_system_id="login_user_inactive",
+            hashed_password=hashed,
+            is_active=False,
+        )
+        usecase = LoginUserUseCase(db_session, password_service, refresh_store, settings)
+
+        with pytest.raises(AccountInactiveError):
+            await usecase.execute(
+                LoginRequest(
+                    external_system_id="login_user_inactive",
+                    encrypted_password=raw_password,
+                )
+            )
+
+        assert refresh_store._tokens == {}
+        assert user.id not in refresh_store._deleted_users

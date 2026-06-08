@@ -5,7 +5,7 @@ from fastapi import HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.errors import TokenInvalidError, TokenMissingError
+from app.auth.errors import AccountInactiveError, TokenInvalidError, TokenMissingError
 from app.auth.tokens import TokenError, decode_token
 from app.users.db_models import UserModel, UserRole
 from shared.settings.config import Settings
@@ -43,6 +43,8 @@ async def build_auth_context(
     user = result.scalar_one_or_none()
     if user is None:
         raise TokenInvalidError("User not found")
+    if not user.is_active:
+        raise AccountInactiveError()
 
     return AuthContext(user_id=str(user.id), role=user.role)
 

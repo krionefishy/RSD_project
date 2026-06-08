@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_PRESENTATION_MODE?: string;
   readonly VITE_MOCK_AUTH?: string;
   readonly VITE_MOCK_KB?: string;
+  readonly VITE_DEMO1_MODE?: string;
 }
 
 interface ImportMeta {
