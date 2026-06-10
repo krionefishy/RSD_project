@@ -1,4 +1,4 @@
-import { useMockApiModule } from "../config/presentationMode";
+import { useMockAuth } from "../config/presentationMode";
 import { getMockUserByExternalId } from "../mock/mockUsers";
 import { authStorage } from "../utils/authStorage";
 import { toBackendRole } from "../utils/roleMap";
@@ -36,7 +36,7 @@ class AuthAPIImpl {
   private publicKeyPromise: Promise<CryptoKey> | null = null;
 
   async fetchPublicKey(): Promise<CryptoKey> {
-    if (useMockApiModule("auth")) {
+    if (useMockAuth()) {
       throw new Error("Mock auth: no public key needed");
     }
     if (!this.publicKeyPromise) {
@@ -61,7 +61,7 @@ class AuthAPIImpl {
   }
 
   async login(externalSystemId: string, _rawPassword: string): Promise<LoginResult> {
-    if (useMockApiModule("auth")) {
+    if (useMockAuth()) {
       const user = getMockUserByExternalId(externalSystemId.trim());
       authStorage.setAuthSession({
         accessToken: MOCK_TOKENS.access_token,
@@ -98,7 +98,7 @@ class AuthAPIImpl {
   }
 
   async refresh(): Promise<string | null> {
-    if (useMockApiModule("auth")) {
+    if (useMockAuth()) {
       return MOCK_TOKENS.access_token;
     }
 
@@ -123,7 +123,7 @@ class AuthAPIImpl {
   }
 
   async logout(): Promise<void> {
-    if (useMockApiModule("auth")) {
+    if (useMockAuth()) {
       authStorage.clear();
       return;
     }

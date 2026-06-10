@@ -6,6 +6,7 @@ compose := "docker compose -f " + compose_file
 deploy_env_file := "deploy/.env.production"
 compose_prod := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.yaml"
 compose_demo := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo.yaml"
+compose_demo1 := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo1.yaml"
 
 backend_dir := "backend"
 app_module := "app.main:app"
@@ -219,6 +220,26 @@ deploy-demo-logs service="":
 deploy-demo-rebuild: _docker
     {{ compose_demo }} up -d --build --force-recreate
 
+[doc('Start Demo 1 stack (backend + frontend_demos partial mock)')]
+deploy-demo1-up: _docker
+    {{ compose_demo1 }} up -d --build
+
+[doc('Stop Demo 1 stack (project rsd-demo1)')]
+deploy-demo1-down: _docker
+    {{ compose_demo1 }} down --remove-orphans
+
+[doc('Show Demo 1 stack status')]
+deploy-demo1-status: _docker
+    {{ compose_demo1 }} ps
+
+[doc('Follow Demo 1 logs (optional service: nginx, backend, frontend, ...)')]
+deploy-demo1-logs service="":
+    {{ compose_demo1 }} logs -f {{ service }}
+
+[doc('Rebuild and restart Demo 1 stack')]
+deploy-demo1-rebuild: _docker
+    {{ compose_demo1 }} up -d --build --force-recreate
+
 [doc('Start full production stack (nginx + frontend + backend + db + redis + kafka)')]
 deploy-prod-up: _docker
     {{ compose_prod }} up -d --build
@@ -239,16 +260,17 @@ deploy-prod-logs service="":
 deploy-prod-rebuild: _docker
     {{ compose_prod }} up -d --build --force-recreate
 
-[doc('Stop both demo and production deploy stacks (free ports 80/443)')]
+[doc('Stop demo, demo1 and production deploy stacks (free ports 80/443)')]
 deploy-down-all: _docker
     {{ compose_prod }} down --remove-orphans 2>/dev/null || true
     {{ compose_demo }} down --remove-orphans 2>/dev/null || true
+    {{ compose_demo1 }} down --remove-orphans 2>/dev/null || true
     @echo "Deploy stacks stopped."
 
 [doc('Run frontend locally in presentation mode (Vite, mock APIs)')]
 frontend-demo:
     cd frontend && npm run dev:demo
 
-[doc('Run frontend in Demo 1 mode (live backend for admin-personnel only)')]
+[doc('Run Demo 1 UI locally (frontend_demos, partial mock)')]
 frontend-demo1:
-    cd frontend && npm run dev:demo1
+    cd frontend_demos && npm run dev

@@ -11,7 +11,7 @@ import type {
   UpdateBlockData,
   UpdateLocationData,
 } from "../types/location";
-import { useMockApiModule } from "../config/presentationMode";
+import { useMockAuth } from "../config/presentationMode";
 import {
   mockGetBlock,
   mockGetLocation,
@@ -126,7 +126,7 @@ function mapLocationDetail(dto: LocationDetailDTO): LocationDetail {
 
 class LocationsAPIImpl {
   async listBlocks(filters?: BlockFilters, signal?: AbortSignal): Promise<BlockSummary[]> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return mockListBlocks();
     }
     const response = await apiClient.get<{ items: BlockListItemDTO[]; total: number }>(
@@ -140,7 +140,7 @@ class LocationsAPIImpl {
   }
 
   async getBlock(blockId: string, signal?: AbortSignal): Promise<BlockDetail> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return mockGetBlock(blockId);
     }
     const response = await apiClient.get<BlockDetailDTO>(`/admin/super/blocks/${blockId}`, { signal });
@@ -148,7 +148,7 @@ class LocationsAPIImpl {
   }
 
   async createBlock(data: CreateBlockData): Promise<BlockSummary> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return { id: "99", name: data.name, description: data.description, stores: 0, employees: 0 };
     }
     const response = await apiClient.post<BlockListItemDTO>("/admin/super/blocks", {
@@ -159,7 +159,7 @@ class LocationsAPIImpl {
   }
 
   async updateBlock(blockId: string, data: UpdateBlockData): Promise<BlockSummary> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return mockGetBlock(blockId);
     }
     const response = await apiClient.put<BlockListItemDTO>(`/admin/super/blocks/${blockId}`, {
@@ -170,12 +170,12 @@ class LocationsAPIImpl {
   }
 
   async deleteBlock(_blockId: string): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/super/blocks/${_blockId}`);
   }
 
   async listLocations(filters?: LocationFilters, signal?: AbortSignal): Promise<LocationSummary[]> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return mockListLocations(filters?.blockId);
     }
     const query: Record<string, string> = {};
@@ -189,7 +189,7 @@ class LocationsAPIImpl {
   }
 
   async getLocation(locationId: string, signal?: AbortSignal): Promise<LocationDetail> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return mockGetLocation(locationId);
     }
     const response = await apiClient.get<LocationDetailDTO>(`/admin/super/locations/${locationId}`, {
@@ -199,7 +199,7 @@ class LocationsAPIImpl {
   }
 
   async createLocation(data: CreateLocationData): Promise<LocationSummary> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return {
         id: "99",
         code: data.code,
@@ -219,7 +219,7 @@ class LocationsAPIImpl {
   }
 
   async updateLocation(locationId: string, data: UpdateLocationData): Promise<LocationSummary> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       const current = mockGetLocation(locationId);
       return {
         ...current,
@@ -239,12 +239,12 @@ class LocationsAPIImpl {
   }
 
   async deleteLocation(_locationId: string): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/super/locations/${_locationId}`);
   }
 
   async assignLocationToBlock(blockId: string, locationId: string): Promise<LocationSummary> {
-    if (useMockApiModule("locations")) {
+    if (useMockAuth()) {
       return mockGetLocation(locationId);
     }
     const response = await apiClient.post<LocationListItemDTO>(
@@ -254,27 +254,27 @@ class LocationsAPIImpl {
   }
 
   async removeLocationFromBlock(_blockId: string, _locationId: string): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/super/blocks/${_blockId}/locations/${_locationId}`);
   }
 
   async assignUserToLocation(_userId: string, _locationId: number): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.post(`/admin/staff/users/${_userId}/location`, { location_id: _locationId });
   }
 
   async removeUserFromLocation(_userId: string): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/staff/users/${_userId}/location`);
   }
 
   async assignManagerToBlock(_managerId: string, _blockId: string): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.post(`/admin/software/users/${_managerId}/blocks`, { block_id: Number(_blockId) });
   }
 
   async removeManagerFromBlock(_managerId: string, _blockId: string): Promise<void> {
-    if (useMockApiModule("locations")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/software/users/${_managerId}/blocks/${_blockId}`);
   }
 }

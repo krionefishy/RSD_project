@@ -37,8 +37,10 @@
 |--------|---------|
 | Локальная инфра (Postgres, Redis, Kafka) | `just infra-up` |
 | Backend на хосте | `just backend` |
-| Демо UI на ноутбуке (моки) | `just frontend-demo` |
-| Демо на сервере (nginx + frontend) | `just deploy-demo-up` |
+| Демо UI на ноутбуке (полные моки) | `just frontend-demo` |
+| Demo 1 UI на ноутбуке (`frontend_demos`) | `just frontend-demo1` |
+| Демо на сервере (nginx + frontend, моки) | `just deploy-demo-up` |
+| Demo 1 на сервере (backend + `frontend_demos`) | `just deploy-demo1-up` |
 | Production на сервере (полный стек) | `just deploy-prod-up` |
 | Остановить оба deploy-стека | `just deploy-down-all` |
 

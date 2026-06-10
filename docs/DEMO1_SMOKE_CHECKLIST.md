@@ -1,6 +1,6 @@
 # Demo 1 — ручной smoke checklist
 
-Использовать с веткой `demo1-partial-mock` и `npm run dev:demo1` + запущенным backend.
+Использовать ветку `demo1-partial-mock`, `just frontend-demo1` (`frontend_demos`) + запущенным backend.
 
 ## Auth
 

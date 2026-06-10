@@ -11,7 +11,7 @@ import type {
   UpsertEmployeeCompensationData,
   UserProfile,
 } from "../types/profile";
-import { useMockApiModule } from "../config/presentationMode";
+import { useMockAuth } from "../config/presentationMode";
 import { getMockUserByExternalId } from "../mock/mockUsers";
 import { mockTimeEntry } from "../mock/fixtures/personnel";
 import { toFrontendRole } from "../utils/roleMap";
@@ -158,7 +158,7 @@ function mapUpdateBody(data: UpdateEmployeeProfileData) {
 
 class AdminStaffAPIImpl {
   async createEmployeeProfile(data: CreateEmployeeProfileData): Promise<CreateEmployeeProfileResult> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       const user = getMockUserByExternalId(data.externalSystemId);
       return {
         user: {
@@ -184,7 +184,7 @@ class AdminStaffAPIImpl {
   }
 
   async updateEmployeeProfile(userId: string, data: UpdateEmployeeProfileData): Promise<UserProfile> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return {
         id: userId,
         externalSystemId: "mock_001",
@@ -203,12 +203,12 @@ class AdminStaffAPIImpl {
   }
 
   async deleteEmployeeProfile(_userId: string): Promise<void> {
-    if (useMockApiModule("adminStaff")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/staff/users/${_userId}/employee-profile`);
   }
 
   async blockEmployeeProfile(userId: string, reason?: string): Promise<UserProfile> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return {
         id: userId,
         externalSystemId: "mock_001",
@@ -228,7 +228,7 @@ class AdminStaffAPIImpl {
   }
 
   async unblockEmployeeProfile(userId: string): Promise<UserProfile> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return {
         id: userId,
         externalSystemId: "mock_001",
@@ -246,7 +246,7 @@ class AdminStaffAPIImpl {
   }
 
   async resetPassword(userId: string): Promise<ResetPasswordResult> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return { temporaryPassword: "Password123!" };
     }
     const response = await apiClient.post<ResetPasswordDTO>(
@@ -256,7 +256,7 @@ class AdminStaffAPIImpl {
   }
 
   async uploadEmployeeAvatar(userId: string, file: File): Promise<{ avatarUrl: string }> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return { avatarUrl: URL.createObjectURL(file) };
     }
     const formData = new FormData();
@@ -272,7 +272,7 @@ class AdminStaffAPIImpl {
     userId: string,
     data: { blockId: number; status: BlockMemberStatus },
   ): Promise<UserProfile> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return {
         id: userId,
         externalSystemId: "mock_001",
@@ -295,7 +295,7 @@ class AdminStaffAPIImpl {
     userId: string,
     data: UpsertEmployeeCompensationData,
   ): Promise<EmployeeCompensation> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return {
         userId,
         baseSalary: data.baseSalary,
@@ -321,7 +321,7 @@ class AdminStaffAPIImpl {
     _query: OwnTimesheetQuery,
     _locationId?: number,
   ): Promise<TimesheetUploadResult> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       return { uploadId: 1, status: "processed", rowsCount: 142, errors: [] };
     }
     const formData = new FormData();
@@ -350,7 +350,7 @@ class AdminStaffAPIImpl {
   }
 
   async updateTimeEntry(entryId: number, data: UpdateTimeEntryData): Promise<TimesheetEntry> {
-    if (useMockApiModule("adminStaff")) {
+    if (useMockAuth()) {
       const entry = mockTimeEntry(entryId);
       return {
         ...entry,
@@ -379,7 +379,7 @@ class AdminStaffAPIImpl {
   }
 
   async deleteTimeEntry(_entryId: number): Promise<void> {
-    if (useMockApiModule("adminStaff")) return;
+    if (useMockAuth()) return;
     await apiClient.delete(`/admin/staff/timesheets/entries/${_entryId}`);
   }
 }

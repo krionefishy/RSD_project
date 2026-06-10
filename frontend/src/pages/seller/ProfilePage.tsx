@@ -13,7 +13,7 @@ import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
 import { toast } from "sonner";
-import { isPresentationMode, useMockApiModule } from "../../config/presentationMode";
+import { isPresentationMode } from "../../config/presentationMode";
 import { showDemoActionToast } from "../../utils/demoToast";
 import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 
@@ -26,7 +26,6 @@ const menuItems = [
 export default function ProfilePage() {
   const { user, logout, setUser } = useApp();
   const navigate = useNavigate();
-  const mockUserApi = useMockApiModule("user");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
@@ -43,7 +42,7 @@ export default function ProfilePage() {
     try {
       const result = await UserAPI.uploadOwnAvatar(file);
       setUser({ ...user, avatar: result.avatarUrl });
-      toast.success(mockUserApi ? "Демо: аватар обновлён локально" : "Аватар обновлён");
+      toast.success(isPresentationMode() ? "Демо: аватар обновлён локально" : "Аватар обновлён");
     } catch (error) {
       toast.error(mapAvatarErrorMessage(error));
     } finally {

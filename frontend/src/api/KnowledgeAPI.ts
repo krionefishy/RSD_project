@@ -15,13 +15,13 @@ import type {
   TestTask,
   TestTaskAdmin,
 } from "../types/knowledge";
-import { useMockApiModule } from "../config/presentationMode";
+import { useMockKB } from "../config/presentationMode";
 import { apiClient } from "./APIClient";
 
 export type { Course, CourseListItem } from "../types/knowledge";
 
 function isMockKB(): boolean {
-  return useMockApiModule("knowledge");
+  return useMockKB();
 }
 
 // ============ MOCK DATA ============

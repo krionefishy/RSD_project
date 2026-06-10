@@ -1,7 +1,6 @@
 // React import not needed in React 18+
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { Home, BookOpen, ChartBarBig, Trophy, User } from "lucide-react";
-import { Demo1DesignBadge } from "../components/Demo1DesignBadge";
 
 const TABS = [
   { path: "/seller", label: "Главная", Icon: Home, exact: true },
@@ -23,9 +22,6 @@ export default function SellerTemplate() {
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "#F8FAFC" }}>
       <div className="flex-1 overflow-auto" style={{ paddingBottom: 64 }}>
-        <div className="px-4 pt-2">
-          <Demo1DesignBadge />
-        </div>
         <Outlet />
       </div>
 
