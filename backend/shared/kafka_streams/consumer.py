@@ -1,7 +1,8 @@
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from aiokafka import AIOKafkaConsumer
 

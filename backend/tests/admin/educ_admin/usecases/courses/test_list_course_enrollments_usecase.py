@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.educ_admin.usecases.courses.list_course_enrollments_usecase import (

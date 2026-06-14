@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from httpx import AsyncClient
 
 from app.users.db_models import UserRole

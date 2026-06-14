@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+from shared.kafka_streams.topics import StorageTopics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +9,7 @@ from app.knowledge_base.db_models import MaterialAttachmentModel
 from app.users.db_models import UserModel
 from tests.admin.educ_admin.conftest import admin_ctx
 from tests.builder import Builder
-from tests.mocks import MockS3Client
+from tests.mocks import FakeKafkaBroker
 
 
 class TestDeleteMaterialAttachmentUseCase:
@@ -22,17 +21,19 @@ class TestDeleteMaterialAttachmentUseCase:
     ) -> None:
         material = await builder.build_material()
         attachment = await builder.build_material_attachment(material=material)
-        mock_s3 = MockS3Client()
-        mock_s3._uploads[attachment.s3_file_key] = b"stored"
+        kafka = FakeKafkaBroker()
 
-        result = await DeleteMaterialAttachmentUseCase(db_session, mock_s3).execute(
+        result = await DeleteMaterialAttachmentUseCase(db_session, kafka).execute(
             material.id,
             attachment.id,
             admin_ctx(education_admin),
         )
 
         assert result is True
-        assert mock_s3.was_operation_performed("delete_object", attachment.s3_file_key)
+        assert kafka.was_message_published(
+            StorageTopics.MATERIAL_ATTACHMENT_DELETE,
+            lambda msg: msg["key"] == attachment.s3_file_key,
+        )
         remaining = (
             await db_session.execute(
                 select(MaterialAttachmentModel).where(MaterialAttachmentModel.id == attachment.id)
@@ -48,7 +49,7 @@ class TestDeleteMaterialAttachmentUseCase:
     ) -> None:
         material = await builder.build_material()
 
-        result = await DeleteMaterialAttachmentUseCase(db_session, MockS3Client()).execute(
+        result = await DeleteMaterialAttachmentUseCase(db_session, FakeKafkaBroker()).execute(
             material.id,
             999999,
             admin_ctx(education_admin),

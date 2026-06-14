@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import date, timedelta
 
 import pytest
@@ -42,7 +40,6 @@ class TestCreateEmployeeProfileUseCase:
 
         assert result.user.external_system_id == "new_employee_001"
         assert result.user.role == UserRole.SELLER.value
-        assert result.user.is_temp_password is True
         assert result.user.location is not None
         assert result.user.block is not None
         assert len(result.temp_password) == 12

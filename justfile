@@ -1,3 +1,4 @@
+# Command groups: local dev | database | CI | deploy | frontend — see scripts/JUSTFILE_REVIEW.md
 set dotenv-load
 
 compose_file := "docker-compose.local.yml"
@@ -10,9 +11,10 @@ compose_demo1 := "docker compose --env-file " + deploy_env_file + " -f deploy/do
 
 backend_dir := "backend"
 app_module := "app.main:app"
-config_path := "shared/settings/config.yaml"
-test_config_path := "shared/settings/config.test.yaml"
-python := env_var_or_default("PYTHON", "python")
+backend_config_path := "shared/settings/config.yaml"
+test_config_path := backend_dir + "/shared/settings/config.test.yaml"
+demo_config_path := backend_dir + "/shared/settings/config.demo.yaml"
+python := env_var_or_default("PYTHON", backend_dir + "/venv/bin/python")
 
 export PGHOST := env_var_or_default("LOCAL_PGHOST", "localhost")
 export PGPORT := env_var_or_default("LOCAL_PGPORT", "5432")
@@ -103,6 +105,21 @@ db-reset-test: db-drop-test db-create-test
 db-migrate: db-create
     DATABASE_URL={{ DATABASE_URL }} {{ python }} -m alembic upgrade head
 
+[doc('Alias for db-migrate')]
+migrate: db-migrate
+
+[doc('Reset DB, migrate and seed Demo 1 demonstration data (Этап 6 scope)')]
+demo1-seed: db-migrate
+    CONFIG_PATH={{ demo_config_path }} DATABASE_URL={{ DATABASE_URL }} {{ python }} scripts/seed_demo1.py
+
+[doc('Local Demo 1 prep: infra up, DB rebuild, Demo 1 seed')]
+demo1-setup: infra-up db-rebuild
+    CONFIG_PATH={{ demo_config_path }} DATABASE_URL={{ DATABASE_URL }} {{ python }} scripts/seed_demo1.py
+
+[doc('Reset DB and seed full demo dataset (incl. knowledge base); demo config only')]
+seed-demo: db-migrate
+    cd {{ backend_dir }} && CONFIG_PATH=shared/settings/config.demo.yaml DATABASE_URL={{ DATABASE_URL }} {{ python }} -m scripts.seed_demo
+
 [doc('Apply migrations to test database (rebuilds DB if alembic revision is missing)')]
 db-migrate-test: db-create-test
     @DATABASE_URL='{{ TEST_DATABASE_URL }}' '{{ python }}' -m alembic upgrade head || (echo "Test DB schema out of sync, rebuilding..." && just db-rebuild-test)
@@ -130,34 +147,34 @@ install:
 
 [doc('Run backend with auto reload')]
 backend:
-    cd {{ backend_dir }} && CONFIG_PATH={{ config_path }} {{ python }} -m uvicorn {{ app_module }} --reload --host 0.0.0.0 --port 8000
+    cd {{ backend_dir }} && CONFIG_PATH={{ backend_config_path }} {{ python }} -m uvicorn {{ app_module }} --reload --host 0.0.0.0 --port 8000
 
 [doc('Alias for backend')]
 dev: backend
 
 [doc('Run backend without reload')]
 serve:
-    cd {{ backend_dir }} && CONFIG_PATH={{ config_path }} {{ python }} -m uvicorn {{ app_module }} --host 0.0.0.0 --port 8000
+    cd {{ backend_dir }} && CONFIG_PATH={{ backend_config_path }} {{ python }} -m uvicorn {{ app_module }} --host 0.0.0.0 --port 8000
 
 [doc('Run backend tests')]
 test *args: db-migrate-test
-    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
+    CONFIG_PATH={{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
 
 [doc('Run backend tests with coverage')]
 test-cov *args: db-migrate-test
-    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest --cov=backend/app --cov-report=term-missing --cov-report=html {{ args }}
+    CONFIG_PATH={{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest --cov=backend/app --cov-report=term-missing --cov-report=html {{ args }}
 
 [doc('Run tests matching pytest -k expression')]
 test-k pattern *args: db-migrate-test
-    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -k "{{ pattern }}" {{ args }}
+    CONFIG_PATH={{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -k "{{ pattern }}" {{ args }}
 
 [doc('Run Demo 1 smoke tests')]
 smoke *args: db-migrate-test
-    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -m smoke {{ args }}
+    CONFIG_PATH={{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest -m smoke {{ args }}
 
 [doc('Reset test database and run tests')]
 test-reset *args: db-rebuild-test
-    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
+    CONFIG_PATH={{ test_config_path }} DATABASE_URL={{ TEST_DATABASE_URL }} {{ python }} -m pytest {{ args }}
 
 [doc('Apply migrations in CI (DATABASE_URL must be set in environment)')]
 ci-migrate:
@@ -165,7 +182,7 @@ ci-migrate:
 
 [doc('Run backend tests with coverage in CI (DATABASE_URL must be set)')]
 ci-test-run:
-    CONFIG_PATH={{ backend_dir }}/{{ test_config_path }} DATABASE_URL={{ env_var("DATABASE_URL") }} {{ python }} -m pytest --cov=backend --cov-report=term-missing
+    CONFIG_PATH={{ test_config_path }} DATABASE_URL={{ env_var("DATABASE_URL") }} {{ python }} -m pytest --cov=backend --cov-report=term-missing
 
 [doc('CI pipeline: migrations then tests with coverage')]
 ci-test: ci-migrate ci-test-run
@@ -194,9 +211,8 @@ mypy:
     {{ python }} -m mypy backend/app backend/tests --show-traceback
 
 
-# --- Deploy (server / production-like Docker stacks) ---
 
-[doc('Generate deploy/production-secrets.txt for .env.production')]
+[doc('Generate backend/shared/settings/config.production.yaml with random secrets')]
 deploy-secrets:
     ./deploy/generate-production-secrets.sh
 

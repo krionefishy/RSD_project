@@ -1,61 +1,104 @@
 #!/usr/bin/env bash
-# Generates deploy/production-secrets.txt for pasting into deploy/.env.production
+# Generates backend/shared/settings/config.production.yaml with random secrets.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUTPUT="${SCRIPT_DIR}/production-secrets.txt"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+OUTPUT="${ROOT_DIR}/backend/shared/settings/config.production.yaml"
 
 gen_alnum() {
   local len=$1
-  # macOS: head closes the pipe early; with pipefail the script exits 141
   openssl rand -hex 32 | tr -dc 'a-zA-Z0-9' | cut -c1-"$len"
 }
 
-DB_PASSWORD="$(gen_alnum 6)"
-REDIS_PASSWORD="$(gen_alnum 8)"
-JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+DB_PASSWORD="$(gen_alnum 16)"
+REPORT_DB_PASSWORD="$(gen_alnum 16)"
+USER_JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+SERVICE_JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+REDIS_PASSWORD="$(gen_alnum 16)"
 
 cat >"$OUTPUT" <<EOF
 # Generated: $(date '+%Y-%m-%d %H:%M:%S %z')
-# Copy into deploy/.env.production on the server. Do not commit.
+# Mount or copy to server; do not commit.
 
-# === Domains for Nginx ===
-FRONTEND_DOMAIN=rsdobin.ru
-API_DOMAIN=rsdobin.ru
-SSL_CERT_PATH=/etc/nginx/certs/live/rsdobin.ru/fullchain.pem
-SSL_CERT_KEY_PATH=/etc/nginx/certs/live/rsdobin.ru/privkey.pem
+environment: production
+log_level: INFO
 
-# === Database ===
-DB_HOST=db
-DB_PORT=5432
-DB_USER=app
-DB_PASSWORD=${DB_PASSWORD}
-DB_NAME=rsd_db
+database:
+  host: db
+  port: 5432
+  user: app
+  password: ${DB_PASSWORD}
+  database: rsd_db
+  echo: false
 
-# === Redis ===
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=${REDIS_PASSWORD}
+main_replica_database:
+  enabled: false
+  host: db
+  port: 5432
+  user: app_readonly
+  password: ${DB_PASSWORD}
+  database: rsd_db
 
-# === Kafka ===
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+backend:
+  jwt:
+    secret: ${USER_JWT_SECRET}
+    algorithm: HS256
+    access_expire_seconds: 900
+    refresh_expire_seconds: 259200
+    rsa_private_key_pem: null
+    rsa_key_size: 2048
+  redis:
+    host: redis
+    port: 6379
+    db: 0
+    password: ${REDIS_PASSWORD}
+  kafka:
+    bootstrap_servers: kafka:9092
+    consumer_group: rsd-backend-production-group
+    max_request_size: 10485760
+  s3:
+    endpoint_url: http://minio:9000
+    tenant_id: ""
+    key_id: minioadmin
+    secret_key: minioadmin
+    bucket_name: rsd-bucket
+    region: ru-central-1
+    verify: true
 
-# === Security ===
-JWT_SECRET=${JWT_SECRET}
-JWT_ALGORITHM=HS256
-CORS_ORIGINS=https://rsdobin.ru
+inter_service_auth:
+  jwt:
+    secret: ${SERVICE_JWT_SECRET}
+    algorithm: HS256
+    issuer: rsd-backend
+    audience: rsd-report-service
+    expire_seconds: 300
+    allowed_subjects:
+      - backend
 
-# === Environment ===
-ENVIRONMENT=production
-RUN_DEMO_SEED=false
-LOG_LEVEL=INFO
+services:
+  report_service:
+    enabled: true
+    base_url: http://report_service:8000
+    timeout_seconds: 120
+
+report_service:
+  database:
+    host: db
+    port: 5432
+    user: report_app
+    password: ${REPORT_DB_PASSWORD}
+    database: rsd_reports
+    echo: false
+  kafka:
+    consumer_group: rsd-report-service-production-group
 EOF
 
 chmod 600 "$OUTPUT"
 
 echo "Written: $OUTPUT"
 echo ""
-echo "Remember these (DB is 6 chars on purpose):"
+echo "Remember these:"
 echo "  DB_PASSWORD=${DB_PASSWORD}"
+echo "  REPORT_DB_PASSWORD=${REPORT_DB_PASSWORD}"
 echo "  REDIS_PASSWORD=${REDIS_PASSWORD}"
-echo "  JWT_SECRET=<48 chars in file>"

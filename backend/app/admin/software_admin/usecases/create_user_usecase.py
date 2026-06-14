@@ -53,7 +53,6 @@ class CreateUserUseCase:
             phone=request.phone,
             position=request.position,
             is_active=True,
-            is_temp_password=True,
         )
         self.session.add(user)
         await self.session.commit()
@@ -71,7 +70,6 @@ class CreateUserUseCase:
                 position=user.position,
                 avatar_url=user.avatar_url,
                 is_active=user.is_active,
-                is_temp_password=user.is_temp_password,
             ),
             temp_password=raw_password,
         )

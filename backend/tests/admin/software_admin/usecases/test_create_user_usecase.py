@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +32,6 @@ class TestCreateUserUseCase:
         assert result.user.external_system_id == "new_user_001"
         assert result.user.role == "seller"
         assert result.user.first_name == "John"
-        assert result.user.is_temp_password is True
         assert result.temp_password is not None
 
     async def test_raises_when_external_id_exists(
@@ -42,7 +39,7 @@ class TestCreateUserUseCase:
         db_session: AsyncSession,
         builder: Builder,
     ) -> None:
-        existing_user = await builder.build_user(
+        await builder.build_user(
             external_system_id="existing_user_001",
             first_name="Existing",
             role=UserRole.SELLER,
@@ -59,4 +56,3 @@ class TestCreateUserUseCase:
             await usecase.execute(request)
 
         assert exc_info.value.status_code == 409
-

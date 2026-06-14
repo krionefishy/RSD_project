@@ -5,15 +5,15 @@ Revises: a021ca5c7e72
 Create Date: 2026-05-24 12:00:00.000000
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 from alembic import op
 
-
 revision: str = "c7e8f9a1b2d3"
-down_revision: Union[str, None] = "a021ca5c7e72"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "a021ca5c7e72"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -56,21 +56,6 @@ def upgrade() -> None:
         "ck_activity_codes_default_hours_non_negative",
         "activity_codes",
         "default_hours IS NULL OR default_hours >= 0",
-    )
-    op.create_check_constraint(
-        "ck_timesheet_uploads_period_order",
-        "timesheet_uploads",
-        "period_from <= period_to",
-    )
-    op.create_check_constraint(
-        "ck_timesheet_uploads_status_valid",
-        "timesheet_uploads",
-        "status IN ('uploaded', 'processed', 'failed')",
-    )
-    op.create_check_constraint(
-        "ck_timesheet_uploads_rows_count_non_negative",
-        "timesheet_uploads",
-        "rows_count >= 0",
     )
     op.create_check_constraint(
         "ck_employee_time_entries_hours_non_negative",
@@ -476,9 +461,6 @@ def downgrade() -> None:
     op.drop_constraint("ck_employee_earning_events_type_valid", "employee_earning_events", type_="check")
     op.drop_constraint("ck_employee_time_entries_shift_type_valid", "employee_time_entries", type_="check")
     op.drop_constraint("ck_employee_time_entries_hours_non_negative", "employee_time_entries", type_="check")
-    op.drop_constraint("ck_timesheet_uploads_rows_count_non_negative", "timesheet_uploads", type_="check")
-    op.drop_constraint("ck_timesheet_uploads_status_valid", "timesheet_uploads", type_="check")
-    op.drop_constraint("ck_timesheet_uploads_period_order", "timesheet_uploads", type_="check")
     op.drop_constraint("ck_activity_codes_default_hours_non_negative", "activity_codes", type_="check")
     op.drop_constraint("ck_activity_codes_entry_type_valid", "activity_codes", type_="check")
     op.drop_constraint(

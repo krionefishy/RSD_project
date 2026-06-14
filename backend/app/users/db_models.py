@@ -1,27 +1,49 @@
-from enum import Enum
+from datetime import date, datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
-from datetime import date, datetime, timezone
 
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, Index, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy import Boolean, CheckConstraint, String, Date, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from storage.pg.database import Base
 
 if TYPE_CHECKING:
-    from app.knowledge_base.db_models import CourseUserModel, UserCourseMaterialModel, UserCourseTestModel, CourseModel, MaterialModel
-    from app.locations.db_models import UserLocationModel, LocationModel, ManagerBlockModel, BlockModel, BlockMemberModel
-    from app.personnel.db_models import EmployeeCompensationModel, EmployeeEarningEventModel, EmployeeEarningTotalModel, EmployeeTimeEntryModel
+    from app.knowledge_base.db_models import (
+        CourseModel,
+        CourseUserModel,
+        MaterialModel,
+        UserCourseMaterialModel,
+        UserCourseTestModel,
+    )
+    from app.locations.db_models import (
+        BlockMemberModel,
+        BlockModel,
+        LocationModel,
+        ManagerBlockModel,
+        UserLocationModel,
+    )
+    from app.personnel.db_models import (
+        EmployeeCompensationModel,
+        EmployeeEarningEventModel,
+        EmployeeEarningTotalModel,
+        EmployeeTimeEntryModel,
+    )
     from app.reports.db_models import RatingSnapshotItemModel, ReportExportModel
-    from app.sellings.db_models import EmployeeDailySalesAggregateModel, EmployeeSalesPlanModel, SalesFactModel, SalesReceiptModel
+    from app.sellings.db_models import (
+        EmployeeDailySalesAggregateModel,
+        EmployeeSalesPlanModel,
+        SalesFactModel,
+        SalesReceiptModel,
+    )
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """Роли пользователей в системе RSD.
 
     Соответствует спецификации ROLE_MODEL.md
     """
+
     SUPER_ADMIN = "super_admin"
     ROOT_ADMIN = "root_admin"
     ADMIN_STAFF = "admin_staff"
@@ -54,42 +76,28 @@ class UserModel(Base):
     position: Mapped[str | None] = mapped_column(String(100), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    is_temp_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=lambda: datetime.now(),
-        onupdate=lambda: datetime.now()
+        DateTime, default=lambda: datetime.now(), onupdate=lambda: datetime.now()
     )
 
     course_users: Mapped[list["CourseUserModel"]] = relationship(
-        "CourseUserModel",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        "CourseUserModel", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
     user_course_materials: Mapped[list["UserCourseMaterialModel"]] = relationship(
-        "UserCourseMaterialModel",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        "UserCourseMaterialModel", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
     user_course_tests: Mapped[list["UserCourseTestModel"]] = relationship(
-        "UserCourseTestModel",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        "UserCourseTestModel", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
     location_assignments: Mapped[list["UserLocationModel"]] = relationship(
         "UserLocationModel",
         foreign_keys="UserLocationModel.user_id",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
     block_assignments: Mapped[list["ManagerBlockModel"]] = relationship(
-        "ManagerBlockModel",
-        back_populates="manager",
-        cascade="all, delete-orphan"
+        "ManagerBlockModel", back_populates="manager", cascade="all, delete-orphan"
     )
     block_memberships: Mapped[list["BlockMemberModel"]] = relationship(
         "BlockMemberModel",
@@ -156,10 +164,7 @@ class UserModel(Base):
     def completed_materials(self) -> list["MaterialModel"]:
         if not self.user_course_materials:
             return []
-        return [
-            um.material for um in self.user_course_materials
-            if um.is_completed and um.material
-        ]
+        return [um.material for um in self.user_course_materials if um.is_completed and um.material]
 
     @property
     def completed_tests(self) -> list["UserCourseTestModel"]:

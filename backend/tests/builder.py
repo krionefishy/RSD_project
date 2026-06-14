@@ -1,13 +1,10 @@
-from __future__ import annotations
-
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Self
 from uuid import UUID, uuid4
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from app.auth.deps import AuthContext
 from app.knowledge_base.db_models import (
@@ -37,8 +34,6 @@ from app.personnel.db_models import (
     EmployeeCompensationModel,
     EmployeeTimeEntryModel,
     ShiftType,
-    TimesheetUploadModel,
-    TimesheetUploadStatus,
 )
 from app.users.db_models import UserModel, UserRole
 
@@ -148,7 +143,6 @@ class Builder:
         birth_date: date | None = None,
         avatar_url: str | None = "https://example.com/avatar.jpg",
         is_active: bool = True,
-        is_temp_password: bool = False,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> UserModel:
@@ -166,7 +160,6 @@ class Builder:
                 birth_date=birth_date,
                 avatar_url=avatar_url,
                 is_active=is_active,
-                is_temp_password=is_temp_password,
                 created_at=created_at or self._default_datetime,
                 updated_at=updated_at or self._default_datetime,
             )
@@ -278,8 +271,6 @@ class Builder:
         activity_code: str | None = None,
         hours: Decimal = Decimal("8.00"),
         shift_type: str = ShiftType.DAY.value,
-        comment: str | None = None,
-        timesheet_upload_id: int | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> EmployeeTimeEntryModel:
@@ -294,41 +285,10 @@ class Builder:
                 activity_code=code,
                 hours=hours,
                 shift_type=shift_type,
-                comment=comment,
-                timesheet_upload_id=timesheet_upload_id,
                 created_at=created_at or self._default_datetime,
                 updated_at=updated_at or self._default_datetime,
             )
             .returning(EmployeeTimeEntryModel)
-        )
-        result = await self._session.execute(statement)
-        return result.scalar_one()
-
-    async def build_timesheet_upload(
-        self,
-        *,
-        file_name: str = "timesheet.xlsx",
-        s3_file_key: str = "timesheets/test.xlsx",
-        period_from: date | None = None,
-        period_to: date | None = None,
-        status: str = TimesheetUploadStatus.UPLOADED.value,
-        rows_count: int = 0,
-        created_at: datetime | None = None,
-    ) -> TimesheetUploadModel:
-        period_start = period_from or self._default_datetime.date()
-        period_end = period_to or period_start
-        statement = (
-            insert(TimesheetUploadModel)
-            .values(
-                file_name=file_name,
-                s3_file_key=s3_file_key,
-                period_from=period_start,
-                period_to=period_end,
-                status=status,
-                rows_count=rows_count,
-                created_at=created_at or self._default_datetime,
-            )
-            .returning(TimesheetUploadModel)
         )
         result = await self._session.execute(statement)
         return result.scalar_one()
@@ -433,11 +393,7 @@ class Builder:
         if user_kwargs:
             merged_kwargs.update(user_kwargs)
         user = await self.build_user(**merged_kwargs)
-        block = (
-            await self.build_block(**block_kwargs)
-            if block_kwargs
-            else await self.default_block
-        )
+        block = await self.build_block(**block_kwargs) if block_kwargs else await self.default_block
         assignment = await self.build_manager_block(manager=user, block=block)
         return user, block, assignment
 
@@ -725,9 +681,7 @@ class Builder:
         updated_at: datetime | None = None,
     ) -> MaterialAttachmentModel:
         material_obj = material or await self.build_material()
-        key = s3_file_key or MaterialAttachmentModel.generate_s3_key(
-            material_obj.id, name, format
-        )
+        key = s3_file_key or MaterialAttachmentModel.generate_s3_key(material_obj.id, name, format)
         statement = (
             insert(MaterialAttachmentModel)
             .values(
@@ -753,7 +707,7 @@ class Builder:
         materials = []
         assignments = []
         for i in range(material_count):
-            material = await self.build_material(name=f"Material {i+1}")
+            material = await self.build_material(name=f"Material {i + 1}")
             assignment = await self.build_course_material(course=course, material=material)
             materials.append(material)
             assignments.append(assignment)
@@ -772,7 +726,7 @@ class Builder:
         tasks = []
         for i in range(task_count):
             task = await self.build_test_task(
-                name=f"Task {i+1}",
+                name=f"Task {i + 1}",
                 points=10,
                 correct_variant=0,
             )

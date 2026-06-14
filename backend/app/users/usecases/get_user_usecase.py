@@ -49,7 +49,6 @@ class GetUserUseCase:
             position=user.position,
             avatar_url=user.avatar_url,
             is_active=user.is_active,
-            is_temp_password=user.is_temp_password,
             birth_date=user.birth_date,
             location=(
                 LocationBriefDTO(id=location.id, name=location.name)

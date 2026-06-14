@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import date
 from decimal import Decimal
 
@@ -23,13 +21,12 @@ class TestDemo1TimesheetMutationsSmoke:
             user=seller,
             work_date=date(2024, 10, 10),
             hours=Decimal("6.00"),
-            comment="Before update",
         )
 
         patch_response = await client.patch(
             f"/api/v1/admin/staff/timesheets/entries/{entry.id}",
             headers=bearer_headers(admin),
-            json={"hours": "7.50", "comment": "After update"},
+            json={"hours": "7.50"},
         )
         assert patch_response.status_code == 200
 
@@ -43,7 +40,6 @@ class TestDemo1TimesheetMutationsSmoke:
         patched_item = next((item for item in items_after_patch if item["id"] == entry.id), None)
         assert patched_item is not None
         assert patched_item["hours"] == "7.50"
-        assert patched_item["comment"] == "After update"
 
         delete_response = await client.delete(
             f"/api/v1/admin/staff/timesheets/entries/{entry.id}",

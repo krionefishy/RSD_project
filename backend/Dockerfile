@@ -27,7 +27,6 @@ COPY backend/docker-entrypoint.sh /usr/local/bin/backend-entrypoint.sh
 RUN chmod +x /usr/local/bin/backend-entrypoint.sh
 
 ENV PYTHONPATH=/backend
-ENV LOG_LEVEL=INFO
 ENV CONFIG_PATH=/backend/shared/settings/config.docker.yaml
 ENV RUN_MIGRATIONS=true
 ENV RUN_DEMO_SEED=true

@@ -17,11 +17,13 @@
 ### Backend
 
 ```bash
-just infra-up
-just migrate
-just seed    # при необходимости
+just demo1-setup   # infra + migrate + Demo 1 seed
 just dev
 ```
+
+Или по шагам: `just infra-up` → `just demo1-seed` → `just dev`.
+
+Данные в дампе: см. `scripts/README.md`.
 
 ### Demo 1 UI
 

@@ -42,7 +42,7 @@ from app.admin.educ_admin.usecases.tests.create_test_usecase import CreateTestUs
 from app.admin.educ_admin.usecases.tests.delete_test_usecase import DeleteTestUseCase
 from app.admin.educ_admin.usecases.tests.list_tests_usecase import ListTestsUseCase
 from app.admin.educ_admin.usecases.tests.update_test_usecase import UpdateTestUseCase
-from storage.s3.client import S3Client
+from shared.kafka_streams.producer import KafkaProducerWrapper
 
 
 class EducAdminUsecaseProvider(Provider):
@@ -81,14 +81,14 @@ class EducAdminUsecaseProvider(Provider):
     def upload_material_attachment(
         self,
         session: AsyncSession,
-        s3_client: S3Client,
+        kafka_producer: KafkaProducerWrapper,
     ) -> UploadMaterialAttachmentUseCase:
-        return UploadMaterialAttachmentUseCase(session, s3_client)
+        return UploadMaterialAttachmentUseCase(session, kafka_producer)
 
     @provide
     def delete_material_attachment(
         self,
         session: AsyncSession,
-        s3_client: S3Client,
+        kafka_producer: KafkaProducerWrapper,
     ) -> DeleteMaterialAttachmentUseCase:
-        return DeleteMaterialAttachmentUseCase(session, s3_client)
+        return DeleteMaterialAttachmentUseCase(session, kafka_producer)

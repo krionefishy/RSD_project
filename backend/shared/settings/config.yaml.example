@@ -1,31 +1,82 @@
+# RSD platform configuration (example).
+# Copy to backend/shared/settings/config.yaml and adjust secrets.
+#
+# Local:  CONFIG_PATH=backend/shared/settings/config.yaml just dev
+# Docker: CONFIG_PATH=/backend/shared/settings/config.docker.yaml
+# Tests:  CONFIG_PATH=backend/shared/settings/config.test.yaml just test
+
 environment: development
 log_level: INFO
 
 database:
-  url: postgresql+asyncpg://app:appsecret@localhost:5432/rsd_db
+  host: localhost
+  port: 5432
+  user: app
+  password: appsecret
+  database: rsd_db
   echo: false
+
+main_replica_database:
+  enabled: true
+  host: localhost
+  port: 5434
+  user: report_reader
+  password: reportreadersecret
+  database: rsd_db
+  echo: false
+  # Можно задать целиком, тогда host/port/user/password/database будут проигнорированы:
+  # url: postgresql+asyncpg://report_reader:reportreadersecret@main_db_replica:5432/rsd_db
 
 backend:
   jwt:
-    secret: change-me-in-production
+    secret: change-me-user-jwt-secret-min-32-chars
     algorithm: HS256
     access_expire_seconds: 900
     refresh_expire_seconds: 259200
     rsa_private_key_pem: null
     rsa_key_size: 2048
-  kafka:
-    bootstrap_servers: localhost:9092
-    consumer_group: rsd-backend-group
-    max_request_size: 10485760
   redis:
     host: localhost
     port: 6379
     db: 0
+  kafka:
+    bootstrap_servers: localhost:9092
+    consumer_group: rsd-backend-group
+    max_request_size: 10485760
   s3:
     endpoint_url: http://localhost:9000
     tenant_id: ""
     key_id: minioadmin
     secret_key: minioadmin
     bucket_name: rsd-bucket
-    region: us-east-1
+    region: ru-central-1
     verify: false
+
+inter_service_auth:
+  jwt:
+    secret: change-me-inter-service-secret-min-32-chars
+    algorithm: HS256
+    issuer: rsd-backend
+    audience: rsd-report-service
+    expire_seconds: 300
+    allowed_subjects:
+      - backend
+
+services:
+  report_service:
+    enabled: true
+    base_url: http://localhost:8001
+    timeout_seconds: 120
+
+report_service:
+  database:
+    host: localhost
+    port: 5435
+    user: report_service
+    password: reportsecret
+    database: rsd_reports
+    echo: false
+    # Можно задать целиком:
+    # url: postgresql+asyncpg://report_service:reportsecret@report_service_db:5432/rsd_reports
+  kafka:
+    consumer_group: rsd-report-service-group

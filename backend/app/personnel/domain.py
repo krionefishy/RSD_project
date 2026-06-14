@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
-from uuid import UUID
+from decimal import Decimal  # noqa: TC003
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -89,7 +88,6 @@ class UpdateTimeEntryRequest(BaseModel):
     activity_code: str | None = None
     hours: Decimal | None = Field(default=None, ge=0)
     shift_type: str | None = None
-    comment: str | None = None
 
 
 class ChangeBlockMemberStatusRequest(BaseModel):

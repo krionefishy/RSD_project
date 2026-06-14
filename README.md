@@ -36,6 +36,8 @@
 | Задача | Команда |
 |--------|---------|
 | Локальная инфра (Postgres, Redis, Kafka) | `just infra-up` |
+| Demo 1: миграции + демо-дамп БД | `just demo1-seed` |
+| Demo 1: всё сразу (infra + БД + дамп) | `just demo1-setup` |
 | Backend на хосте | `just backend` |
 | Демо UI на ноутбуке (полные моки) | `just frontend-demo` |
 | Demo 1 UI на ноутбуке (`frontend_demos`) | `just frontend-demo1` |
@@ -44,5 +46,5 @@
 | Production на сервере (полный стек) | `just deploy-prod-up` |
 | Остановить оба deploy-стека | `just deploy-down-all` |
 
-Перед deploy на сервере: `deploy/.env.production`, certbot — см. `docs/NGINX_DEPLOY.md`.
-Секреты для `.env`: `just deploy-secrets`.
+Перед deploy: `just deploy-secrets` → `backend/shared/settings/config.production.yaml`, certbot — см. `docs/NGINX_DEPLOY.md`.
+Конфигурация приложений: `backend/shared/settings/` (не `.env`).

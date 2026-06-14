@@ -36,7 +36,6 @@ class ResetPasswordUseCase:
 
         temp_password = _generate_temp_password()
         user.hashed_password = self.password_service.hash(temp_password)
-        user.is_temp_password = True
         await self.session.commit()
 
         await self.refresh_store.delete_all_for_user(user.id)

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from uuid import UUID
 
 from sqlalchemy import select
@@ -39,7 +37,6 @@ def map_user_profile(user: UserModel) -> UserProfileDTO:
         position=user.position,
         avatar_url=user.avatar_url,
         is_active=user.is_active,
-        is_temp_password=user.is_temp_password,
         location=(
             LocationBriefDTO(id=location.id, name=location.name) if location is not None else None
         ),

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import secrets
 import string
 
@@ -60,7 +58,6 @@ class CreateEmployeeProfileUseCase:
             birth_date=request.birth_date,
             position=request.position,
             is_active=True,
-            is_temp_password=True,
         )
         self.session.add(user)
         await self.session.flush()

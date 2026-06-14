@@ -8,8 +8,6 @@ Account definitions live in demo_accounts.json (same IDs as the login screen in 
 Usage:
     CONFIG_PATH=backend/shared/settings/config.demo.yaml python -m backend.scripts.seed_demo
 """
-from __future__ import annotations
-
 import asyncio
 import json
 import logging
@@ -244,6 +242,18 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
     )
 
 
+async def seed_demo1(session: AsyncSession) -> None:
+    """Seed only Demo 1 scope: auth users, structure, compensation, timesheets."""
+    password, accounts = _load_demo_accounts()
+    await _reset_database(session)
+    users = await _seed_users(session, password, accounts)
+    await _seed_locations(session, users)
+    await _seed_personnel(session, users)
+    await session.commit()
+    logger.info("Demo 1 dataset seeded (users, structure, personnel). Knowledge/sales skipped.")
+    _log_demo_credentials(password, accounts)
+
+
 async def seed_demo(session: AsyncSession) -> None:
     password, accounts = _load_demo_accounts()
     await _reset_database(session)
@@ -253,6 +263,32 @@ async def seed_demo(session: AsyncSession) -> None:
     await _seed_knowledge_base(session, users)
     await session.commit()
     _log_demo_credentials(password, accounts)
+
+
+_DEMO1_SEED_ENVIRONMENTS = frozenset({"demo", "docker", "development"})
+
+
+def _load_demo1_settings() -> Settings:
+    settings = load_settings(_config_path())
+    if settings.env_mode not in _DEMO1_SEED_ENVIRONMENTS:
+        raise RuntimeError(
+            f"Refusing to reset database: config environment is {settings.env_mode!r}, "
+            f"expected one of {sorted(_DEMO1_SEED_ENVIRONMENTS)}."
+        )
+    return settings
+
+
+async def main_demo1() -> None:
+    settings = _load_demo1_settings()
+    db_url = _normalize_db_url(os.getenv("DATABASE_URL") or settings.database.url)
+    engine = create_async_engine(db_url)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    try:
+        async with session_factory() as session:
+            await seed_demo1(session)
+    finally:
+        await engine.dispose()
 
 
 async def main() -> None:

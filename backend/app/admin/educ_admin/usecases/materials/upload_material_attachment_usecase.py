@@ -1,6 +1,7 @@
-from typing import Optional
-
 from fastapi import HTTPException, status
+from shared.kafka_streams.producer import KafkaProducerWrapper
+from shared.kafka_streams.storage_events import publish_s3_upload, sanitize_key_segment
+from shared.kafka_streams.topics import StorageTopics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,13 +9,12 @@ from app.knowledge_base.access import KB_ADMIN_ROLES
 from app.knowledge_base.db_models import MaterialAttachmentModel, MaterialModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import MaterialAttachmentDTO
-from storage.s3.client import S3Client
 
 
 class UploadMaterialAttachmentUseCase:
-    def __init__(self, session: AsyncSession, s3_client: Optional[S3Client]):
+    def __init__(self, session: AsyncSession, kafka_producer: KafkaProducerWrapper):
         self.session = session
-        self.s3_client = s3_client
+        self.kafka_producer = kafka_producer
 
     async def execute(
         self,
@@ -23,13 +23,13 @@ class UploadMaterialAttachmentUseCase:
         content_type: str,
         payload: bytes,
         ctx: UserContext,
-    ) -> Optional[MaterialAttachmentDTO]:
+    ) -> MaterialAttachmentDTO | None:
         if ctx.role.value not in KB_ADMIN_ROLES:
             return None
-        if self.s3_client is None:
+        if not payload:
             raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="S3 storage is not configured",
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Empty file",
             )
 
         material = (
@@ -38,16 +38,19 @@ class UploadMaterialAttachmentUseCase:
         if material is None:
             return None
 
-        safe_name = self.s3_client.sanitize_key_segment(filename, "attachment")
+        safe_name = sanitize_key_segment(filename, "attachment")
         extension = safe_name.rsplit(".", 1)[-1].lower() if "." in safe_name else "bin"
         display_name = safe_name.rsplit(".", 1)[0] if "." in safe_name else safe_name
         s3_key = MaterialAttachmentModel.generate_s3_key(material_id, display_name, extension)
 
-        await self.s3_client.put_object(
+        await publish_s3_upload(
+            self.kafka_producer,
+            StorageTopics.MATERIAL_ATTACHMENT_UPLOAD,
             key=s3_key,
             body=payload,
             content_type=content_type,
             metadata={"material_id": str(material_id)},
+            original_filename=filename,
         )
 
         attachment = MaterialAttachmentModel(

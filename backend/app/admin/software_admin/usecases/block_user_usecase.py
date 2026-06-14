@@ -42,5 +42,4 @@ class BlockUserUseCase:
             position=user.position,
             avatar_url=user.avatar_url,
             is_active=user.is_active,
-            is_temp_password=user.is_temp_password,
         )

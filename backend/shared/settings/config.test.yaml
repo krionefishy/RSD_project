@@ -1,5 +1,5 @@
-# Test configuration
-# Used by pytest
+environment: testing
+log_level: DEBUG
 
 database:
   host: localhost
@@ -7,24 +7,51 @@ database:
   user: app
   password: appsecret
   database: rsd_test_db
+  echo: false
+
+main_replica_database:
+  enabled: false
 
 backend:
-  logging:
-    level: DEBUG
-  env:
-    mode: testing
   jwt:
-    secret: test-secret-not-for-production
+    secret: test-user-jwt-secret-not-for-production
     algorithm: HS256
-    access_expire_seconds: 3600       # 1 hour for easier testing
-    refresh_expire_seconds: 86400   # 1 day for tests
-    rsa_private_key_pem: null       # Auto-generate ephemeral key
+    access_expire_seconds: 3600
+    refresh_expire_seconds: 86400
+    rsa_private_key_pem: null
     rsa_key_size: 2048
   redis:
     host: localhost
     port: 6379
-    db: 1  # Use separate DB for tests
+    db: 1
   kafka:
     bootstrap_servers: localhost:9092
     consumer_group: rsd-backend-test-group
     max_request_size: 10485760
+
+inter_service_auth:
+  jwt:
+    secret: test-inter-service-secret-not-for-production
+    algorithm: HS256
+    issuer: rsd-backend
+    audience: rsd-report-service
+    expire_seconds: 300
+    allowed_subjects:
+      - backend
+
+services:
+  report_service:
+    enabled: false
+    base_url: http://localhost:8001
+    timeout_seconds: 30
+
+report_service:
+  database:
+    host: localhost
+    port: 5433
+    user: app
+    password: appsecret
+    database: rsd_test_reports_db
+    echo: false
+  kafka:
+    consumer_group: rsd-report-service-test-group

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.staff_admin.usecases.profiles.update_employee_profile_usecase import (

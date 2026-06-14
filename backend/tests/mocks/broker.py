@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 
@@ -25,6 +26,11 @@ class FakeKafkaBroker:
 
     async def publish(self, message: Any, topic: str, *args: Any, **kwargs: Any) -> None:
         self.published.append((topic, message))
+
+    async def send(self, topic: str, value: Any, *args: Any, **kwargs: Any) -> None:
+        if isinstance(value, bytes):
+            value = json.loads(value.decode("utf-8"))
+        self.published.append((topic, value))
 
     async def publish_batch(self, *messages: Any, topic: str, **kwargs: Any) -> None:
         for message in messages:

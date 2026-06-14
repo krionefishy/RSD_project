@@ -9,6 +9,7 @@ from shared.di.providers.personnel import PersonnelUsecaseProvider
 from shared.di.providers.profile import ProfileUsecaseProvider
 from shared.di.providers.sellings import SellingsUsecaseProvider
 from shared.di.providers.locations import LocationsUsecaseProvider
+from shared.di.providers.report_service import ReportServiceIntegrationProvider
 from shared.di.providers.users import UsersUsecaseProvider
 
 ALL_PROVIDERS = [
@@ -26,4 +27,5 @@ ALL_PROVIDERS = [
     PersonnelUsecaseProvider(),
     SellingsUsecaseProvider(),
     AdminUsecaseProvider(),
+    ReportServiceIntegrationProvider(),
 ]

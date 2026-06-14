@@ -35,7 +35,8 @@ from app.users.usecases.profiles.get_own_profile_usecase import GetOwnProfileUse
 from app.users.usecases.profiles.get_own_timesheet_usecase import GetOwnTimesheetUseCase
 from app.users.usecases.profiles.get_user_profile_usecase import GetUserProfileUseCase
 from app.users.usecases.profiles.upload_own_avatar_usecase import UploadOwnAvatarUseCase
-from storage.s3.client import S3Client
+from shared.integrations.report_service import ReportServiceClient
+from shared.kafka_streams.producer import KafkaProducerWrapper
 
 
 class ProfileUsecaseProvider(Provider):
@@ -61,14 +62,14 @@ class ProfileUsecaseProvider(Provider):
     def upload_own_avatar(
         self,
         session: AsyncSession,
-        s3_client: S3Client,
+        kafka_producer: KafkaProducerWrapper,
     ) -> UploadOwnAvatarUseCase:
-        return UploadOwnAvatarUseCase(session, s3_client)
+        return UploadOwnAvatarUseCase(session, kafka_producer)
 
     @provide
     def upload_timesheet_file(
         self,
         session: AsyncSession,
-        s3_client: S3Client,
+        report_service: ReportServiceClient,
     ) -> UploadTimesheetFileUseCase:
-        return UploadTimesheetFileUseCase(session, s3_client)
+        return UploadTimesheetFileUseCase(session, report_service)

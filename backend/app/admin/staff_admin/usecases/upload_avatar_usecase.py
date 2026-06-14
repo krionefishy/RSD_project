@@ -1,19 +1,20 @@
 from datetime import datetime
-from typing import Optional
 
 from fastapi import HTTPException, status
+from shared.kafka_streams.producer import KafkaProducerWrapper
+from shared.kafka_streams.storage_events import publish_s3_upload, sanitize_key_segment
+from shared.kafka_streams.topics import StorageTopics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.personnel.domain import ALLOWED_AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES
 from app.users.db_models import UserModel
-from storage.s3.client import S3Client
 
 
 class UploadAvatarUseCase:
-    def __init__(self, session: AsyncSession, s3_client: Optional[S3Client]):
+    def __init__(self, session: AsyncSession, kafka_producer: KafkaProducerWrapper):
         self.session = session
-        self.s3_client = s3_client
+        self.kafka_producer = kafka_producer
 
     async def execute(
         self,
@@ -21,12 +22,7 @@ class UploadAvatarUseCase:
         filename: str,
         content_type: str,
         payload: bytes,
-    ) -> Optional[str]:
-        if self.s3_client is None:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="S3 storage is not configured",
-            )
+    ) -> str | None:
         if content_type not in ALLOWED_AVATAR_CONTENT_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -50,13 +46,16 @@ class UploadAvatarUseCase:
         if user is None:
             return None
 
-        safe_name = self.s3_client.sanitize_key_segment(filename, "avatar")
+        safe_name = sanitize_key_segment(filename, "avatar")
         key = f"avatars/{user_id}/{safe_name}"
-        await self.s3_client.put_object(
+        await publish_s3_upload(
+            self.kafka_producer,
+            StorageTopics.AVATAR_UPLOAD,
             key=key,
             body=payload,
             content_type=content_type,
             metadata={"user_id": str(user_id)},
+            original_filename=filename,
         )
 
         user.avatar_url = key

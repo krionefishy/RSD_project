@@ -26,7 +26,6 @@ class UserProfileDTO(BaseModel):
     position: str | None = None
     avatar_url: str | None = None
     is_active: bool
-    is_temp_password: bool
     location: LocationBriefDTO | None = None
     block: BlockBriefDTO | None = None
     block_member_status: str | None = None
@@ -52,7 +51,6 @@ class UserDTO(BaseModel):
     position: str | None = None
     avatar_url: str | None = None
     is_active: bool | None = None
-    is_temp_password: bool | None = None
     birth_date: date | None = None
     location: LocationBriefDTO | None = None
     block: BlockBriefDTO | None = None

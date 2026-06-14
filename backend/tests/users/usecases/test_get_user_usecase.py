@@ -1,9 +1,6 @@
-from __future__ import annotations
-
 from datetime import datetime
 from uuid import uuid4
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.users.db_models import UserRole
@@ -158,7 +155,6 @@ class TestGetUserUseCase:
             avatar_url="https://example.com/avatar.jpg",
             role=UserRole.ADMIN_SALES,
             is_active=True,
-            is_temp_password=False,
         )
 
         usecase = GetUserUseCase(db_session)
@@ -174,7 +170,6 @@ class TestGetUserUseCase:
         assert result.avatar_url == "https://example.com/avatar.jpg"
         assert result.role == "admin_sales"
         assert result.is_active is True
-        assert result.is_temp_password is False
 
     async def test_returns_inactive_user(
         self,
@@ -192,20 +187,3 @@ class TestGetUserUseCase:
 
         assert result is not None
         assert result.is_active is False
-
-    async def test_returns_user_with_temp_password(
-        self,
-        db_session: AsyncSession,
-        builder: Builder,
-    ) -> None:
-        user = await builder.build_user(
-            external_system_id="temp_pass_user",
-            first_name="Grace",
-            is_temp_password=True,
-        )
-
-        usecase = GetUserUseCase(db_session)
-        result = await usecase.execute(user.id)
-
-        assert result is not None
-        assert result.is_temp_password is True

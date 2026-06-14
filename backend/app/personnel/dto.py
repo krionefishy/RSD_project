@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
@@ -28,8 +26,9 @@ class EmployeeTimeEntryDTO(BaseModel):
     activity_name: str
     hours: Decimal
     shift_type: str
-    comment: str | None = None
-    timesheet_upload_id: int | None = None
+    shift_code: str | None = None
+    starts_at: str | None = None
+    ends_at: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -60,8 +59,7 @@ class TimesheetImportErrorDTO(BaseModel):
 
 
 class TimesheetUploadResultDTO(BaseModel):
-    upload_id: int
-    status: str
+    entries_count: int
     rows_count: int
     errors: list[TimesheetImportErrorDTO]
 

@@ -23,15 +23,116 @@ services:
   db:
     image: postgres:15-alpine
     restart: unless-stopped
-    env_file: ./.env.production
+    command:
+      - "postgres"
+      - "-c"
+      - "wal_level=replica"
+      - "-c"
+      - "max_wal_senders=${POSTGRES_MAX_WAL_SENDERS:-10}"
+      - "-c"
+      - "max_replication_slots=${POSTGRES_MAX_REPLICATION_SLOTS:-10}"
+      - "-c"
+      - "wal_keep_size=${POSTGRES_WAL_KEEP_SIZE:-1024MB}"
+      - "-c"
+      - "max_connections=${POSTGRES_MAX_CONNECTIONS:-100}"
+      - "-c"
+      - "shared_buffers=${POSTGRES_SHARED_BUFFERS:-512MB}"
+      - "-c"
+      - "work_mem=${POSTGRES_WORK_MEM:-16MB}"
+      - "-c"
+      - "maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}"
+      - "-c"
+      - "effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-2GB}"
+      - "-c"
+      - "checkpoint_timeout=${POSTGRES_CHECKPOINT_TIMEOUT:-10min}"
+      - "-c"
+      - "log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION_STATEMENT:-500ms}"
+      - "-c"
+      - "log_checkpoints=on"
+      - "-c"
+      - "log_lock_waits=on"
     environment:
-      POSTGRES_USER: ${DB_USER:?DB_USER is required}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: appsecret
+      POSTGRES_DB: rsd_db
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}
+      MAIN_REPLICA_READONLY_USER: ${MAIN_REPLICA_READONLY_USER:-report_reader}
+      MAIN_REPLICA_READONLY_PASSWORD: ${MAIN_REPLICA_READONLY_PASSWORD:-reportreadersecret}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ../deploy/docker/init-main-db.sh:/docker-entrypoint-initdb.d/20-init-main-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER is required} -d ${DB_NAME:?DB_NAME is required}"]
+      test: ["CMD-SHELL", "pg_isready -U app -d rsd_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  db_replica:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/replica-entrypoint.sh"]
+    environment:
+      PRIMARY_HOST: db
+      PRIMARY_PORT: 5432
+      POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}
+      POSTGRES_SHARED_BUFFERS: ${REPLICA_POSTGRES_SHARED_BUFFERS:-256MB}
+      POSTGRES_WORK_MEM: ${REPLICA_POSTGRES_WORK_MEM:-8MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${REPLICA_POSTGRES_MAINTENANCE_WORK_MEM:-128MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${REPLICA_POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}
+      POSTGRES_MAX_CONNECTIONS: ${REPLICA_POSTGRES_MAX_CONNECTIONS:-100}
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: ${REPLICA_POSTGRES_LOG_MIN_DURATION_STATEMENT:-500ms}
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ../deploy/docker/replica-entrypoint.sh:/replica-entrypoint.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MAIN_REPLICA_READONLY_USER:-report_reader} -d rsd_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  report_db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=${REPORT_POSTGRES_MAX_CONNECTIONS:-50}"
+      - "-c"
+      - "shared_buffers=${REPORT_POSTGRES_SHARED_BUFFERS:-256MB}"
+      - "-c"
+      - "work_mem=${REPORT_POSTGRES_WORK_MEM:-8MB}"
+      - "-c"
+      - "maintenance_work_mem=${REPORT_POSTGRES_MAINTENANCE_WORK_MEM:-128MB}"
+      - "-c"
+      - "effective_cache_size=${REPORT_POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}"
+      - "-c"
+      - "checkpoint_timeout=${REPORT_POSTGRES_CHECKPOINT_TIMEOUT:-10min}"
+      - "-c"
+      - "log_min_duration_statement=${REPORT_POSTGRES_LOG_MIN_DURATION_STATEMENT:-500ms}"
+      - "-c"
+      - "log_checkpoints=on"
+      - "-c"
+      - "log_lock_waits=on"
+    environment:
+      POSTGRES_USER: ${REPORT_DB_SUPERUSER:-report_admin}
+      POSTGRES_PASSWORD: ${REPORT_DB_SUPERUSER_PASSWORD:-reportadminsecret}
+      POSTGRES_DB: ${REPORT_DB_NAME:-rsd_reports}
+      REPORT_DB_APP_USER: ${REPORT_DB_APP_USER:-report_service}
+      REPORT_DB_APP_PASSWORD: ${REPORT_DB_APP_PASSWORD:-reportsecret}
+    volumes:
+      - report_postgres_data:/var/lib/postgresql/data
+      - ../deploy/docker/init-report-service-db.sh:/docker-entrypoint-initdb.d/20-init-report-service-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REPORT_DB_APP_USER:-report_service} -d ${REPORT_DB_NAME:-rsd_reports}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -87,18 +188,43 @@ services:
       context: ..
       dockerfile: backend/Dockerfile
     restart: unless-stopped
-    env_file: ./.env.production
     environment:
-      DATABASE_URL: postgresql+asyncpg://${DB_USER:?DB_USER is required}:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/${DB_NAME:?DB_NAME is required}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      LOG_LEVEL: INFO
+      CONFIG_PATH: /backend/shared/settings/config.docker.yaml
     networks:
       - proxy
       - internal
     depends_on:
       db:
+        condition: service_healthy
+      db_replica:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      report_service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  report_service:
+    build:
+      context: ..
+      dockerfile: backend/report_service/Dockerfile
+    restart: unless-stopped
+    environment:
+      CONFIG_PATH: /service/shared/settings/config.docker.yaml
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+      db_replica:
+        condition: service_healthy
+      report_db:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -112,6 +238,8 @@ services:
 
 volumes:
   postgres_data:
+  postgres_replica_data:
+  report_postgres_data:
   redis_data:
 
 networks:

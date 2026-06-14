@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from decimal import Decimal
 
 from httpx import AsyncClient
@@ -20,7 +18,7 @@ class TestPatchUpdateTimeEntry:
         response = await client.patch(
             f"/api/v1/admin/staff/timesheets/entries/{entry.id}",
             headers=bearer_headers(admin),
-            json={"hours": "7.50", "comment": "Corrected"},
+            json={"hours": "7.50"},
         )
 
         assert response.status_code == 200

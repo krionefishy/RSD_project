@@ -1,6 +1,6 @@
-from enum import Enum
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -14,43 +14,44 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Time,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from storage.pg.database import Base
 
 if TYPE_CHECKING:
     from app.users.db_models import UserModel
 
 
-class ActivityEntryType(str, Enum):
+class ActivityEntryType(StrEnum):
     WORK = "work"
     ABSENCE = "absence"
     DAY_OFF = "day_off"
 
 
-class TimesheetUploadStatus(str, Enum):
-    UPLOADED = "uploaded"
-    PROCESSED = "processed"
-    FAILED = "failed"
-
-
-class ShiftType(str, Enum):
+class ShiftType(StrEnum):
     DAY = "day"
     NIGHT = "night"
     NONE = "none"
 
 
-class EarningType(str, Enum):
+class ScheduleShiftCode(StrEnum):
+    S1 = "С1"
+    S2 = "С2"
+    DAY_OFF = "В"
+    ABSENCE = "О/Б"
+
+
+class EarningType(StrEnum):
     SALARY = "salary"
     HOURLY = "hourly"
     BONUS = "bonus"
     MANUAL = "manual"
 
 
-class EarningSourceType(str, Enum):
+class EarningSourceType(StrEnum):
     TIME_ENTRY = "time_entry"
     SALES_PLAN_BONUS = "sales_plan_bonus"
     MANUAL = "manual"
@@ -115,35 +116,6 @@ class ActivityCodeModel(Base):
     )
 
 
-class TimesheetUploadModel(Base):
-    __tablename__ = "timesheet_uploads"
-
-    __table_args__ = (
-        Index("ix_timesheet_uploads_period", "period_from", "period_to"),
-        Index("ix_timesheet_uploads_status", "status"),
-        CheckConstraint("period_from <= period_to", name="ck_timesheet_uploads_period_order"),
-        CheckConstraint(
-            "status IN ('uploaded', 'processed', 'failed')",
-            name="ck_timesheet_uploads_status_valid",
-        ),
-        CheckConstraint("rows_count >= 0", name="ck_timesheet_uploads_rows_count_non_negative"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    s3_file_key: Mapped[str] = mapped_column(String(500), nullable=False)
-    period_from: Mapped[date] = mapped_column(Date, nullable=False)
-    period_to: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default=TimesheetUploadStatus.UPLOADED.value)
-    rows_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
-
-    time_entries: Mapped[list["EmployeeTimeEntryModel"]] = relationship(
-        "EmployeeTimeEntryModel",
-        back_populates="timesheet_upload",
-    )
-
-
 class EmployeeTimeEntryModel(Base):
     __tablename__ = "employee_time_entries"
 
@@ -151,9 +123,12 @@ class EmployeeTimeEntryModel(Base):
         UniqueConstraint("user_id", "work_date", "shift_type", name="uq_employee_time_entries_user_date_shift"),
         Index("ix_employee_time_entries_work_date", "work_date"),
         Index("ix_employee_time_entries_user_work_date", "user_id", "work_date"),
-        Index("ix_employee_time_entries_upload_id", "timesheet_upload_id"),
         CheckConstraint("hours >= 0", name="ck_employee_time_entries_hours_non_negative"),
         CheckConstraint("shift_type IN ('day', 'night', 'none')", name="ck_employee_time_entries_shift_type_valid"),
+        CheckConstraint(
+            "shift_code IS NULL OR shift_code IN ('С1', 'С2', 'В', 'О/Б')",
+            name="ck_employee_time_entries_shift_code_valid",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -170,11 +145,9 @@ class EmployeeTimeEntryModel(Base):
     )
     hours: Mapped[Decimal] = mapped_column(Numeric(4, 2), nullable=False)
     shift_type: Mapped[str] = mapped_column(String(20), nullable=False, default=ShiftType.NONE.value)
-    comment: Mapped[str | None] = mapped_column(String(500))
-    timesheet_upload_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey("timesheet_uploads.id", ondelete="SET NULL"),
-    )
+    shift_code: Mapped[str | None] = mapped_column(String(10))
+    starts_at: Mapped[time | None] = mapped_column(Time)
+    ends_at: Mapped[time | None] = mapped_column(Time)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -184,10 +157,6 @@ class EmployeeTimeEntryModel(Base):
 
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="time_entries")
     activity_code_ref: Mapped["ActivityCodeModel"] = relationship("ActivityCodeModel", back_populates="time_entries")
-    timesheet_upload: Mapped["TimesheetUploadModel | None"] = relationship(
-        "TimesheetUploadModel",
-        back_populates="time_entries",
-    )
 
 
 class EmployeeEarningEventModel(Base):
@@ -196,7 +165,9 @@ class EmployeeEarningEventModel(Base):
     __table_args__ = (
         Index("ix_employee_earning_events_user_datetime", "user_id", "event_datetime"),
         Index("ix_employee_earning_events_source", "source_type", "source_id"),
-        CheckConstraint("earning_type IN ('salary', 'hourly', 'bonus', 'manual')", name="ck_employee_earning_events_type_valid"),
+        CheckConstraint(
+            "earning_type IN ('salary', 'hourly', 'bonus', 'manual')", name="ck_employee_earning_events_type_valid"
+        ),
         CheckConstraint("amount >= 0", name="ck_employee_earning_events_amount_non_negative"),
         CheckConstraint(
             "source_type IS NULL OR source_type IN ('time_entry', 'sales_plan_bonus', 'manual')",

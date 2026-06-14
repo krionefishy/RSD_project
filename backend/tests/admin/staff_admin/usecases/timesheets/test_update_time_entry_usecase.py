@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import date
 from decimal import Decimal
 
@@ -15,7 +13,7 @@ from tests.builder import Builder
 
 
 class TestUpdateTimeEntryUseCase:
-    async def test_updates_hours_and_comment(
+    async def test_updates_hours(
         self,
         db_session: AsyncSession,
         builder: Builder,
@@ -26,12 +24,11 @@ class TestUpdateTimeEntryUseCase:
 
         result = await UpdateTimeEntryUseCase(db_session).execute(
             entry.id,
-            UpdateTimeEntryRequest(hours=Decimal("7.50"), comment="Corrected"),
+            UpdateTimeEntryRequest(hours=Decimal("7.50")),
             ctx,
         )
 
         assert result.hours == Decimal("7.50")
-        assert result.comment == "Corrected"
 
     async def test_raises_not_found_for_missing_entry(
         self,

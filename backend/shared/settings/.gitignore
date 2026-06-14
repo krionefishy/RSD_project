@@ -1,0 +1,4 @@
+# Local overrides (gitignored)
+config.yaml
+config.production.yaml
+config.local.yaml

@@ -49,7 +49,7 @@ backend/
 4. **DTO** — выходные Pydantic модели
 5. **DB Models** — SQLAlchemy ORM, `Base` из `storage.pg.database`
 6. **DI** — dishka, провайдеры в `shared/di/providers/`, usecase регистрируются через `provide_all`
-7. **Kafka** — только для фоновых S3 операций, единый список `s3_consumers`
+7. **Kafka/S3** — все S3 upload/delete только через Kafka topics `storage.s3.<domain>.<action>` и отдельные `s3_consumers`; прямые `put_object/delete_object` разрешены только внутри Kafka consumer; из бизнес-кода напрямую к S3 можно только GET/presigned GET
 8. **Docker** — Traefik (без nginx), `proxy` + `internal` сети
 
 ---
@@ -96,6 +96,7 @@ frontend/
 - Local infra: `docker-compose.local.yml` (Postgres, Kafka, Redis)
 - CI: `docker-compose.ci.yaml` (Postgres for tests)
 - Сети: `proxy` (внешняя) / `internal` (изолированная)
+- Новые микросервисы оформляются по `.cursor/rules/MICROSERVICE_TEMPLATE.md`: своя БД/миграции, общие Kafka/S3/Redis, локальные DI providers.
 
 ---
 

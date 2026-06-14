@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from httpx import AsyncClient
 
 from tests.builder import Builder

@@ -2,14 +2,14 @@ import asyncio
 import os
 import sys
 from logging.config import fileConfig
+from pathlib import Path
 
-# Add project root to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from alembic import context
+from shared.settings.config import default_config_path, load_settings
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
-
 from storage.pg.database import Base
 
 import app.knowledge_base.db_models  # noqa: F401 - register tables with Base.metadata
@@ -21,6 +21,7 @@ import app.users.db_models  # noqa: F401 - register tables with Base.metadata
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -51,7 +52,8 @@ async def run_async_migrations():
     """Run migrations in 'online' mode with async engine."""
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
-        raise RuntimeError("DATABASE_URL is not set in environment")
+        config_path = os.getenv("CONFIG_PATH", str(default_config_path()))
+        database_url = load_settings(config_path).database.url
     if database_url.startswith("postgresql://"):
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from decimal import Decimal
 
 from app.personnel.db_models import EmployeeTimeEntryModel
@@ -34,8 +32,9 @@ def map_time_entry(entry: EmployeeTimeEntryModel, location_name: str | None = No
         activity_name=entry.activity_code_ref.name if entry.activity_code_ref else entry.activity_code,
         hours=entry.hours,
         shift_type=entry.shift_type,
-        comment=entry.comment,
-        timesheet_upload_id=entry.timesheet_upload_id,
+        shift_code=entry.shift_code,
+        starts_at=entry.starts_at.isoformat(timespec="minutes") if entry.starts_at else None,
+        ends_at=entry.ends_at.isoformat(timespec="minutes") if entry.ends_at else None,
         created_at=entry.created_at,
         updated_at=entry.updated_at,
     )

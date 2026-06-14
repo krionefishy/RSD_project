@@ -1,8 +1,5 @@
-from __future__ import annotations
-
 from uuid import uuid4
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.staff_admin.usecases.reset_password_usecase import ResetPasswordUseCase
@@ -21,7 +18,6 @@ class TestResetPasswordUseCase:
             external_system_id="reset_test_user",
             first_name="John",
             role=UserRole.SELLER,
-            is_temp_password=False,
         )
         password_service = MockPasswordService()
         refresh_store = MockRefreshTokenStore()
@@ -31,7 +27,6 @@ class TestResetPasswordUseCase:
 
         assert result is not None
         assert len(result) == 12
-        assert user.is_temp_password is True
         assert len(refresh_store._deleted_users) == 1
         assert refresh_store._deleted_users[0] == user.id
 

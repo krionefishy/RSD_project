@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 from httpx import AsyncClient
 
@@ -54,8 +52,8 @@ class TestDemo1AuthSmoke:
             "/api/v1/auth/refresh",
             json={"refresh_token": refresh_token},
         )
-        assert refresh_response.status_code == 403
-        assert refresh_response.json()["detail"]["code"] == "ACCOUNT_INACTIVE"
+        assert refresh_response.status_code == 401
+        assert refresh_response.json()["detail"]["code"] == "REFRESH_INVALID"
 
         me_response = await client.get(
             "/api/v1/users/me",

@@ -12,7 +12,7 @@ from shared.di.providers import ALL_PROVIDERS
 from shared.kafka_streams.kafka import start_kafka, stop_kafka
 from shared.kafka_streams.producer import KafkaProducerWrapper
 from shared.kafka_streams.subscribers import s3_consumers
-from shared.settings.config import Settings, load_settings
+from shared.settings.config import Settings, default_config_path, load_settings
 from storage.pg.database import Database
 from storage.redis.client import RedisClient
 from storage.s3.client import S3Client
@@ -27,7 +27,7 @@ class Application:
             lifespan=self.lifespan,
         )
         self.db: Database = Database()
-        config_path = os.getenv("CONFIG_PATH", "shared/settings/config.yaml")
+        config_path = os.getenv("CONFIG_PATH", str(default_config_path()))
         self.settings: Settings = load_settings(config_path)
         self.redis_client = RedisClient(
             host=self.settings.redis.host,

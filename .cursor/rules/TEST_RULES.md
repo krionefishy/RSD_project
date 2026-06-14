@@ -20,14 +20,11 @@ tests/
 ## Import Rules
 
 1. **ALL imports must be at the top of the file** - no inline imports inside functions
-2. Use `from __future__ import annotations` as the first import line
-3. Order: stdlib → third-party → first-party (app, tests)
-4. Group imports with blank lines between groups
+2. Order: stdlib → third-party → first-party (app, tests)
+3. Group imports with blank lines between groups
 
 Example:
 ```python
-from __future__ import annotations
-
 from datetime import datetime
 from uuid import uuid4
 

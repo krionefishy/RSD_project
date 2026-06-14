@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from datetime import datetime
 
 from fastapi import HTTPException, status
@@ -71,8 +69,6 @@ class UpdateTimeEntryUseCase:
         entry.activity_code = new_code
         entry.shift_type = new_shift
         entry.hours = new_hours
-        if request.comment is not None:
-            entry.comment = request.comment
         entry.updated_at = datetime.now()
 
         await self.session.commit()
