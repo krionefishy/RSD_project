@@ -26,7 +26,7 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    database_url = os.getenv("DATABASE_URL")
+    database_url = os.getenv("REPORT_SERVICE_DATABASE_URL")
     if not database_url:
         config_path = os.getenv("CONFIG_PATH", str(default_config_path()))
         database_url = load_settings(config_path, service="report_service").database.url

@@ -36,6 +36,10 @@ export interface LocationSummary {
   name: string;
   address: string;
   city?: string | null;
+  s1StartAt?: string | null;
+  s1EndAt?: string | null;
+  s2StartAt?: string | null;
+  s2EndAt?: string | null;
   blockId?: string;
   blockName?: string;
   employees: number;
@@ -69,6 +73,10 @@ export interface CreateLocationData {
   name: string;
   address: string;
   city?: string;
+  s1StartAt?: string;
+  s1EndAt?: string;
+  s2StartAt?: string;
+  s2EndAt?: string;
 }
 
 export interface UpdateLocationData {
@@ -76,4 +84,8 @@ export interface UpdateLocationData {
   name?: string;
   address?: string;
   city?: string | null;
+  s1StartAt?: string;
+  s1EndAt?: string;
+  s2StartAt?: string;
+  s2EndAt?: string;
 }

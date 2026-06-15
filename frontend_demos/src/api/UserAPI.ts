@@ -85,6 +85,9 @@ interface OwnTimesheetEntryDTO {
   activity_name: string;
   hours: string;
   shift_type: string;
+  shift_code?: "С1" | "С2" | "В" | "О/Б" | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
   comment?: string | null;
 }
 
@@ -325,6 +328,9 @@ class UserAPIImpl {
         activityName: item.activity_name,
         hours: item.hours,
         shiftType: item.shift_type as ShiftType,
+        shiftCode: item.shift_code ?? undefined,
+        startsAt: item.starts_at ?? undefined,
+        endsAt: item.ends_at ?? undefined,
         comment: item.comment ?? undefined,
       })),
       periodFrom: response.period_from,

@@ -36,8 +36,9 @@
 | Задача | Команда |
 |--------|---------|
 | Локальная инфра (Postgres, Redis, Kafka) | `just infra-up` |
+| Demo 1: **всё локально одной командой** | `just demo1-local` |
 | Demo 1: миграции + демо-дамп БД | `just demo1-seed` |
-| Demo 1: всё сразу (infra + БД + дамп) | `just demo1-setup` |
+| Demo 1: infra + сброс БД + дамп | `just demo1-setup` |
 | Backend на хосте | `just backend` |
 | Демо UI на ноутбуке (полные моки) | `just frontend-demo` |
 | Demo 1 UI на ноутбуке (`frontend_demos`) | `just frontend-demo1` |

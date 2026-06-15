@@ -4,7 +4,7 @@ from tests.builder import Builder
 
 
 class TestDeleteRemoveUserLocation:
-    async def test_returns_204_when_admin_staff_removes_location(
+    async def test_returns_deleted_when_admin_staff_removes_location(
         self,
         client: AsyncClient,
         builder: Builder,
@@ -20,7 +20,8 @@ class TestDeleteRemoveUserLocation:
             headers=bearer_headers(admin),
         )
 
-        assert response.status_code == 204
+        assert response.status_code == 200
+        assert response.json() == {"deleted": True}
 
     async def test_returns_403_when_seller_removes_location(
         self,

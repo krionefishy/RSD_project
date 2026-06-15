@@ -40,7 +40,9 @@ interface EmployeeTimeEntryDTO {
   activity_name: string;
   hours: string;
   shift_type: string;
-  comment?: string | null;
+  shift_code?: "С1" | "С2" | "В" | "О/Б" | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
 }
 
 interface EmployeeTimesheetDTO {
@@ -68,7 +70,9 @@ function mapTimeEntry(dto: EmployeeTimeEntryDTO): TimesheetEntry {
     activityName: dto.activity_name,
     hours: dto.hours,
     shiftType: dto.shift_type as TimesheetEntry["shiftType"],
-    comment: dto.comment ?? undefined,
+    shiftCode: dto.shift_code ?? undefined,
+    startsAt: dto.starts_at ?? undefined,
+    endsAt: dto.ends_at ?? undefined,
     userId: dto.user_id,
     userName: userDisplayName(dto.user),
     locationName: dto.location?.name,

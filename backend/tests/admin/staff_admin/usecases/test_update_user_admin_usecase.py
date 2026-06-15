@@ -31,8 +31,10 @@ class TestUpdateUserAdminUseCase:
             position="Director",
         )
         usecase = UpdateUserAdminUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id, request)
+        result = await usecase.execute(user.id, request, ctx)
 
         assert result is not None
         assert result.first_name == "Jane"
@@ -43,11 +45,14 @@ class TestUpdateUserAdminUseCase:
     async def test_returns_none_for_nonexistent_user(
         self,
         db_session: AsyncSession,
+        builder: Builder,
     ) -> None:
         request = UserAdminUpdate(first_name="New Name")
         usecase = UpdateUserAdminUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(uuid4(), request)
+        result = await usecase.execute(uuid4(), request, ctx)
 
         assert result is None
 
@@ -66,8 +71,10 @@ class TestUpdateUserAdminUseCase:
         )
         request = UserAdminUpdate(first_name="Jane")
         usecase = UpdateUserAdminUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id, request)
+        result = await usecase.execute(user.id, request, ctx)
 
         assert result is not None
         assert result.first_name == "Jane"

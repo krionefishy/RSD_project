@@ -1,31 +1,35 @@
-from enum import Enum
-from datetime import datetime, timezone
+from datetime import datetime, time
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
-    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
-    Index,
+    Time,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from storage.pg.database import Base
 
 if TYPE_CHECKING:
     from app.reports.db_models import RatingSnapshotItemModel
-    from app.sellings.db_models import LocationDailySalesAggregateModel, LocationSalesPlanModel, SalesFactModel, SalesReceiptModel
+    from app.sellings.db_models import (
+        LocationDailySalesAggregateModel,
+        LocationSalesPlanModel,
+        SalesFactModel,
+        SalesReceiptModel,
+    )
     from app.users.db_models import UserModel
 
 
-class BlockMemberStatus(str, Enum):
+class BlockMemberStatus(StrEnum):
     PRIMARY = "primary"
     RESERVE = "reserve"
 
@@ -33,34 +37,24 @@ class BlockMemberStatus(str, Enum):
 class BlockModel(Base):
     __tablename__ = "blocks"
 
-    __table_args__ = (
-        UniqueConstraint("name", name="uq_blocks_name"),
-    )
+    __table_args__ = (UniqueConstraint("name", name="uq_blocks_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=lambda: datetime.now(),
-        onupdate=lambda: datetime.now()
+        DateTime, default=lambda: datetime.now(), onupdate=lambda: datetime.now()
     )
 
     manager_assignments: Mapped[list["ManagerBlockModel"]] = relationship(
-        "ManagerBlockModel",
-        back_populates="block",
-        cascade="all, delete-orphan"
+        "ManagerBlockModel", back_populates="block", cascade="all, delete-orphan"
     )
     location_assignments: Mapped[list["BlockLocationModel"]] = relationship(
-        "BlockLocationModel",
-        back_populates="block",
-        cascade="all, delete-orphan"
+        "BlockLocationModel", back_populates="block", cascade="all, delete-orphan"
     )
     member_assignments: Mapped[list["BlockMemberModel"]] = relationship(
-        "BlockMemberModel",
-        back_populates="block",
-        cascade="all, delete-orphan"
+        "BlockMemberModel", back_populates="block", cascade="all, delete-orphan"
     )
     rating_snapshot_items: Mapped[list["RatingSnapshotItemModel"]] = relationship(
         "RatingSnapshotItemModel",
@@ -79,9 +73,7 @@ class BlockModel(Base):
 class ManagerBlockModel(Base):
     __tablename__ = "manager_blocks"
 
-    __table_args__ = (
-        UniqueConstraint("manager_id", "block_id", name="uq_manager_blocks_manager_block"),
-    )
+    __table_args__ = (UniqueConstraint("manager_id", "block_id", name="uq_manager_blocks_manager_block"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     manager_id: Mapped[UUID] = mapped_column(
@@ -177,22 +169,20 @@ class LocationModel(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[str] = mapped_column(String(500), nullable=False)
     city: Mapped[str | None] = mapped_column(String(100))
+    s1_start_at: Mapped[time] = mapped_column(Time, nullable=False, default=time(8, 0))
+    s1_end_at: Mapped[time] = mapped_column(Time, nullable=False, default=time(16, 0))
+    s2_start_at: Mapped[time] = mapped_column(Time, nullable=False, default=time(16, 0))
+    s2_end_at: Mapped[time] = mapped_column(Time, nullable=False, default=time(0, 0))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=lambda: datetime.now(),
-        onupdate=lambda: datetime.now()
+        DateTime, default=lambda: datetime.now(), onupdate=lambda: datetime.now()
     )
 
     block_assignments: Mapped[list["BlockLocationModel"]] = relationship(
-        "BlockLocationModel",
-        back_populates="location",
-        cascade="all, delete-orphan"
+        "BlockLocationModel", back_populates="location", cascade="all, delete-orphan"
     )
     user_assignments: Mapped[list["UserLocationModel"]] = relationship(
-        "UserLocationModel",
-        back_populates="location",
-        cascade="all, delete-orphan"
+        "UserLocationModel", back_populates="location", cascade="all, delete-orphan"
     )
     sales_plans: Mapped[list["LocationSalesPlanModel"]] = relationship(
         "LocationSalesPlanModel",

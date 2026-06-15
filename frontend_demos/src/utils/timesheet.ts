@@ -17,12 +17,32 @@ const MONTH_NAMES = [
 
 export const SHIFT_TYPE_OPTIONS: Array<{ value: ShiftType; label: string }> = [
   { value: "day", label: "Дневная" },
-  { value: "night", label: "Ночная" },
+  { value: "night", label: "Вечерняя" },
   { value: "none", label: "Без смены" },
+];
+
+export const SHIFT_CODE_OPTIONS: Array<{ value: "С1" | "С2"; label: string }> = [
+  { value: "С1", label: "С1 — Дневная" },
+  { value: "С2", label: "С2 — Вечерняя" },
 ];
 
 export function shiftTypeLabel(shiftType: string): string {
   return SHIFT_TYPE_OPTIONS.find((item) => item.value === shiftType)?.label ?? shiftType;
+}
+
+export function shiftCodeLabel(shiftCode?: string): string {
+  if (shiftCode === "С1") return "Дневная";
+  if (shiftCode === "С2") return "Вечерняя";
+  return shiftCode ?? "";
+}
+
+export function formatShiftTimeRange(startsAt?: string, endsAt?: string): string | null {
+  if (!startsAt || !endsAt) return null;
+  return `${startsAt}–${endsAt}`;
+}
+
+export function isWorkShift(entry: { shiftCode?: string | null }): boolean {
+  return entry.shiftCode === "С1" || entry.shiftCode === "С2";
 }
 
 export function formatMonthTitle(monthDate: Date): string {
@@ -56,13 +76,25 @@ export function mapTimesheetErrorMessage(message: string): string {
   return mapping[message] ?? message;
 }
 
+export function workDateFromMonthDay(monthDate: Date, day: number): string {
+  const monthStr = String(monthDate.getMonth() + 1).padStart(2, "0");
+  const dayStr = String(day).padStart(2, "0");
+  return `${monthDate.getFullYear()}-${monthStr}-${dayStr}`;
+}
+
 export function suggestShiftTypeForActivity(activityCode: string): ShiftType {
   if (activityCode === "Н") return "night";
   if (activityCode === "Я") return "day";
   return "none";
 }
 
-export function entryVisualType(entry: { hours: string; shiftType: string; activityCode: string }): "work" | "off" | "absence" {
+export function entryVisualType(entry: {
+  hours: string;
+  shiftType: string;
+  activityCode: string;
+  shiftCode?: string;
+}): "work" | "off" | "absence" {
+  if (isWorkShift(entry)) return "work";
   const hours = Number.parseFloat(entry.hours);
   if (entry.activityCode === "Б" || entry.activityCode === "О") return "absence";
   if (entry.shiftType === "none" || hours <= 0) return "off";

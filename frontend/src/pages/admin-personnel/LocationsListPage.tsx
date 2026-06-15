@@ -9,6 +9,7 @@ import { useApp } from "../../context/AppContext";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { canManageStructure } from "../../utils/structureAccess";
 import { toast } from "sonner";
+import { AppSelect } from "../../components/AppSelect";
 
 export default function LocationsListPage() {
   const navigate = useNavigate();
@@ -84,19 +85,13 @@ export default function LocationsListPage() {
 
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="flex gap-2">
-          <select
+          <AppSelect
             value={filterBlockId}
-            onChange={(e) => setFilterBlockId(e.target.value)}
-            className="flex-1 h-10 px-3 rounded-lg border text-sm"
-            style={{ borderColor: "#E2E8F0", background: "#fff" }}
-          >
-            <option value="">Все блоки</option>
-            {blocks.map((block) => (
-              <option key={block.id} value={block.id}>
-                {block.name}
-              </option>
-            ))}
-          </select>
+            onValueChange={setFilterBlockId}
+            emptyOption={{ value: "__all_blocks__", label: "Все блоки" }}
+            options={blocks.map((block) => ({ value: block.id, label: block.name }))}
+            className="flex-1"
+          />
           {canEdit && (
             <button
               onClick={() => setShowCreate(true)}

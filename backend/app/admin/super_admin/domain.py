@@ -16,6 +16,10 @@ class CreateLocationRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     address: str = Field(min_length=1, max_length=500)
     city: str | None = Field(default=None, max_length=100)
+    s1_start_at: str | None = None
+    s1_end_at: str | None = None
+    s2_start_at: str | None = None
+    s2_end_at: str | None = None
 
 
 class UpdateLocationRequest(BaseModel):
@@ -23,3 +27,7 @@ class UpdateLocationRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     address: str | None = Field(default=None, min_length=1, max_length=500)
     city: str | None = Field(default=None, max_length=100)
+    s1_start_at: str | None = None
+    s1_end_at: str | None = None
+    s2_start_at: str | None = None
+    s2_end_at: str | None = None

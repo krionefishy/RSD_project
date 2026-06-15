@@ -12,6 +12,7 @@ import { monthPeriodQuery } from "../../utils/timesheet";
 import { toast } from "sonner";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
 import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
+import { AppSelect } from "../../components/AppSelect";
 
 function profileDisplayName(profile: UserProfile): string {
   const parts = [profile.lastName, profile.firstName, profile.middleName].filter(Boolean);
@@ -280,35 +281,21 @@ export default function EmployeeDetailPage() {
               ))}
               <label className="flex flex-col gap-1">
                 <span style={{ color: "#64748B", fontSize: 12 }}>Блок</span>
-                <select
+                <AppSelect
                   value={profileForm.blockId}
-                  onChange={(e) => setProfileForm({ ...profileForm, blockId: e.target.value, locationId: "" })}
-                  className="w-full h-10 px-3 rounded-lg border"
-                  style={inputStyle}
-                >
-                  <option value="">Не назначен</option>
-                  {structureBlocks.map((block) => (
-                    <option key={block.id} value={block.id}>
-                      {block.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => setProfileForm({ ...profileForm, blockId: value, locationId: "" })}
+                  emptyOption={{ value: "__none_block__", label: "Не назначен" }}
+                  options={structureBlocks.map((block) => ({ value: block.id, label: block.name }))}
+                />
               </label>
               <label className="flex flex-col gap-1">
                 <span style={{ color: "#64748B", fontSize: 12 }}>Точка</span>
-                <select
+                <AppSelect
                   value={profileForm.locationId}
-                  onChange={(e) => setProfileForm({ ...profileForm, locationId: e.target.value })}
-                  className="w-full h-10 px-3 rounded-lg border"
-                  style={inputStyle}
-                >
-                  <option value="">Не назначена</option>
-                  {locationOptions.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => setProfileForm({ ...profileForm, locationId: value })}
+                  emptyOption={{ value: "__none_location__", label: "Не назначена" }}
+                  options={locationOptions.map((location) => ({ value: location.id, label: location.name }))}
+                />
               </label>
             </div>
             <button
@@ -332,7 +319,7 @@ export default function EmployeeDetailPage() {
               Табель сотрудника
             </h3>
             <p style={{ color: "#64748B", fontSize: 12, marginBottom: 12 }}>
-              Код «Я» — дневная смена, «Н» — ночная, отсутствия и выходные — без смены.
+              Просмотр графика. Назначение и изменение смен — в разделе «Табель».
             </p>
             <TimesheetCalendar
               entries={timesheetEntries}

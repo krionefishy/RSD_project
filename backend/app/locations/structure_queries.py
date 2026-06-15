@@ -3,15 +3,8 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.locations.db_models import (
-    BlockLocationModel,
-    BlockMemberModel,
-    BlockModel,
-    LocationModel,
-    ManagerBlockModel,
-    UserLocationModel,
-)
-from app.users.db_models import UserModel
+from app.locations.db_models import BlockLocationModel, BlockMemberModel, BlockModel, LocationModel, ManagerBlockModel, UserLocationModel
+from app.users.db_models import UserModel, UserRole
 
 
 def _display_name(user: UserModel) -> str:
@@ -36,9 +29,29 @@ async def count_members_by_block(session: AsyncSession) -> dict[int, int]:
     return {row[0]: row[1] for row in result.all()}
 
 
+async def count_staff_members_by_block(session: AsyncSession) -> dict[int, int]:
+    result = await session.execute(
+        select(BlockMemberModel.block_id, func.count(BlockMemberModel.id))
+        .join(UserModel, UserModel.id == BlockMemberModel.user_id)
+        .where(UserModel.role.in_([UserRole.SELLER.value, UserRole.MANAGER.value]))
+        .group_by(BlockMemberModel.block_id)
+    )
+    return {row[0]: row[1] for row in result.all()}
+
+
 async def count_users_by_location(session: AsyncSession) -> dict[int, int]:
     result = await session.execute(
         select(UserLocationModel.location_id, func.count(UserLocationModel.id))
+        .group_by(UserLocationModel.location_id)
+    )
+    return {row[0]: row[1] for row in result.all()}
+
+
+async def count_staff_users_by_location(session: AsyncSession) -> dict[int, int]:
+    result = await session.execute(
+        select(UserLocationModel.location_id, func.count(UserLocationModel.id))
+        .join(UserModel, UserModel.id == UserLocationModel.user_id)
+        .where(UserModel.role.in_([UserRole.SELLER.value, UserRole.MANAGER.value]))
         .group_by(UserLocationModel.location_id)
     )
     return {row[0]: row[1] for row in result.all()}

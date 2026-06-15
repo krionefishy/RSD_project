@@ -4,23 +4,27 @@ from typing import Optional
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.deps import AuthContext
 from app.locations.db_models import BlockMemberModel, BlockMemberStatus, LocationModel, UserLocationModel
 from app.users.db_models import UserModel
 from app.users.domain import UserAdminUpdate
 from app.users.dto import UserDTO
+from app.users.profile_scope import ensure_staff_admin_can_manage_user
 
 
 class UpdateUserAdminUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def execute(self, user_id, request: UserAdminUpdate) -> Optional[UserDTO]:
+    async def execute(self, user_id, request: UserAdminUpdate, ctx: AuthContext) -> Optional[UserDTO]:
         user_result = await self.session.execute(
             select(UserModel).where(UserModel.id == user_id)
         )
         user = user_result.scalar_one_or_none()
         if user is None:
             return None
+
+        ensure_staff_admin_can_manage_user(ctx, user.role)
 
         if request.first_name is not None:
             user.first_name = request.first_name

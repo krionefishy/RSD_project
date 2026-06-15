@@ -38,23 +38,26 @@ export function AppSelect({
   return (
     <Select value={selectValue} onValueChange={handleChange} disabled={disabled}>
       <SelectTrigger
-        className={`w-full h-10 rounded-xl border px-3 text-sm ${className}`}
+        className={`w-full h-10 rounded-lg border px-3 text-sm shadow-sm transition-colors ${className}`}
         style={{
-          borderColor: "#E2E8F0",
+          borderColor: "#CBD5E1",
           background: "#fff",
           color: "#1E293B",
         }}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="rounded-xl border" style={{ borderColor: "#E2E8F0" }}>
+      <SelectContent
+        className="rounded-lg border p-1 shadow-lg"
+        style={{ borderColor: "#CBD5E1", background: "#fff" }}
+      >
         {emptyOption && (
-          <SelectItem key={emptyOption.value} value={emptyOption.value} className="text-sm">
+          <SelectItem key={emptyOption.value} value={emptyOption.value} className="text-sm rounded-md">
             {emptyOption.label}
           </SelectItem>
         )}
         {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value} className="text-sm">
+          <SelectItem key={opt.value} value={opt.value} className="text-sm rounded-md">
             {opt.label}
           </SelectItem>
         ))}

@@ -1,7 +1,11 @@
+import { AppSelect } from "../AppSelect";
 import type { TimesheetEntry } from "../../types/profile";
-import { SHIFT_TYPE_OPTIONS, shiftTypeLabel } from "../../utils/timesheet";
-
-const inputStyle = { borderColor: "#E2E8F0", fontSize: 14 } as const;
+import {
+  formatShiftTimeRange,
+  isWorkShift,
+  SHIFT_CODE_OPTIONS,
+  shiftCodeLabel,
+} from "../../utils/timesheet";
 
 interface TimesheetEntriesListProps {
   entries: TimesheetEntry[];
@@ -10,6 +14,7 @@ interface TimesheetEntriesListProps {
   error?: string | null;
   emptyMessage?: string;
   editable?: boolean;
+  mode?: "shifts" | "full";
   showEmployee?: boolean;
   savingEntryId?: number | null;
   deletingEntryId?: number | null;
@@ -23,8 +28,9 @@ export function TimesheetEntriesList({
   totalHours,
   loading = false,
   error = null,
-  emptyMessage = "Нет записей за выбранный период",
+  emptyMessage = "Нет смен за выбранный период",
   editable = false,
+  mode = "shifts",
   showEmployee = false,
   savingEntryId = null,
   deletingEntryId = null,
@@ -32,6 +38,8 @@ export function TimesheetEntriesList({
   onSaveEntry,
   onDeleteEntry,
 }: TimesheetEntriesListProps) {
+  const visibleEntries = mode === "shifts" ? entries.filter(isWorkShift) : entries;
+
   if (loading) {
     return (
       <div className="rounded-xl px-3 py-4 text-center" style={{ background: "#F8FAFC", color: "#64748B", fontSize: 13 }}>
@@ -50,114 +58,104 @@ export function TimesheetEntriesList({
 
   return (
     <div className="flex flex-col gap-2">
-      {entries.length === 0 ? (
+      {visibleEntries.length === 0 ? (
         <div className="rounded-xl px-3 py-4 text-center" style={{ background: "#F8FAFC", color: "#64748B", fontSize: 13 }}>
           {emptyMessage}
         </div>
       ) : (
-        entries.map((entry) => (
-          <div key={entry.id} className="rounded-xl p-3" style={{ background: "#F8FAFC" }}>
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 600 }}>
-                  {entry.workDate}
-                  {showEmployee && entry.userName ? ` · ${entry.userName}` : ""}
-                </p>
-                <p style={{ color: "#64748B", fontSize: 12 }}>
-                  {entry.activityCode} — {entry.activityName}
-                  {entry.locationName ? ` · ${entry.locationName}` : ""}
-                </p>
-              </div>
-              {!editable && (
-                <span style={{ color: "#2E7D32", fontSize: 13, fontWeight: 600 }}>{entry.hours} ч</span>
-              )}
-            </div>
-
-            {editable ? (
-              <>
-                <div className="grid grid-cols-[1fr_88px] gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={entry.activityCode}
-                    onChange={(e) => onChangeEntry?.({ ...entry, activityCode: e.target.value.toUpperCase() })}
-                    className="h-9 px-3 rounded-lg border bg-white"
-                    style={inputStyle}
-                    aria-label="Код активности"
-                  />
-                  <input
-                    value={entry.hours}
-                    onChange={(e) => onChangeEntry?.({ ...entry, hours: e.target.value })}
-                    className="h-9 px-3 rounded-lg border bg-white"
-                    style={inputStyle}
-                    inputMode="decimal"
-                    aria-label="Часы"
-                  />
+        visibleEntries.map((entry) => {
+          const timeRange = formatShiftTimeRange(entry.startsAt, entry.endsAt);
+          return (
+            <div key={entry.id} className="rounded-xl p-3" style={{ background: "#F8FAFC" }}>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex-1">
+                  <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 600 }}>
+                    {entry.workDate}
+                    {showEmployee && entry.userName ? ` · ${entry.userName}` : ""}
+                  </p>
+                  {!editable && (
+                    <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 700, marginTop: 4 }}>
+                      {entry.shiftCode ?? "—"}
+                    </p>
+                  )}
+                  {!editable && (
+                    <p style={{ color: "#64748B", fontSize: 12, marginTop: 2 }}>
+                      {shiftCodeLabel(entry.shiftCode)}
+                      {timeRange ? ` · ${timeRange}` : ""}
+                    </p>
+                  )}
                 </div>
-                <div className="grid grid-cols-[1fr_1fr] gap-2 mb-2">
-                  <select
-                    value={entry.shiftType}
-                    onChange={(e) =>
-                      onChangeEntry?.({ ...entry, shiftType: e.target.value as TimesheetEntry["shiftType"] })
-                    }
-                    className="h-9 px-3 rounded-lg border bg-white"
-                    style={inputStyle}
-                    aria-label="Тип смены"
-                  >
-                    {SHIFT_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={entry.comment ?? ""}
-                    onChange={(e) => onChangeEntry?.({ ...entry, comment: e.target.value })}
-                    placeholder="Комментарий"
-                    className="h-9 px-3 rounded-lg border bg-white"
-                    style={inputStyle}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={savingEntryId === entry.id}
-                    onClick={() => onSaveEntry?.(entry)}
-                    className="flex-1 h-9 rounded-lg"
-                    style={{
-                      background: "#2E7D32",
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      opacity: savingEntryId === entry.id ? 0.7 : 1,
-                    }}
-                  >
-                    {savingEntryId === entry.id ? "Сохранение..." : "Сохранить"}
-                  </button>
+                {!editable && (
+                  <span style={{ color: "#2E7D32", fontSize: 13, fontWeight: 600 }}>{entry.hours} ч</span>
+                )}
+                {!editable && onDeleteEntry && (
                   <button
                     type="button"
                     disabled={deletingEntryId === entry.id}
-                    onClick={() => onDeleteEntry?.(entry.id)}
-                    className="h-9 px-3 rounded-lg"
+                    onClick={() => onDeleteEntry(entry.id)}
+                    className="h-8 px-3 rounded-lg shrink-0"
                     style={{
                       background: "#FEF2F2",
                       color: "#DC2626",
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: 600,
                       opacity: deletingEntryId === entry.id ? 0.7 : 1,
                     }}
                   >
                     {deletingEntryId === entry.id ? "..." : "Удалить"}
                   </button>
-                </div>
-              </>
-            ) : (
-              <p style={{ color: "#64748B", fontSize: 12 }}>
-                {shiftTypeLabel(entry.shiftType)}
-                {entry.comment ? ` · ${entry.comment}` : ""}
-              </p>
-            )}
-          </div>
-        ))
+                )}
+              </div>
+
+              {editable && entry.shiftCode && (
+                <>
+                  <div className="mb-2">
+                    <AppSelect
+                      value={entry.shiftCode}
+                      onValueChange={(value) =>
+                        onChangeEntry?.({ ...entry, shiftCode: value as TimesheetEntry["shiftCode"] })
+                      }
+                      options={SHIFT_CODE_OPTIONS}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={savingEntryId === entry.id}
+                      onClick={() => onSaveEntry?.(entry)}
+                      className="flex-1 h-9 rounded-lg"
+                      style={{
+                        background: "#2E7D32",
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        opacity: savingEntryId === entry.id ? 0.7 : 1,
+                      }}
+                    >
+                      {savingEntryId === entry.id ? "Сохранение..." : "Сохранить"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deletingEntryId === entry.id}
+                      onClick={() => onDeleteEntry?.(entry.id)}
+                      className="h-9 px-3 rounded-lg"
+                      style={{
+                        background: "#FEF2F2",
+                        color: "#DC2626",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        opacity: deletingEntryId === entry.id ? 0.7 : 1,
+                      }}
+                    >
+                      {deletingEntryId === entry.id ? "..." : "Удалить"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })
       )}
 
       <div className="rounded-xl px-3 py-3 flex items-center justify-between" style={{ background: "#E8F5E9" }}>

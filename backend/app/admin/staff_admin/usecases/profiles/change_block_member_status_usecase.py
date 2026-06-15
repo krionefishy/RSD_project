@@ -6,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.deps import AuthContext
 from app.locations.db_models import BlockMemberModel
 from app.personnel.domain import ChangeBlockMemberStatusRequest
+from app.users.db_models import UserModel
 from app.users.dto import UserProfileDTO
 from app.users.profile_errors import ProfileNotFoundError
 from app.users.profile_mapper import load_user_for_profile, map_user_profile
-from app.users.profile_scope import require_staff_admin
+from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
 
 
 class ChangeBlockMemberStatusUseCase:
@@ -23,6 +24,14 @@ class ChangeBlockMemberStatusUseCase:
         ctx: AuthContext,
     ) -> UserProfileDTO:
         require_staff_admin(ctx)
+
+        user_result = await self.session.execute(
+            select(UserModel).where(UserModel.id == target_user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        if user is None:
+            raise ProfileNotFoundError()
+        ensure_staff_admin_can_manage_user(ctx, user.role)
 
         result = await self.session.execute(
             select(BlockMemberModel).where(

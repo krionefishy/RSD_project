@@ -13,7 +13,7 @@ from app.personnel.dto import EmployeeTimeEntryDTO
 from app.personnel.timesheet_mapper import map_time_entry
 from app.users.db_models import UserModel
 from app.users.profile_errors import ProfileConflictError, ProfileNotFoundError
-from app.users.profile_scope import require_staff_admin
+from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
 
 
 class UpdateTimeEntryUseCase:
@@ -41,6 +41,8 @@ class UpdateTimeEntryUseCase:
         entry = result.scalar_one_or_none()
         if entry is None:
             raise ProfileNotFoundError("Time entry not found")
+
+        ensure_staff_admin_can_manage_user(ctx, entry.user.role)
 
         new_code = request.activity_code or entry.activity_code
         new_shift = request.shift_type or entry.shift_type

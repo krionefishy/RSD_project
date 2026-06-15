@@ -34,16 +34,7 @@ import { useStructureOptions } from "../../hooks/useStructureOptions";
 
 type ConfirmAction = "block" | "unblock" | "delete" | "resetPassword" | null;
 
-const ROLE_FILTERS: Array<UserRole | "all"> = [
-  "all",
-  "seller",
-  "manager",
-  "admin-edu",
-  "admin-sales",
-  "admin-personnel",
-  "admin-po",
-  "superadmin",
-];
+const ROLE_FILTERS: Array<UserRole | "all"> = ["all", "seller", "manager"];
 
 export default function ManageUsersPage() {
   const navigate = useNavigate();

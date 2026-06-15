@@ -17,7 +17,7 @@ demo_config_path := backend_dir + "/shared/settings/config.demo.yaml"
 python := env_var_or_default("PYTHON", backend_dir + "/venv/bin/python")
 
 export PGHOST := env_var_or_default("LOCAL_PGHOST", "localhost")
-export PGPORT := env_var_or_default("LOCAL_PGPORT", "5432")
+export PGPORT := env_var_or_default("LOCAL_PGPORT", "5437")
 export PGUSER := env_var_or_default("DB_USER", "app")
 export PGPASSWORD := env_var_or_default("DB_PASSWORD", "appsecret")
 export PGDATABASE := env_var_or_default("DB_NAME", "rsd_db")
@@ -115,6 +115,14 @@ demo1-seed: db-migrate
 [doc('Local Demo 1 prep: infra up, DB rebuild, Demo 1 seed')]
 demo1-setup: infra-up db-rebuild
     CONFIG_PATH={{ demo_config_path }} DATABASE_URL={{ DATABASE_URL }} {{ python }} scripts/seed_demo1.py
+
+[doc('Apply report_service database migrations (demo config)')]
+report-db-migrate:
+    cd {{ backend_dir }}/report_service && env -u DATABASE_URL CONFIG_PATH=../shared/settings/config.demo.yaml PYTHONPATH=.. {{ python }} -m alembic upgrade head
+
+[doc('Start full Demo 1 locally: infra, migrate, seed, backend, report_service, UI')]
+demo1-local *args:
+    ./scripts/demo1-local.sh {{ args }}
 
 [doc('Reset DB and seed full demo dataset (incl. knowledge base); demo config only')]
 seed-demo: db-migrate

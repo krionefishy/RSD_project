@@ -7,8 +7,10 @@ from shared.kafka_streams.topics import StorageTopics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.deps import AuthContext
 from app.personnel.domain import ALLOWED_AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES
 from app.users.db_models import UserModel
+from app.users.profile_scope import ensure_staff_admin_can_manage_user
 
 
 class UploadAvatarUseCase:
@@ -22,6 +24,7 @@ class UploadAvatarUseCase:
         filename: str,
         content_type: str,
         payload: bytes,
+        ctx: AuthContext,
     ) -> str | None:
         if content_type not in ALLOWED_AVATAR_CONTENT_TYPES:
             raise HTTPException(
@@ -45,6 +48,8 @@ class UploadAvatarUseCase:
         user = result.scalar_one_or_none()
         if user is None:
             return None
+
+        ensure_staff_admin_can_manage_user(ctx, user.role)
 
         safe_name = sanitize_key_segment(filename, "avatar")
         key = f"avatars/{user_id}/{safe_name}"

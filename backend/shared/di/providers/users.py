@@ -7,6 +7,7 @@ from app.admin.software_admin.usecases.block_user_usecase import BlockUserUseCas
 from app.admin.software_admin.usecases.create_user_usecase import CreateUserUseCase
 from app.admin.software_admin.usecases.remove_user_block_usecase import RemoveUserBlockUseCase
 from app.admin.software_admin.usecases.unblock_user_usecase import UnblockUserUseCase
+from app.admin.staff_admin.usecases.get_personnel_overview_usecase import GetPersonnelOverviewUseCase
 from app.admin.staff_admin.usecases.assign_user_location_usecase import AssignUserLocationUseCase
 from app.admin.staff_admin.usecases.remove_user_location_usecase import RemoveUserLocationUseCase
 from app.admin.staff_admin.usecases.reset_password_usecase import ResetPasswordUseCase
@@ -22,6 +23,7 @@ class UsersUsecaseProvider(Provider):
 
     get_user = provide(GetUserUseCase)
     list_users = provide(ListUsersUseCase)
+    get_personnel_overview = provide(GetPersonnelOverviewUseCase)
     create_user = provide(CreateUserUseCase)
     update_user_admin = provide(UpdateUserAdminUseCase)
     block_user = provide(BlockUserUseCase)

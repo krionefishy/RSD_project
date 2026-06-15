@@ -2,18 +2,19 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.staff_admin.usecases.profiles.delete_employee_profile_usecase import (
     DeleteEmployeeProfileUseCase,
 )
-from app.users.db_models import UserRole
+from app.users.db_models import UserModel, UserRole
 from app.users.profile_errors import ProfileConflictError, ProfileForbiddenError, ProfileNotFoundError
 from tests.builder import Builder
 
 
 class TestDeleteEmployeeProfileUseCase:
-    async def test_soft_deletes_employee(
+    async def test_deletes_employee(
         self,
         db_session: AsyncSession,
         builder: Builder,
@@ -25,8 +26,8 @@ class TestDeleteEmployeeProfileUseCase:
         result = await DeleteEmployeeProfileUseCase(db_session).execute(seller.id, ctx)
 
         assert result.deleted is True
-        await db_session.refresh(seller)
-        assert seller.is_active is False
+        deleted = await db_session.scalar(select(UserModel.id).where(UserModel.id == seller.id))
+        assert deleted is None
 
     async def test_raises_conflict_when_deleting_self(
         self,

@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
+import { AppSelect } from "../../components/AppSelect";
 
 type ConfirmKind = "deleteBlock" | "removeLocation" | "removeManager" | null;
 
@@ -234,19 +235,13 @@ export default function BlockDetailPage() {
           <p style={{ fontSize: 13, color: "#64748B" }}>{block.managerName || "Не назначен"}</p>
           {canEdit && (
             <div className="flex gap-2 mt-3">
-              <select
+              <AppSelect
                 value={managerId}
-                onChange={(e) => setManagerId(e.target.value)}
-                className="flex-1 h-9 px-3 rounded-lg border text-sm"
-                style={{ borderColor: "#E2E8F0" }}
-              >
-                <option value="">Выбрать менеджера</option>
-                {managers.map((manager) => (
-                  <option key={manager.id} value={manager.id}>
-                    {manager.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setManagerId}
+                emptyOption={{ value: "__no_manager__", label: "Выбрать менеджера" }}
+                options={managers.map((manager) => ({ value: manager.id, label: manager.label }))}
+                className="h-9"
+              />
               <button
                 onClick={() => void handleAssignManager()}
                 disabled={!managerId}
@@ -280,19 +275,13 @@ export default function BlockDetailPage() {
             <p style={{ fontSize: 14, fontWeight: 600, color: "#1E293B" }}>Точки блока</p>
             {canEdit && unassignedLocations.length > 0 && (
               <div className="flex gap-1">
-                <select
+                <AppSelect
                   value={assignLocationId}
-                  onChange={(e) => setAssignLocationId(e.target.value)}
-                  className="h-8 px-2 rounded-lg border text-xs max-w-[140px]"
-                  style={{ borderColor: "#E2E8F0" }}
-                >
-                  <option value="">Добавить...</option>
-                  {unassignedLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setAssignLocationId}
+                  emptyOption={{ value: "__no_location__", label: "Добавить..." }}
+                  options={unassignedLocations.map((location) => ({ value: location.id, label: location.name }))}
+                  className="h-8 max-w-[140px]"
+                />
                 <button
                   onClick={() => void handleAssignLocation()}
                   disabled={!assignLocationId}

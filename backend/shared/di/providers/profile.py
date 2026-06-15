@@ -25,6 +25,7 @@ from app.admin.staff_admin.usecases.profiles.unblock_employee_profile_usecase im
 from app.admin.staff_admin.usecases.profiles.update_employee_profile_usecase import (
     UpdateEmployeeProfileUseCase,
 )
+from app.admin.staff_admin.usecases.timesheets.create_time_entry_usecase import CreateTimeEntryUseCase
 from app.admin.staff_admin.usecases.timesheets.delete_time_entry_usecase import DeleteTimeEntryUseCase
 from app.admin.staff_admin.usecases.timesheets.update_time_entry_usecase import UpdateTimeEntryUseCase
 from app.admin.staff_admin.usecases.timesheets.upload_timesheet_file_usecase import (
@@ -55,6 +56,7 @@ class ProfileUsecaseProvider(Provider):
     change_employee_position = provide(ChangeEmployeePositionUseCase)
     change_block_member_status = provide(ChangeBlockMemberStatusUseCase)
     upsert_employee_compensation = provide(UpsertEmployeeCompensationUseCase)
+    create_time_entry = provide(CreateTimeEntryUseCase)
     update_time_entry = provide(UpdateTimeEntryUseCase)
     delete_time_entry = provide(DeleteTimeEntryUseCase)
 

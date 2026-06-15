@@ -11,7 +11,7 @@ from app.personnel.domain import UpsertEmployeeCompensationRequest
 from app.personnel.dto import EmployeeCompensationDTO
 from app.users.db_models import UserModel
 from app.users.profile_errors import ProfileNotFoundError
-from app.users.profile_scope import require_staff_admin
+from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
 
 
 class UpsertEmployeeCompensationUseCase:
@@ -27,8 +27,10 @@ class UpsertEmployeeCompensationUseCase:
         require_staff_admin(ctx)
 
         user_result = await self.session.execute(select(UserModel).where(UserModel.id == target_user_id))
-        if user_result.scalar_one_or_none() is None:
+        user = user_result.scalar_one_or_none()
+        if user is None:
             raise ProfileNotFoundError()
+        ensure_staff_admin_can_manage_user(ctx, user.role)
 
         result = await self.session.execute(
             select(EmployeeCompensationModel).where(EmployeeCompensationModel.user_id == target_user_id)

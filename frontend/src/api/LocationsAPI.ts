@@ -58,6 +58,10 @@ interface LocationListItemDTO {
   name: string;
   address: string;
   city?: string | null;
+  s1_start_at?: string | null;
+  s1_end_at?: string | null;
+  s2_start_at?: string | null;
+  s2_end_at?: string | null;
   block_id?: number | null;
   block_name?: string | null;
   employees: number;
@@ -111,6 +115,10 @@ function mapLocation(dto: LocationListItemDTO): LocationSummary {
     name: dto.name,
     address: dto.address,
     city: dto.city,
+    s1StartAt: dto.s1_start_at,
+    s1EndAt: dto.s1_end_at,
+    s2StartAt: dto.s2_start_at,
+    s2EndAt: dto.s2_end_at,
     blockId: dto.block_id != null ? String(dto.block_id) : undefined,
     blockName: dto.block_name ?? undefined,
     employees: dto.employees,
@@ -214,6 +222,10 @@ class LocationsAPIImpl {
       name: data.name,
       address: data.address,
       city: data.city,
+      s1_start_at: data.s1StartAt,
+      s1_end_at: data.s1EndAt,
+      s2_start_at: data.s2StartAt,
+      s2_end_at: data.s2EndAt,
     });
     return mapLocation(response);
   }
@@ -234,6 +246,10 @@ class LocationsAPIImpl {
       name: data.name,
       address: data.address,
       city: data.city,
+      s1_start_at: data.s1StartAt,
+      s1_end_at: data.s1EndAt,
+      s2_start_at: data.s2StartAt,
+      s2_end_at: data.s2EndAt,
     });
     return mapLocation(response);
   }

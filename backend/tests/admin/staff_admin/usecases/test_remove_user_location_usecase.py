@@ -22,18 +22,23 @@ class TestRemoveUserLocationUseCase:
             },
         )
         usecase = RemoveUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id)
+        result = await usecase.execute(user.id, ctx)
 
         assert result is True
 
     async def test_returns_none_for_nonexistent_user(
         self,
         db_session: AsyncSession,
+        builder: Builder,
     ) -> None:
         usecase = RemoveUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(uuid4())
+        result = await usecase.execute(uuid4(), ctx)
 
         assert result is None
 
@@ -48,7 +53,9 @@ class TestRemoveUserLocationUseCase:
             role=UserRole.SELLER,
         )
         usecase = RemoveUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id)
+        result = await usecase.execute(user.id, ctx)
 
         assert result is False

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal  # noqa: TC003
+from uuid import UUID  # noqa: TC003
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -88,6 +89,19 @@ class UpdateTimeEntryRequest(BaseModel):
     activity_code: str | None = None
     hours: Decimal | None = Field(default=None, ge=0)
     shift_type: str | None = None
+
+
+class CreateTimeEntryRequest(BaseModel):
+    user_id: UUID
+    work_date: date
+    shift_code: str
+    location_id: int | None = None
+
+    @model_validator(mode="after")
+    def validate_shift_code(self) -> CreateTimeEntryRequest:
+        if self.shift_code not in {"С1", "С2"}:
+            raise ValueError("shift_code must be С1 or С2")
+        return self
 
 
 class ChangeBlockMemberStatusRequest(BaseModel):

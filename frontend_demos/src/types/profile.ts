@@ -82,6 +82,7 @@ export interface OwnTimesheetQuery {
 }
 
 export type ShiftType = "day" | "night" | "none";
+export type ScheduleShiftCode = "С1" | "С2" | "В" | "О/Б";
 
 export interface TimesheetEntry {
   id: number;
@@ -90,6 +91,9 @@ export interface TimesheetEntry {
   activityName: string;
   hours: string;
   shiftType: ShiftType;
+  shiftCode?: ScheduleShiftCode;
+  startsAt?: string;
+  endsAt?: string;
   comment?: string;
   userId?: string;
   userName?: string;
@@ -129,4 +133,17 @@ export interface UpdateTimeEntryData {
   hours?: string;
   shiftType?: ShiftType;
   comment?: string;
+}
+
+export interface CreateTimeEntryData {
+  userId: string;
+  workDate: string;
+  shiftCode: "С1" | "С2";
+  locationId?: number;
+}
+
+export interface PersonnelOverview {
+  employeesCount: number;
+  locationsCount: number;
+  blocksCount: number;
 }

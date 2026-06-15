@@ -3,7 +3,7 @@ log_level: INFO
 
 database:
   host: localhost
-  port: 5432
+  port: 5437
   user: app
   password: appsecret
   database: rsd_db
@@ -56,9 +56,9 @@ services:
 report_service:
   database:
     host: localhost
-    port: 5432
-    user: app
-    password: appsecret
+    port: 5436
+    user: report_service
+    password: reportsecret
     database: rsd_reports
     echo: false
   kafka:

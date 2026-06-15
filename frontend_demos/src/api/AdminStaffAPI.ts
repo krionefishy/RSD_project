@@ -1,5 +1,6 @@
 import type {
   BlockMemberStatus,
+  CreateTimeEntryData,
   CreateEmployeeProfileData,
   CreateEmployeeProfileResult,
   EmployeeCompensation,
@@ -10,6 +11,7 @@ import type {
   UpdateTimeEntryData,
   UpsertEmployeeCompensationData,
   UserProfile,
+  PersonnelOverview,
 } from "../types/profile";
 import { useMockApiModule } from "../config/presentationMode";
 import { getMockUserByExternalId } from "../mock/mockUsers";
@@ -75,7 +77,16 @@ interface EmployeeTimeEntryDTO {
   activity_name: string;
   hours: string;
   shift_type: string;
+  shift_code?: "С1" | "С2" | "В" | "О/Б" | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
   comment?: string | null;
+}
+
+interface PersonnelOverviewDTO {
+  employees_count: number;
+  locations_count: number;
+  blocks_count: number;
 }
 
 interface TimesheetImportErrorDTO {
@@ -156,7 +167,34 @@ function mapUpdateBody(data: UpdateEmployeeProfileData) {
   };
 }
 
+function mapTimeEntryDto(response: EmployeeTimeEntryDTO): TimesheetEntry {
+  return {
+    id: response.id,
+    workDate: response.work_date,
+    activityCode: response.activity_code,
+    activityName: response.activity_name,
+    hours: response.hours,
+    shiftType: response.shift_type as TimesheetEntry["shiftType"],
+    shiftCode: response.shift_code ?? undefined,
+    startsAt: response.starts_at ?? undefined,
+    endsAt: response.ends_at ?? undefined,
+    comment: response.comment ?? undefined,
+  };
+}
+
 class AdminStaffAPIImpl {
+  async getOverview(signal?: AbortSignal): Promise<PersonnelOverview> {
+    if (useMockApiModule("adminStaff")) {
+      return { employeesCount: 142, locationsCount: 47, blocksCount: 5 };
+    }
+    const response = await apiClient.get<PersonnelOverviewDTO>("/admin/staff/overview", { signal });
+    return {
+      employeesCount: response.employees_count,
+      locationsCount: response.locations_count,
+      blocksCount: response.blocks_count,
+    };
+  }
+
   async createEmployeeProfile(data: CreateEmployeeProfileData): Promise<CreateEmployeeProfileResult> {
     if (useMockApiModule("adminStaff")) {
       const user = getMockUserByExternalId(data.externalSystemId);
@@ -367,15 +405,33 @@ class AdminStaffAPIImpl {
         comment: data.comment,
       },
     );
-    return {
-      id: response.id,
-      workDate: response.work_date,
-      activityCode: response.activity_code,
-      activityName: response.activity_name,
-      hours: response.hours,
-      shiftType: response.shift_type as TimesheetEntry["shiftType"],
-      comment: response.comment ?? undefined,
-    };
+    return mapTimeEntryDto(response);
+  }
+
+  async createTimeEntry(data: CreateTimeEntryData): Promise<TimesheetEntry> {
+    if (useMockApiModule("adminStaff")) {
+      return {
+        id: Date.now(),
+        workDate: data.workDate,
+        activityCode: "Я",
+        activityName: "Явка",
+        hours: "8.00",
+        shiftType: "day",
+        shiftCode: data.shiftCode,
+        startsAt: data.shiftCode === "С1" ? "08:00" : "16:00",
+        endsAt: data.shiftCode === "С1" ? "16:00" : "00:00",
+      };
+    }
+    const response = await apiClient.post<EmployeeTimeEntryDTO>(
+      "/admin/staff/timesheets/entries",
+      {
+        user_id: data.userId,
+        work_date: data.workDate,
+        shift_code: data.shiftCode,
+        location_id: data.locationId,
+      },
+    );
+    return mapTimeEntryDto(response);
   }
 
   async deleteTimeEntry(_entryId: number): Promise<void> {

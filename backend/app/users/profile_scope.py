@@ -15,10 +15,20 @@ STAFF_ADMIN_ROLES = {
 }
 UNRESTRICTED_ROLES = {UserRole.ROOT_ADMIN.value, UserRole.SUPER_ADMIN.value}
 SELLER_ROLES = {UserRole.SELLER.value}
+STAFF_MANAGEABLE_ROLES = {UserRole.SELLER.value, UserRole.MANAGER.value}
 
 
 def require_staff_admin(ctx: AuthContext) -> None:
     if ctx.role not in STAFF_ADMIN_ROLES:
+        raise ProfileForbiddenError()
+
+
+def is_staff_manageable_role(role: str) -> bool:
+    return role in STAFF_MANAGEABLE_ROLES
+
+
+def ensure_staff_admin_can_manage_user(ctx: AuthContext, role: str) -> None:
+    if ctx.role == UserRole.ADMIN_STAFF.value and role not in STAFF_MANAGEABLE_ROLES:
         raise ProfileForbiddenError()
 
 

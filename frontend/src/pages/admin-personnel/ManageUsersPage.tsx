@@ -34,16 +34,7 @@ import { useStructureOptions } from "../../hooks/useStructureOptions";
 
 type ConfirmAction = "block" | "unblock" | "delete" | "resetPassword" | null;
 
-const ROLE_FILTERS: Array<UserRole | "all"> = [
-  "all",
-  "seller",
-  "manager",
-  "admin-edu",
-  "admin-sales",
-  "admin-personnel",
-  "admin-po",
-  "superadmin",
-];
+const ROLE_FILTERS: Array<UserRole | "all"> = ["all", "seller", "manager"];
 
 export default function ManageUsersPage() {
   const navigate = useNavigate();
@@ -171,7 +162,8 @@ export default function ManageUsersPage() {
   const confirmDescriptions: Record<Exclude<ConfirmAction, null>, string> = {
     block: "Сотрудник не сможет войти в систему до разблокировки.",
     unblock: "Сотрудник снова получит доступ к системе.",
-    delete: "Профиль сотрудника будет удалён без возможности восстановления.",
+    delete:
+      "Профиль сотрудника будет удалён без возможности восстановления. Будут удалены назначения, табельные записи, прогресс обучения и связанные бизнесовые данные продавца. Это действие нельзя отменить.",
     resetPassword: "Будет сгенерирован новый пароль для передачи сотруднику.",
   };
 

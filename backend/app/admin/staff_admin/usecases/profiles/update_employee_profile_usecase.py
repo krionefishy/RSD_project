@@ -17,7 +17,7 @@ from app.users.db_models import UserModel
 from app.users.dto import UserProfileDTO
 from app.users.profile_errors import ProfileNotFoundError
 from app.users.profile_mapper import load_user_for_profile, map_user_profile
-from app.users.profile_scope import require_staff_admin
+from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
 
 
 class UpdateEmployeeProfileUseCase:
@@ -36,6 +36,7 @@ class UpdateEmployeeProfileUseCase:
         user = result.scalar_one_or_none()
         if user is None:
             raise ProfileNotFoundError()
+        ensure_staff_admin_can_manage_user(ctx, user.role)
 
         if request.first_name is not None:
             user.first_name = request.first_name

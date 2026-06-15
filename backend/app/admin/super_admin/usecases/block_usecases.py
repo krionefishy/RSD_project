@@ -16,13 +16,13 @@ from app.locations.structure_dto import (
 )
 from app.locations.structure_queries import (
     count_locations_by_block,
-    count_members_by_block,
-    count_users_by_location,
+    count_staff_members_by_block,
+    count_staff_users_by_location,
     location_ids_for_blocks,
     manager_block_ids,
     managers_by_block,
 )
-from app.users.db_models import UserModel
+from app.users.db_models import UserModel, UserRole
 from app.users.dto import UserBriefDTO
 
 
@@ -57,7 +57,7 @@ class ListBlocksUseCase:
 
         blocks = (await self.session.execute(query)).scalars().all()
         location_counts = await count_locations_by_block(self.session)
-        member_counts = await count_members_by_block(self.session)
+        member_counts = await count_staff_members_by_block(self.session)
         block_managers = await managers_by_block(self.session)
 
         items = []
@@ -94,8 +94,8 @@ class GetBlockUseCase:
             return None
 
         location_counts = await count_locations_by_block(self.session)
-        member_counts = await count_members_by_block(self.session)
-        user_counts = await count_users_by_location(self.session)
+        member_counts = await count_staff_members_by_block(self.session)
+        user_counts = await count_staff_users_by_location(self.session)
         block_managers = await managers_by_block(self.session)
 
         locations_result = await self.session.execute(
@@ -119,7 +119,10 @@ class GetBlockUseCase:
         members_result = await self.session.execute(
             select(UserModel)
             .join(BlockMemberModel, BlockMemberModel.user_id == UserModel.id)
-            .where(BlockMemberModel.block_id == block_id)
+            .where(
+                BlockMemberModel.block_id == block_id,
+                UserModel.role.in_([UserRole.SELLER.value, UserRole.MANAGER.value]),
+            )
             .order_by(UserModel.last_name, UserModel.first_name)
         )
         members = [_user_brief(user) for user in members_result.scalars().all()]
@@ -190,7 +193,7 @@ class UpdateBlockUseCase:
         await self.session.refresh(block)
 
         location_counts = await count_locations_by_block(self.session)
-        member_counts = await count_members_by_block(self.session)
+        member_counts = await count_staff_members_by_block(self.session)
         block_managers = await managers_by_block(self.session)
         manager = block_managers.get(block.id)
         return BlockListItemDTO(

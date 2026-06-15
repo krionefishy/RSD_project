@@ -1,4 +1,4 @@
-from typing import Optional
+from datetime import time
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -11,7 +11,7 @@ from app.auth.deps import AuthContext
 from app.locations.db_models import BlockLocationModel, BlockModel, LocationModel, UserLocationModel
 from app.locations.structure_dto import LocationDetailDTO, LocationListItemDTO, LocationsListDTO
 from app.locations.structure_queries import (
-    count_users_by_location,
+    count_staff_users_by_location,
     location_ids_for_blocks,
     manager_block_ids,
 )
@@ -27,6 +27,36 @@ def _user_brief(user: UserModel) -> UserBriefDTO:
         last_name=user.last_name,
         role=user.role,
     )
+
+
+def _parse_shift_time(value: str | None) -> time | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    if stripped == "24:00":
+        return time(0, 0)
+    try:
+        return time.fromisoformat(stripped)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Shift time must be in HH:MM format",
+        ) from exc
+
+
+def _time_str(value: time | None) -> str | None:
+    return value.isoformat(timespec="minutes") if value else None
+
+
+def _location_shift_fields(location: LocationModel) -> dict[str, str | None]:
+    return {
+        "s1_start_at": _time_str(location.s1_start_at),
+        "s1_end_at": _time_str(location.s1_end_at),
+        "s2_start_at": _time_str(location.s2_start_at),
+        "s2_end_at": _time_str(location.s2_end_at),
+    }
 
 
 async def _location_block_info(
@@ -71,7 +101,7 @@ class ListLocationsUseCase:
             query = query.where(LocationModel.id.in_(block_location_ids))
 
         locations = (await self.session.execute(query)).scalars().all()
-        user_counts = await count_users_by_location(self.session)
+        user_counts = await count_staff_users_by_location(self.session)
         block_info = await _location_block_info(self.session, [loc.id for loc in locations])
 
         items = []
@@ -84,6 +114,7 @@ class ListLocationsUseCase:
                     name=location.name,
                     address=location.address,
                     city=location.city,
+                    **_location_shift_fields(location),
                     block_id=block[0] if block else None,
                     block_name=block[1] if block else None,
                     employees=user_counts.get(location.id, 0),
@@ -96,7 +127,7 @@ class GetLocationUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def execute(self, location_id: int, auth: AuthContext) -> Optional[LocationDetailDTO]:
+    async def execute(self, location_id: int, auth: AuthContext) -> LocationDetailDTO | None:
         location = (
             await self.session.execute(select(LocationModel).where(LocationModel.id == location_id))
         ).scalar_one_or_none()
@@ -109,7 +140,7 @@ class GetLocationUseCase:
             if location_id not in allowed_location_ids:
                 return None
 
-        user_counts = await count_users_by_location(self.session)
+        user_counts = await count_staff_users_by_location(self.session)
         block_info = await _location_block_info(self.session, [location.id])
         block = block_info.get(location.id)
 
@@ -127,6 +158,7 @@ class GetLocationUseCase:
             name=location.name,
             address=location.address,
             city=location.city,
+            **_location_shift_fields(location),
             block_id=block[0] if block else None,
             block_name=block[1] if block else None,
             employees=user_counts.get(location.id, 0),
@@ -144,6 +176,10 @@ class CreateLocationUseCase:
             name=request.name.strip(),
             address=request.address.strip(),
             city=request.city.strip() if request.city else None,
+            s1_start_at=_parse_shift_time(request.s1_start_at) or time(8, 0),
+            s1_end_at=_parse_shift_time(request.s1_end_at) or time(16, 0),
+            s2_start_at=_parse_shift_time(request.s2_start_at) or time(16, 0),
+            s2_end_at=_parse_shift_time(request.s2_end_at) or time(0, 0),
         )
         self.session.add(location)
         try:
@@ -161,6 +197,7 @@ class CreateLocationUseCase:
             name=location.name,
             address=location.address,
             city=location.city,
+            **_location_shift_fields(location),
             employees=0,
         )
 
@@ -173,7 +210,7 @@ class UpdateLocationUseCase:
         self,
         location_id: int,
         request: UpdateLocationRequest,
-    ) -> Optional[LocationListItemDTO]:
+    ) -> LocationListItemDTO | None:
         location = (
             await self.session.execute(select(LocationModel).where(LocationModel.id == location_id))
         ).scalar_one_or_none()
@@ -188,6 +225,14 @@ class UpdateLocationUseCase:
             location.address = request.address.strip()
         if request.city is not None:
             location.city = request.city.strip() or None
+        if request.s1_start_at is not None:
+            location.s1_start_at = _parse_shift_time(request.s1_start_at) or location.s1_start_at
+        if request.s1_end_at is not None:
+            location.s1_end_at = _parse_shift_time(request.s1_end_at) or location.s1_end_at
+        if request.s2_start_at is not None:
+            location.s2_start_at = _parse_shift_time(request.s2_start_at) or location.s2_start_at
+        if request.s2_end_at is not None:
+            location.s2_end_at = _parse_shift_time(request.s2_end_at) or location.s2_end_at
 
         try:
             await self.session.commit()
@@ -199,7 +244,7 @@ class UpdateLocationUseCase:
             ) from exc
         await self.session.refresh(location)
 
-        user_counts = await count_users_by_location(self.session)
+        user_counts = await count_staff_users_by_location(self.session)
         block_info = await _location_block_info(self.session, [location.id])
         block = block_info.get(location.id)
         return LocationListItemDTO(
@@ -208,6 +253,7 @@ class UpdateLocationUseCase:
             name=location.name,
             address=location.address,
             city=location.city,
+            **_location_shift_fields(location),
             block_id=block[0] if block else None,
             block_name=block[1] if block else None,
             employees=user_counts.get(location.id, 0),
@@ -234,9 +280,7 @@ class AssignLocationToBlockUseCase:
         self.session = session
 
     async def execute(self, block_id: int, location_id: int) -> LocationListItemDTO:
-        block = (
-            await self.session.execute(select(BlockModel).where(BlockModel.id == block_id))
-        ).scalar_one_or_none()
+        block = (await self.session.execute(select(BlockModel).where(BlockModel.id == block_id))).scalar_one_or_none()
         location = (
             await self.session.execute(select(LocationModel).where(LocationModel.id == location_id))
         ).scalar_one_or_none()
@@ -244,9 +288,7 @@ class AssignLocationToBlockUseCase:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Block or location not found")
 
         existing = (
-            await self.session.execute(
-                select(BlockLocationModel).where(BlockLocationModel.location_id == location_id)
-            )
+            await self.session.execute(select(BlockLocationModel).where(BlockLocationModel.location_id == location_id))
         ).scalar_one_or_none()
         if existing is not None and existing.block_id != block_id:
             raise HTTPException(
@@ -264,13 +306,14 @@ class AssignLocationToBlockUseCase:
                     detail="Location is already assigned to another block",
                 ) from exc
 
-        user_counts = await count_users_by_location(self.session)
+        user_counts = await count_staff_users_by_location(self.session)
         return LocationListItemDTO(
             id=location.id,
             code=location.code,
             name=location.name,
             address=location.address,
             city=location.city,
+            **_location_shift_fields(location),
             block_id=block_id,
             block_name=block.name,
             employees=user_counts.get(location.id, 0),

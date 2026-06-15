@@ -8,13 +8,14 @@ from fastapi import APIRouter, Depends, UploadFile
 from app.admin.staff_admin.usecases.compensations.upsert_employee_compensation_usecase import (
     UpsertEmployeeCompensationUseCase,
 )
+from app.admin.staff_admin.usecases.timesheets.create_time_entry_usecase import CreateTimeEntryUseCase
 from app.admin.staff_admin.usecases.timesheets.delete_time_entry_usecase import DeleteTimeEntryUseCase
 from app.admin.staff_admin.usecases.timesheets.update_time_entry_usecase import UpdateTimeEntryUseCase
 from app.admin.staff_admin.usecases.timesheets.upload_timesheet_file_usecase import (
     UploadTimesheetFileUseCase,
 )
 from app.auth.deps import AuthContext, require_staff_admin
-from app.personnel.domain import UpdateTimeEntryRequest, UpsertEmployeeCompensationRequest
+from app.personnel.domain import CreateTimeEntryRequest, UpdateTimeEntryRequest, UpsertEmployeeCompensationRequest
 from app.personnel.dto import (
     DeleteResultDTO,
     EmployeeCompensationDTO,
@@ -75,6 +76,19 @@ async def update_time_entry(
     usecase: FromDishka[UpdateTimeEntryUseCase],
 ) -> EmployeeTimeEntryDTO:
     return await usecase.execute(time_entry_id, request, auth)
+
+
+@router.post(
+    "/timesheets/entries",
+    response_model=EmployeeTimeEntryDTO,
+    summary="Создать запись табеля вручную",
+)
+async def create_time_entry(
+    request: CreateTimeEntryRequest,
+    auth: Annotated[AuthContext, Depends(require_staff_admin)],
+    usecase: FromDishka[CreateTimeEntryUseCase],
+) -> EmployeeTimeEntryDTO:
+    return await usecase.execute(request, auth)
 
 
 @router.delete(

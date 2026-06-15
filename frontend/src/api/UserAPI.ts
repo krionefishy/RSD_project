@@ -63,7 +63,7 @@ interface UserProfileDTO {
   position?: string | null;
   avatar_url?: string | null;
   is_active: boolean;
-  is_temp_password: boolean;
+  is_temp_password?: boolean;
   location?: LocationBriefDTO | null;
   block?: BlockBriefDTO | null;
   block_member_status?: string | null;
@@ -85,7 +85,9 @@ interface OwnTimesheetEntryDTO {
   activity_name: string;
   hours: string;
   shift_type: string;
-  comment?: string | null;
+  shift_code?: "С1" | "С2" | "В" | "О/Б" | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
 }
 
 interface OwnTimesheetDTO {
@@ -149,7 +151,7 @@ function mapProfile(dto: UserProfileDTO): UserProfile {
     position: dto.position ?? undefined,
     avatarUrl: dto.avatar_url ?? undefined,
     isActive: dto.is_active,
-    isTempPassword: dto.is_temp_password,
+    isTempPassword: dto.is_temp_password ?? false,
     location: dto.location ?? undefined,
     block: dto.block ?? undefined,
     blockMemberStatus:
@@ -325,7 +327,9 @@ class UserAPIImpl {
         activityName: item.activity_name,
         hours: item.hours,
         shiftType: item.shift_type as ShiftType,
-        comment: item.comment ?? undefined,
+        shiftCode: item.shift_code ?? undefined,
+        startsAt: item.starts_at ?? undefined,
+        endsAt: item.ends_at ?? undefined,
       })),
       periodFrom: response.period_from,
       periodTo: response.period_to,

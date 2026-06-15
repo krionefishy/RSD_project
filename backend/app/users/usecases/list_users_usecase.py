@@ -22,6 +22,7 @@ class ListUsersUseCase:
         role: Optional[str] = None,
         is_active: Optional[bool] = None,
         manager_id: UUID | None = None,
+        viewer_role: str | None = None,
     ) -> UsersListDTO:
         statement: Select[tuple[UserModel]] = (
             select(UserModel)
@@ -46,7 +47,11 @@ class ListUsersUseCase:
             if block_id is not None:
                 manager_block_ids = [block_id]
 
-        if role is not None:
+        if viewer_role == UserRole.ADMIN_STAFF.value:
+            statement = statement.where(UserModel.role.in_([UserRole.SELLER.value, UserRole.MANAGER.value]))
+            if role is not None and role in (UserRole.SELLER.value, UserRole.MANAGER.value):
+                statement = statement.where(UserModel.role == role)
+        elif role is not None:
             statement = statement.where(UserModel.role == role)
         elif manager_id is not None:
             statement = statement.where(UserModel.role == UserRole.SELLER.value)

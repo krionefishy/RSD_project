@@ -25,8 +25,10 @@ class TestAssignUserLocationUseCase:
             address="123 Main St",
         )
         usecase = AssignUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id, location.id)
+        result = await usecase.execute(user.id, location.id, ctx)
 
         assert result is not None
         assert result.user_id == user.id
@@ -50,8 +52,10 @@ class TestAssignUserLocationUseCase:
             address="456 Second St",
         )
         usecase = AssignUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id, new_location.id)
+        result = await usecase.execute(user.id, new_location.id, ctx)
 
         assert result is not None
         assert result.location_id == new_location.id
@@ -67,8 +71,10 @@ class TestAssignUserLocationUseCase:
             address="789 Third St",
         )
         usecase = AssignUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(uuid4(), location.id)
+        result = await usecase.execute(uuid4(), location.id, ctx)
 
         assert result is None
 
@@ -83,7 +89,9 @@ class TestAssignUserLocationUseCase:
             role=UserRole.SELLER,
         )
         usecase = AssignUserLocationUseCase(db_session)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id, 99999)
+        result = await usecase.execute(user.id, 99999, ctx)
 
         assert result is None

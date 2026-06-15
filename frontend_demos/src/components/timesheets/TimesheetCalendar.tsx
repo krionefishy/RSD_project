@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { TimesheetMonthFilter } from "./TimesheetMonthFilter";
 import type { TimesheetEntry } from "../../types/profile";
-import { entryVisualType, formatMonthTitle } from "../../utils/timesheet";
+import {
+  entryVisualType,
+  formatMonthTitle,
+  formatShiftTimeRange,
+  isWorkShift,
+  shiftCodeLabel,
+  workDateFromMonthDay,
+} from "../../utils/timesheet";
 
 const typeConfig = {
   work: { color: "#2E7D32", bg: "#E8F5E9", label: "Смена" },
@@ -22,6 +29,69 @@ function entriesByDate(entries: TimesheetEntry[]): Map<number, TimesheetEntry[]>
   return map;
 }
 
+function ShiftEntryCard({
+  entry,
+  showEmployees,
+}: {
+  entry: TimesheetEntry;
+  showEmployees: boolean;
+}) {
+  const visual = entryVisualType(entry);
+  const cfg = typeConfig[visual];
+  const timeRange = formatShiftTimeRange(entry.startsAt, entry.endsAt);
+
+  if (isWorkShift(entry)) {
+    return (
+      <div
+        className="flex items-center gap-3 rounded-xl p-3"
+        style={{ background: cfg.bg }}
+      >
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: "#fff" }}
+        >
+          <span style={{ color: cfg.color, fontSize: 15, fontWeight: 800 }}>{entry.shiftCode}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          {showEmployees && entry.userName && (
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
+              {entry.userName}
+            </p>
+          )}
+          <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600 }}>
+            {shiftCodeLabel(entry.shiftCode)}
+          </p>
+          {timeRange && (
+            <p style={{ color: "#64748B", fontSize: 13, marginTop: 2 }}>{timeRange}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex items-center gap-3 rounded-xl p-3"
+      style={{ background: cfg.bg }}
+    >
+      <div className="flex-1 min-w-0">
+        {showEmployees && entry.userName && (
+          <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
+            {entry.userName}
+          </p>
+        )}
+        <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>
+          {entry.activityName} ({entry.activityCode})
+        </p>
+        <p style={{ color: "#64748B", fontSize: 12 }}>
+          {cfg.label}
+          {entry.hours ? ` · ${entry.hours} ч` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export interface TimesheetCalendarProps {
   entries: TimesheetEntry[];
   loading?: boolean;
@@ -31,8 +101,9 @@ export interface TimesheetCalendarProps {
   showMonthFilter?: boolean;
   totalHours?: string;
   showSummary?: boolean;
-  /** Показывать ФИО сотрудника (табель точки) */
   showEmployees?: boolean;
+  allowAssign?: boolean;
+  onDayClick?: (workDate: string) => void;
   className?: string;
 }
 
@@ -46,6 +117,8 @@ export function TimesheetCalendar({
   totalHours = "0",
   showSummary = true,
   showEmployees = false,
+  allowAssign = false,
+  onDayClick,
   className = "",
 }: TimesheetCalendarProps) {
   const today = new Date();
@@ -60,6 +133,7 @@ export function TimesheetCalendar({
   const isCurrentMonth =
     monthDate.getFullYear() === today.getFullYear() && monthDate.getMonth() === today.getMonth();
   const selectedEntries = selectedDate ? byDate.get(selectedDate) ?? [] : [];
+  const shiftEntries = selectedEntries.filter(isWorkShift);
 
   useEffect(() => {
     if (selectedDate !== null && selectedDate > daysInMonth) {
@@ -68,7 +142,14 @@ export function TimesheetCalendar({
   }, [daysInMonth, selectedDate]);
 
   const daysWithEntries = new Set(entries.map((entry) => entry.workDate)).size;
-  const absenceEntries = entries.filter((entry) => entryVisualType(entry) === "absence").length;
+  const shiftCount = entries.filter(isWorkShift).length;
+
+  const handleDayClick = (date: number) => {
+    setSelectedDate(date);
+    if (allowAssign && onDayClick) {
+      onDayClick(workDateFromMonthDay(monthDate, date));
+    }
+  };
 
   return (
     <div className={className}>
@@ -107,7 +188,8 @@ export function TimesheetCalendar({
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const date = i + 1;
                 const dayEntries = byDate.get(date) ?? [];
-                const visual = dayEntries[0] ? entryVisualType(dayEntries[0]) : "off";
+                const shiftDay = dayEntries.find(isWorkShift);
+                const visual = shiftDay ? entryVisualType(shiftDay) : dayEntries[0] ? entryVisualType(dayEntries[0]) : "off";
                 const cfg = typeConfig[visual];
                 const isSelected = date === selectedDate;
                 const isToday = isCurrentMonth && date === today.getDate();
@@ -117,7 +199,7 @@ export function TimesheetCalendar({
                   <button
                     key={date}
                     type="button"
-                    onClick={() => setSelectedDate(date)}
+                    onClick={() => handleDayClick(date)}
                     className="flex flex-col items-center py-1"
                   >
                     <div
@@ -156,41 +238,15 @@ export function TimesheetCalendar({
           <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
             {selectedDate} {formatMonthTitle(monthDate).split(" ")[0].toLowerCase()}
           </p>
-          {selectedEntries.length === 0 ? (
-            <p style={{ color: "#64748B", fontSize: 13 }}>Нет записей на этот день</p>
+          {shiftEntries.length === 0 && selectedEntries.length === 0 ? (
+            <p style={{ color: "#64748B", fontSize: 13 }}>
+              {allowAssign ? "Нет смен — нажмите день в календаре, чтобы назначить" : "Нет записей на этот день"}
+            </p>
           ) : (
             <div className="flex flex-col gap-2">
-              {selectedEntries.map((entry) => {
-                const visual = entryVisualType(entry);
-                const cfg = typeConfig[visual];
-                return (
-                  <div
-                    key={entry.id}
-                    className="flex items-center gap-3 rounded-xl p-3"
-                    style={{ background: cfg.bg }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ background: "#fff" }}
-                    >
-                      <span style={{ color: cfg.color, fontSize: 14, fontWeight: 700 }}>{entry.hours}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {showEmployees && entry.userName && (
-                        <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 2 }}>
-                          {entry.userName}
-                        </p>
-                      )}
-                      <p style={{ color: showEmployees ? "#64748B" : "#1E293B", fontSize: 14, fontWeight: showEmployees ? 400 : 500 }}>
-                        {entry.activityName} ({entry.activityCode})
-                      </p>
-                      <p style={{ color: "#64748B", fontSize: 12 }}>
-                        {cfg.label} · {entry.hours} ч
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+              {(shiftEntries.length > 0 ? shiftEntries : selectedEntries).map((entry) => (
+                <ShiftEntryCard key={entry.id} entry={entry} showEmployees={showEmployees} />
+              ))}
             </div>
           )}
         </div>
@@ -206,9 +262,8 @@ export function TimesheetCalendar({
           </p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Записей", value: entries.length, color: "#2E7D32" },
+              { label: "Смен", value: shiftCount, color: "#2E7D32" },
               { label: "Дней с записями", value: daysWithEntries, color: "#64748B" },
-              { label: "Отсутствий", value: absenceEntries, color: "#F59E0B" },
               { label: "Часов", value: totalHours, color: "#C41E3A" },
             ].map((s) => (
               <div key={s.label} className="rounded-xl p-3" style={{ background: "#F8FAFC" }}>

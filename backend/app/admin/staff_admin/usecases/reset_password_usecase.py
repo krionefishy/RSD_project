@@ -5,9 +5,11 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.deps import AuthContext
 from app.auth.password import PasswordService
 from app.auth.redis_store import RefreshTokenStore
 from app.users.db_models import UserModel
+from app.users.profile_scope import ensure_staff_admin_can_manage_user
 
 
 def _generate_temp_password(length: int = 12) -> str:
@@ -26,13 +28,15 @@ class ResetPasswordUseCase:
         self.password_service = password_service
         self.refresh_store = refresh_store
 
-    async def execute(self, user_id) -> Optional[str]:
+    async def execute(self, user_id, ctx: AuthContext) -> Optional[str]:
         result = await self.session.execute(
             select(UserModel).where(UserModel.id == user_id)
         )
         user = result.scalar_one_or_none()
         if user is None:
             return None
+
+        ensure_staff_admin_can_manage_user(ctx, user.role)
 
         temp_password = _generate_temp_password()
         user.hashed_password = self.password_service.hash(temp_password)

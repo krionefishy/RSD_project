@@ -10,7 +10,9 @@ export function mockOwnTimesheet(query: OwnTimesheetQuery): OwnTimesheet {
     activityName: "Работа в зале",
     hours: "8.0",
     shiftType: "day" as const,
-    comment: undefined,
+    shiftCode: day.shift === "morning" ? ("С1" as const) : ("С2" as const),
+    startsAt: day.shift === "morning" ? "08:00" : "16:00",
+    endsAt: day.shift === "morning" ? "16:00" : "00:00",
   }));
 
   return {

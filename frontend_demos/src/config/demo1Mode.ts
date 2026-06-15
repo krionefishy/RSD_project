@@ -4,7 +4,7 @@
  * All other API modules are forced to mock/design behaviour.
  */
 
-export type Demo1ApiModule = "auth" | "user" | "adminStaff" | "personnel";
+export type Demo1ApiModule = "auth" | "user" | "adminStaff" | "personnel" | "locations";
 
 export type ApiModule =
   | Demo1ApiModule
@@ -18,6 +18,7 @@ const DEMO1_LIVE_MODULES: ReadonlySet<Demo1ApiModule> = new Set([
   "user",
   "adminStaff",
   "personnel",
+  "locations",
 ]);
 
 /** Route prefixes that use the live Demo 1 backend integration. */
@@ -47,7 +48,7 @@ export function shouldUseMockApiModule(module: ApiModule): boolean {
   }
 
   if (isDemo1Mode()) {
-    if (module === "knowledge" || module === "sellings" || module === "locations" || module === "adminSoftware") {
+    if (module === "knowledge" || module === "sellings" || module === "adminSoftware") {
       return true;
     }
     return !isDemo1LiveApi(module);

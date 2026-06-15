@@ -22,8 +22,10 @@ class TestResetPasswordUseCase:
         password_service = MockPasswordService()
         refresh_store = MockRefreshTokenStore()
         usecase = ResetPasswordUseCase(db_session, password_service, refresh_store)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(user.id)
+        result = await usecase.execute(user.id, ctx)
 
         assert result is not None
         assert len(result) == 12
@@ -33,11 +35,14 @@ class TestResetPasswordUseCase:
     async def test_returns_none_for_nonexistent_user(
         self,
         db_session: AsyncSession,
+        builder: Builder,
     ) -> None:
         password_service = MockPasswordService()
         refresh_store = MockRefreshTokenStore()
         usecase = ResetPasswordUseCase(db_session, password_service, refresh_store)
+        admin = await builder.default_admin_staff
+        ctx = builder.auth_context_for(admin)
 
-        result = await usecase.execute(uuid4())
+        result = await usecase.execute(uuid4(), ctx)
 
         assert result is None

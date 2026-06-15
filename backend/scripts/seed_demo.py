@@ -8,12 +8,13 @@ Account definitions live in demo_accounts.json (same IDs as the login screen in 
 Usage:
     CONFIG_PATH=backend/shared/settings/config.demo.yaml python -m backend.scripts.seed_demo
 """
+
 import asyncio
 import json
 import logging
 import os
 import sys
-from datetime import date
+from datetime import date, time
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -21,7 +22,10 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from shared.settings.config import Settings, load_settings
+from storage.pg.database import Base
 
 from app.auth.password import PasswordService
 from app.knowledge_base.db_models import (
@@ -53,8 +57,6 @@ from app.personnel.db_models import (
 from app.reports import db_models as _reports_models  # noqa: F401
 from app.sellings import db_models as _sellings_models  # noqa: F401
 from app.users.db_models import UserModel, UserRole
-from shared.settings.config import Settings, load_settings
-from storage.pg.database import Base
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("seed_demo")
@@ -143,23 +145,58 @@ def _log_demo_credentials(password: str, accounts: list[dict[str, Any]]) -> None
 async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) -> None:
     north = BlockModel(name="Северный блок", description="Демо-блок для менеджера")
     south = BlockModel(name="Южный блок", description="Резервный демо-блок")
-    metro = LocationModel(code="MSK-METRO", name="ТЦ Метрополис", address="Москва, Ленинградское шоссе, 16А", city="Москва")
-    europe = LocationModel(code="MSK-EURO", name="ТЦ Европарк", address="Москва, Рублевское шоссе, 62", city="Москва")
+    metro = LocationModel(
+        code="MSK-METRO",
+        name="ТЦ Метрополис",
+        address="Москва, Ленинградское шоссе, 16А",
+        city="Москва",
+        s1_start_at=time(5, 0),
+        s1_end_at=time(13, 30),
+        s2_start_at=time(13, 30),
+        s2_end_at=time(22, 0),
+    )
+    europe = LocationModel(
+        code="MSK-EURO",
+        name="ТЦ Европарк",
+        address="Москва, Рублевское шоссе, 62",
+        city="Москва",
+        s1_start_at=time(5, 0),
+        s1_end_at=time(13, 30),
+        s2_start_at=time(13, 30),
+        s2_end_at=time(22, 0),
+    )
+    crocus = LocationModel(
+        code="MSK-CROCUS",
+        name="ТЦ Крокус Сити",
+        address="Московская область, Красногорск, Международная улица, 12",
+        city="Красногорск",
+        s1_start_at=time(6, 0),
+        s1_end_at=time(14, 0),
+        s2_start_at=time(14, 0),
+        s2_end_at=time(22, 0),
+    )
 
-    session.add_all([north, south, metro, europe])
+    session.add_all([north, south, metro, europe, crocus])
     await session.flush()
 
     session.add_all(
         [
             BlockLocationModel(block_id=north.id, location_id=metro.id),
+            BlockLocationModel(block_id=north.id, location_id=crocus.id),
             BlockLocationModel(block_id=south.id, location_id=europe.id),
             ManagerBlockModel(manager_id=users["manager_north"].id, block_id=north.id),
-            BlockMemberModel(user_id=users["seller_anna"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value),
-            BlockMemberModel(user_id=users["seller_kirill"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value),
-            BlockMemberModel(user_id=users["seller_olga"].id, block_id=north.id, status=BlockMemberStatus.RESERVE.value),
+            BlockMemberModel(
+                user_id=users["seller_anna"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value
+            ),
+            BlockMemberModel(
+                user_id=users["seller_kirill"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value
+            ),
+            BlockMemberModel(
+                user_id=users["seller_olga"].id, block_id=north.id, status=BlockMemberStatus.RESERVE.value
+            ),
             UserLocationModel(user_id=users["seller_anna"].id, location_id=metro.id),
             UserLocationModel(user_id=users["seller_kirill"].id, location_id=metro.id),
-            UserLocationModel(user_id=users["seller_olga"].id, location_id=metro.id),
+            UserLocationModel(user_id=users["seller_olga"].id, location_id=crocus.id),
         ]
     )
 
@@ -167,26 +204,110 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
 async def _seed_personnel(session: AsyncSession, users: dict[str, UserModel]) -> None:
     session.add_all(
         [
-            ActivityCodeModel(code="Я", name="Явка дневная", entry_type=ActivityEntryType.WORK.value, default_hours=Decimal("8.00"), is_paid=True, is_worked_time=True),
-            ActivityCodeModel(code="Н", name="Ночная смена", entry_type=ActivityEntryType.WORK.value, default_hours=Decimal("8.00"), is_paid=True, is_worked_time=True),
-            ActivityCodeModel(code="В", name="Выходной", entry_type=ActivityEntryType.DAY_OFF.value, default_hours=Decimal("0.00"), is_paid=False, is_worked_time=False),
-            ActivityCodeModel(code="Б", name="Больничный", entry_type=ActivityEntryType.ABSENCE.value, default_hours=Decimal("0.00"), is_paid=False, is_worked_time=False),
+            ActivityCodeModel(
+                code="Я",
+                name="Явка дневная",
+                entry_type=ActivityEntryType.WORK.value,
+                default_hours=Decimal("8.00"),
+                is_paid=True,
+                is_worked_time=True,
+            ),
+            ActivityCodeModel(
+                code="Н",
+                name="Ночная смена",
+                entry_type=ActivityEntryType.WORK.value,
+                default_hours=Decimal("8.00"),
+                is_paid=True,
+                is_worked_time=True,
+            ),
+            ActivityCodeModel(
+                code="В",
+                name="Выходной",
+                entry_type=ActivityEntryType.DAY_OFF.value,
+                default_hours=Decimal("0.00"),
+                is_paid=False,
+                is_worked_time=False,
+            ),
+            ActivityCodeModel(
+                code="Б",
+                name="Больничный",
+                entry_type=ActivityEntryType.ABSENCE.value,
+                default_hours=Decimal("0.00"),
+                is_paid=False,
+                is_worked_time=False,
+            ),
         ]
     )
     session.add_all(
         [
-            EmployeeCompensationModel(user_id=users["seller_anna"].id, base_salary=Decimal("45000.00"), hourly_rate=Decimal("350.00"), night_hourly_rate=Decimal("450.00")),
-            EmployeeCompensationModel(user_id=users["seller_kirill"].id, base_salary=Decimal("52000.00"), hourly_rate=Decimal("410.00"), night_hourly_rate=Decimal("520.00")),
-            EmployeeCompensationModel(user_id=users["seller_olga"].id, base_salary=Decimal("30000.00"), hourly_rate=Decimal("280.00"), night_hourly_rate=None),
+            EmployeeCompensationModel(
+                user_id=users["seller_anna"].id,
+                base_salary=Decimal("45000.00"),
+                hourly_rate=Decimal("350.00"),
+                night_hourly_rate=Decimal("450.00"),
+            ),
+            EmployeeCompensationModel(
+                user_id=users["seller_kirill"].id,
+                base_salary=Decimal("52000.00"),
+                hourly_rate=Decimal("410.00"),
+                night_hourly_rate=Decimal("520.00"),
+            ),
+            EmployeeCompensationModel(
+                user_id=users["seller_olga"].id,
+                base_salary=Decimal("30000.00"),
+                hourly_rate=Decimal("280.00"),
+                night_hourly_rate=None,
+            ),
         ]
     )
     session.add_all(
         [
-            EmployeeTimeEntryModel(user_id=users["seller_anna"].id, work_date=date(2026, 5, 20), activity_code="Я", hours=Decimal("8.00"), shift_type=ShiftType.DAY.value),
-            EmployeeTimeEntryModel(user_id=users["seller_anna"].id, work_date=date(2026, 5, 21), activity_code="Н", hours=Decimal("8.00"), shift_type=ShiftType.NIGHT.value),
-            EmployeeTimeEntryModel(user_id=users["seller_kirill"].id, work_date=date(2026, 5, 20), activity_code="Я", hours=Decimal("8.00"), shift_type=ShiftType.DAY.value),
-            EmployeeTimeEntryModel(user_id=users["seller_kirill"].id, work_date=date(2026, 5, 21), activity_code="В", hours=Decimal("0.00"), shift_type=ShiftType.NONE.value),
-            EmployeeTimeEntryModel(user_id=users["seller_olga"].id, work_date=date(2026, 5, 20), activity_code="Б", hours=Decimal("0.00"), shift_type=ShiftType.NONE.value),
+            EmployeeTimeEntryModel(
+                user_id=users["seller_anna"].id,
+                work_date=date(2026, 6, 15),
+                activity_code="Я",
+                hours=Decimal("8.50"),
+                shift_type=ShiftType.DAY.value,
+                shift_code="С1",
+                starts_at=time(5, 0),
+                ends_at=time(13, 30),
+            ),
+            EmployeeTimeEntryModel(
+                user_id=users["seller_kirill"].id,
+                work_date=date(2026, 6, 15),
+                activity_code="Я",
+                hours=Decimal("8.50"),
+                shift_type=ShiftType.DAY.value,
+                shift_code="С2",
+                starts_at=time(13, 30),
+                ends_at=time(22, 0),
+            ),
+            EmployeeTimeEntryModel(
+                user_id=users["seller_anna"].id,
+                work_date=date(2026, 6, 16),
+                activity_code="Я",
+                hours=Decimal("8.50"),
+                shift_type=ShiftType.DAY.value,
+                shift_code="С2",
+                starts_at=time(13, 30),
+                ends_at=time(22, 0),
+            ),
+            EmployeeTimeEntryModel(
+                user_id=users["seller_kirill"].id,
+                work_date=date(2026, 6, 16),
+                activity_code="В",
+                hours=Decimal("0.00"),
+                shift_type=ShiftType.NONE.value,
+                shift_code="В",
+            ),
+            EmployeeTimeEntryModel(
+                user_id=users["seller_olga"].id,
+                work_date=date(2026, 6, 15),
+                activity_code="Б",
+                hours=Decimal("0.00"),
+                shift_type=ShiftType.NONE.value,
+                shift_code="О/Б",
+            ),
         ]
     )
 
@@ -236,7 +357,13 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
             CourseMaterialModel(course_id=course.id, material_id=material_register.id),
             CourseTestModel(course_id=course.id, test_id=final_test.id, is_final=True),
             CourseUserModel(user_id=users["seller_anna"].id, course_id=course.id, user_points_by_course=5),
-            CourseUserModel(user_id=users["seller_kirill"].id, course_id=course.id, user_points_by_course=10, is_course_completed=True, is_course_completed_successfully=True),
+            CourseUserModel(
+                user_id=users["seller_kirill"].id,
+                course_id=course.id,
+                user_points_by_course=10,
+                is_course_completed=True,
+                is_course_completed_successfully=True,
+            ),
             CourseUserModel(user_id=users["seller_olga"].id, course_id=course.id, user_points_by_course=0),
         ]
     )

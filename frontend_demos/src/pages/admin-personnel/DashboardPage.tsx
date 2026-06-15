@@ -1,18 +1,63 @@
-// React import not needed in React 18+
+import { useEffect, useState } from "react";
 import { Building2, MapPin, Users } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
+import { AdminStaffAPI } from "../../api/AdminStaffAPI";
+import { getErrorMessage, isAbortError } from "../../utils/errors";
 
 export default function AdminPersonnelDashboardPage() {
   const { user } = useApp();
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    employeesCount: 0,
+    locationsCount: 0,
+    blocksCount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    AdminStaffAPI.getOverview(controller.signal)
+      .then(setStats)
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        console.error(getErrorMessage(error, "Не удалось загрузить сводку"));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
+
   if (!user) return null;
 
-  const stats = [
-    { label: "Всего сотрудников", value: 142, icon: Users, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-personnel/manage" },
-    { label: "Всего точек", value: 47, icon: MapPin, color: "#22C55E", bg: "#F0FDF4", path: "/admin-personnel/locations" },
-    { label: "Всего блоков", value: 5, icon: Building2, color: "#F59E0B", bg: "#FFFBEB", path: "/admin-personnel/blocks" },
+  const cards = [
+    {
+      label: "Всего сотрудников",
+      value: loading ? "…" : stats.employeesCount,
+      icon: Users,
+      color: "#2E7D32",
+      bg: "#E8F5E9",
+      path: "/admin-personnel/manage",
+    },
+    {
+      label: "Всего точек",
+      value: loading ? "…" : stats.locationsCount,
+      icon: MapPin,
+      color: "#22C55E",
+      bg: "#F0FDF4",
+      path: "/admin-personnel/locations",
+    },
+    {
+      label: "Всего блоков",
+      value: loading ? "…" : stats.blocksCount,
+      icon: Building2,
+      color: "#F59E0B",
+      bg: "#FFFBEB",
+      path: "/admin-personnel/blocks",
+    },
   ];
 
   return (
@@ -29,9 +74,9 @@ export default function AdminPersonnelDashboardPage() {
 
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-3">
-          {stats.map((s, i) => (
+          {cards.map((s) => (
             <button
-              key={i}
+              key={s.label}
               type="button"
               onClick={() => navigate(s.path)}
               className="rounded-2xl p-4 text-left w-full"
@@ -45,7 +90,6 @@ export default function AdminPersonnelDashboardPage() {
             </button>
           ))}
         </div>
-
       </div>
     </div>
   );

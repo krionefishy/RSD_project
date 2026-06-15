@@ -44,7 +44,16 @@ export default function LocationDetailPage() {
   const [confirmUserId, setConfirmUserId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const [form, setForm] = useState({ code: "", name: "", address: "", city: "" });
+  const [form, setForm] = useState({
+    code: "",
+    name: "",
+    address: "",
+    city: "",
+    s1StartAt: "08:00",
+    s1EndAt: "16:00",
+    s2StartAt: "16:00",
+    s2EndAt: "00:00",
+  });
   const [saving, setSaving] = useState(false);
   const [assignUserId, setAssignUserId] = useState("");
   const today = new Date();
@@ -65,6 +74,10 @@ export default function LocationDetailPage() {
         name: data.name,
         address: data.address,
         city: data.city ?? "",
+        s1StartAt: data.s1StartAt ?? "08:00",
+        s1EndAt: data.s1EndAt ?? "16:00",
+        s2StartAt: data.s2StartAt ?? "16:00",
+        s2EndAt: data.s2EndAt ?? "00:00",
       });
     } catch (error) {
       if (isAbortError(error)) return;
@@ -111,6 +124,10 @@ export default function LocationDetailPage() {
         name: form.name.trim(),
         address: form.address.trim(),
         city: form.city.trim() || null,
+        s1StartAt: form.s1StartAt,
+        s1EndAt: form.s1EndAt,
+        s2StartAt: form.s2StartAt,
+        s2EndAt: form.s2EndAt,
       });
       setLocation((prev) => (prev ? { ...prev, ...updated } : prev));
       toast.success("Точка обновлена");
@@ -200,15 +217,40 @@ export default function LocationDetailPage() {
         {canEditStructure && (
           <div className="rounded-2xl p-4 flex flex-col gap-2" style={{ background: "#fff" }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: "#1E293B" }}>Редактирование</p>
-            {(["code", "name", "address", "city"] as const).map((field) => (
+            {([
+              ["code", "Код точки"],
+              ["name", "Название"],
+              ["address", "Адрес"],
+              ["city", "Город"],
+            ] as const).map(([field, label]) => (
               <input
                 key={field}
                 value={form[field]}
                 onChange={(e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))}
+                placeholder={label}
                 className="h-10 px-3 rounded-lg border"
                 style={{ borderColor: "#E2E8F0", fontSize: 14 }}
               />
             ))}
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ["s1StartAt", "С1 начало"],
+                ["s1EndAt", "С1 конец"],
+                ["s2StartAt", "С2 начало"],
+                ["s2EndAt", "С2 конец"],
+              ] as const).map(([field, label]) => (
+                <label key={field} className="flex flex-col gap-1">
+                  <span style={{ color: "#64748B", fontSize: 12 }}>{label}</span>
+                  <input
+                    type="time"
+                    value={form[field]}
+                    onChange={(e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))}
+                    className="h-10 px-3 rounded-lg border"
+                    style={{ borderColor: "#E2E8F0", fontSize: 14 }}
+                  />
+                </label>
+              ))}
+            </div>
             <button
               onClick={() => void handleSave()}
               disabled={saving}
@@ -231,6 +273,10 @@ export default function LocationDetailPage() {
         <div className="rounded-2xl p-4" style={{ background: "#fff" }}>
           <p style={{ fontSize: 13, color: "#64748B" }}>{location.address}</p>
           {location.city && <p style={{ fontSize: 13, color: "#64748B" }}>{location.city}</p>}
+          <p style={{ fontSize: 12, color: "#64748B", marginTop: 4 }}>
+            С1 {location.s1StartAt ?? "08:00"}-{location.s1EndAt ?? "16:00"} · С2{" "}
+            {location.s2StartAt ?? "16:00"}-{location.s2EndAt ?? "00:00"}
+          </p>
           <p style={{ fontSize: 12, color: "#94A3B8", marginTop: 4 }}>{location.employees} сотрудников на точке</p>
         </div>
 

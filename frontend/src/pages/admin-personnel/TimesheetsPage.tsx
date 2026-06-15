@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
@@ -6,13 +6,14 @@ import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
 import { AppSelect } from "../../components/AppSelect";
 import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
+import { AssignShiftDialog } from "../../components/timesheets/AssignShiftDialog";
 import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
 import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
-import type { TimesheetEntry, TimesheetUploadResult, UpdateTimeEntryData } from "../../types/profile";
+import type { TimesheetEntry, TimesheetUploadResult } from "../../types/profile";
 import { AppUser } from "../../types/user";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
-import { mapTimesheetErrorMessage, monthPeriodQuery } from "../../utils/timesheet";
+import { isWorkShift, mapTimesheetErrorMessage, monthPeriodQuery } from "../../utils/timesheet";
 import { toast } from "sonner";
 
 export default function TimesheetsPage() {
@@ -24,23 +25,26 @@ export default function TimesheetsPage() {
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [employees, setEmployees] = useState<AppUser[]>([]);
+  const [locationEmployees, setLocationEmployees] = useState<AppUser[]>([]);
   const [employeesLoading, setEmployeesLoading] = useState(true);
 
   const [locationEntries, setLocationEntries] = useState<TimesheetEntry[]>([]);
-  const [locationDraftEntries, setLocationDraftEntries] = useState<TimesheetEntry[]>([]);
   const [locationTotalHours, setLocationTotalHours] = useState("0");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const [employeeEntries, setEmployeeEntries] = useState<TimesheetEntry[]>([]);
-  const [employeeDraftEntries, setEmployeeDraftEntries] = useState<TimesheetEntry[]>([]);
   const [employeeTotalHours, setEmployeeTotalHours] = useState("0");
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
-  const [savingEntryId, setSavingEntryId] = useState<number | null>(null);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const [assignShiftOpen, setAssignShiftOpen] = useState(false);
+  const [assignWorkDate, setAssignWorkDate] = useState("");
+  const [assigningShift, setAssigningShift] = useState(false);
+  const [assignMode, setAssignMode] = useState<"location" | "employee">("location");
+  const [assignTargetUserId, setAssignTargetUserId] = useState("");
   const [lastUpload, setLastUpload] = useState<TimesheetUploadResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -55,7 +59,7 @@ export default function TimesheetsPage() {
   useEffect(() => {
     const controller = new AbortController();
     setEmployeesLoading(true);
-    UserAPI.listUsers({ role: "seller", isActive: true }, controller.signal)
+    UserAPI.listUsers({ isActive: true }, controller.signal)
       .then((users) => {
         setEmployees(users);
         if (!selectedUserId && users[0]) setSelectedUserId(users[0].id);
@@ -70,6 +74,21 @@ export default function TimesheetsPage() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    if (!selectedLocationId) {
+      setLocationEmployees([]);
+      return;
+    }
+    const controller = new AbortController();
+    UserAPI.listUsers({ locationId: selectedLocationId, isActive: true }, controller.signal)
+      .then(setLocationEmployees)
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setLocationEmployees([]);
+      });
+    return () => controller.abort();
+  }, [selectedLocationId]);
+
   const loadLocationTimesheet = useCallback(
     async (signal?: AbortSignal) => {
       if (!selectedLocationId) return;
@@ -78,13 +97,11 @@ export default function TimesheetsPage() {
       try {
         const data = await PersonnelAPI.getLocationTimesheet(Number(selectedLocationId), period, signal);
         setLocationEntries(data.items);
-        setLocationDraftEntries(data.items);
         setLocationTotalHours(data.totalHours);
       } catch (error) {
         if (isAbortError(error)) return;
         setLocationError(getErrorMessage(error, "Не удалось загрузить табель точки"));
         setLocationEntries([]);
-        setLocationDraftEntries([]);
         setLocationTotalHours("0");
       } finally {
         if (!signal?.aborted) setLocationLoading(false);
@@ -101,13 +118,11 @@ export default function TimesheetsPage() {
       try {
         const data = await PersonnelAPI.getEmployeeTimesheet(selectedUserId, period, signal);
         setEmployeeEntries(data.items);
-        setEmployeeDraftEntries(data.items);
         setEmployeeTotalHours(data.totalHours);
       } catch (error) {
         if (isAbortError(error)) return;
         setEmployeeError(getErrorMessage(error, "Не удалось загрузить табель сотрудника"));
         setEmployeeEntries([]);
-        setEmployeeDraftEntries([]);
         setEmployeeTotalHours("0");
       } finally {
         if (!signal?.aborted) setEmployeeLoading(false);
@@ -157,49 +172,80 @@ export default function TimesheetsPage() {
     void handleUploadFile(file);
   };
 
-  const toUpdatePayload = (entry: TimesheetEntry): UpdateTimeEntryData => ({
-    activityCode: entry.activityCode,
-    hours: entry.hours,
-    shiftType: entry.shiftType,
-    comment: entry.comment,
-  });
-
-  const updateEntryDraft = (
-    setter: Dispatch<SetStateAction<TimesheetEntry[]>>,
-    entry: TimesheetEntry,
-  ) => {
-    setter((prev) => prev.map((item) => (item.id === entry.id ? entry : item)));
-  };
-
-  const handleSaveEntry = async (entry: TimesheetEntry) => {
-    setSavingEntryId(entry.id);
-    try {
-      await AdminStaffAPI.updateTimeEntry(entry.id, toUpdatePayload(entry));
-      toast.success("Запись табеля сохранена");
-      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
-    } catch (error) {
-      toast.error(
-        mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось сохранить запись табеля")),
-      );
-    } finally {
-      setSavingEntryId(null);
-    }
-  };
-
   const handleDeleteEntry = async (entryId: number) => {
     setDeletingEntryId(entryId);
     try {
       await AdminStaffAPI.deleteTimeEntry(entryId);
-      toast.success("Запись табеля удалена");
+      toast.success("Смена удалена");
       await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
     } catch (error) {
       toast.error(
-        mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось удалить запись табеля")),
+        mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось удалить смену")),
       );
     } finally {
       setDeletingEntryId(null);
     }
   };
+
+  const handleAssignShift = async ({ userId, shiftCode }: { userId: string; shiftCode: "С1" | "С2" }) => {
+    setAssigningShift(true);
+    try {
+      await AdminStaffAPI.createTimeEntry({
+        userId,
+        workDate: assignWorkDate,
+        shiftCode,
+        locationId: selectedLocationId ? Number(selectedLocationId) : undefined,
+      });
+      toast.success(existingShiftForAssign ? "Смена обновлена" : "Смена назначена");
+      setAssignShiftOpen(false);
+      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
+    } catch (error) {
+      toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось назначить смену")));
+    } finally {
+      setAssigningShift(false);
+    }
+  };
+
+  const handleDeleteFromDialog = async (entryId: number) => {
+    await handleDeleteEntry(entryId);
+    setAssignShiftOpen(false);
+  };
+
+  const openAssignDialog = (mode: "location" | "employee", workDate: string) => {
+    setAssignMode(mode);
+    setAssignWorkDate(workDate);
+    if (mode === "location") {
+      setAssignTargetUserId(locationEmployees[0]?.id ?? "");
+    } else {
+      setAssignTargetUserId(selectedUserId);
+    }
+    setAssignShiftOpen(true);
+  };
+
+  const existingShiftForAssign = useMemo(() => {
+    const targetUserId = assignMode === "employee" ? selectedUserId : assignTargetUserId;
+    if (!targetUserId || !assignWorkDate) return null;
+    const entries = assignMode === "location" ? locationEntries : employeeEntries;
+    const entry = entries.find((item) => {
+      if (item.workDate !== assignWorkDate || !isWorkShift(item)) return false;
+      if (assignMode === "employee") return true;
+      return item.userId === targetUserId;
+    });
+    if (!entry?.shiftCode || (entry.shiftCode !== "С1" && entry.shiftCode !== "С2")) return null;
+    return {
+      id: entry.id,
+      shiftCode: entry.shiftCode,
+      startsAt: entry.startsAt,
+      endsAt: entry.endsAt,
+    };
+  }, [
+    assignMode,
+    assignTargetUserId,
+    assignWorkDate,
+    employeeEntries,
+    locationEntries,
+    selectedUserId,
+  ]);
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -256,7 +302,7 @@ export default function TimesheetsPage() {
                   <CheckCircle size={16} color="#22C55E" />
                 )}
                 <span style={{ color: "#1E293B", fontSize: 13, fontWeight: 600 }}>
-                  Загрузка #{lastUpload.uploadId} · {lastUpload.status} · строк: {lastUpload.rowsCount}
+                  Создано записей: {lastUpload.entriesCount} · строк: {lastUpload.rowsCount}
                 </span>
               </div>
               {lastUpload.errors.length > 0 && (
@@ -297,20 +343,20 @@ export default function TimesheetsPage() {
             showMonthFilter={false}
             showSummary={false}
             showEmployees
+            allowAssign={Boolean(selectedLocationId)}
+            onDayClick={(workDate) => openAssignDialog("location", workDate)}
           />
           <div className="mt-3">
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Смены сотрудников</p>
             <TimesheetEntriesList
-              entries={locationDraftEntries}
+              entries={locationEntries}
               totalHours={locationTotalHours}
               loading={locationLoading}
               error={locationError}
-              emptyMessage="Нет записей табеля по выбранной точке"
-              editable
+              emptyMessage="Нет смен по выбранной точке"
               showEmployee
-              savingEntryId={savingEntryId}
+              mode="shifts"
               deletingEntryId={deletingEntryId}
-              onChangeEntry={(entry) => updateEntryDraft(setLocationDraftEntries, entry)}
-              onSaveEntry={(entry) => void handleSaveEntry(entry)}
               onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
             />
           </div>
@@ -339,19 +385,19 @@ export default function TimesheetsPage() {
             onMonthChange={setMonthDate}
             showMonthFilter={false}
             showSummary={false}
+            allowAssign={Boolean(selectedUserId)}
+            onDayClick={(workDate) => openAssignDialog("employee", workDate)}
           />
           <div className="mt-3">
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Смены сотрудника</p>
             <TimesheetEntriesList
-              entries={employeeDraftEntries}
+              entries={employeeEntries}
               totalHours={employeeTotalHours}
               loading={employeeLoading}
               error={employeeError}
-              emptyMessage="Нет записей табеля по выбранному сотруднику"
-              editable
-              savingEntryId={savingEntryId}
+              emptyMessage="Нет смен по выбранному сотруднику"
+              mode="shifts"
               deletingEntryId={deletingEntryId}
-              onChangeEntry={(entry) => updateEntryDraft(setEmployeeDraftEntries, entry)}
-              onSaveEntry={(entry) => void handleSaveEntry(entry)}
               onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
             />
           </div>
@@ -365,15 +411,31 @@ export default function TimesheetsPage() {
                 <FileSpreadsheet size={20} color="#2E7D32" />
               </div>
               <div>
-                <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>ID {lastUpload.uploadId}</p>
+                <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>
+                  Создано записей: {lastUpload.entriesCount}
+                </p>
                 <p style={{ color: "#94A3B8", fontSize: 11 }}>
-                  {period.periodFrom} — {period.periodTo} · статус {lastUpload.status}
+                  {period.periodFrom} — {period.periodTo} · строк {lastUpload.rowsCount}
                 </p>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      <AssignShiftDialog
+        open={assignShiftOpen}
+        onOpenChange={setAssignShiftOpen}
+        workDate={assignWorkDate}
+        userId={assignMode === "employee" ? selectedUserId : undefined}
+        employees={assignMode === "location" ? locationEmployees : undefined}
+        existingShift={existingShiftForAssign}
+        submitting={assigningShift}
+        deleting={deletingEntryId !== null}
+        onSubmit={handleAssignShift}
+        onDelete={handleDeleteFromDialog}
+        onSelectedUserChange={setAssignTargetUserId}
+      />
     </div>
   );
 }

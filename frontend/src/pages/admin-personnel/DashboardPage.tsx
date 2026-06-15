@@ -1,18 +1,56 @@
 // React import not needed in React 18+
+import { useEffect, useState } from "react";
 import { Building2, MapPin, Users } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
+import { LocationsAPI } from "../../api/LocationsAPI";
+import { UserAPI } from "../../api/UserAPI";
+import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { toast } from "sonner";
 
 export default function AdminPersonnelDashboardPage() {
   const { user } = useApp();
   const navigate = useNavigate();
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsData, setStatsData] = useState({
+    employees: 0,
+    locations: 0,
+    blocks: 0,
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadStats() {
+      setStatsLoading(true);
+      try {
+        const [employees, locations, blocks] = await Promise.all([
+          UserAPI.listUsers({ role: "seller" }, controller.signal),
+          LocationsAPI.listLocations(undefined, controller.signal),
+          LocationsAPI.listBlocks(undefined, controller.signal),
+        ]);
+        setStatsData({
+          employees: employees.filter((employee) => employee.storeName).length,
+          locations: locations.length,
+          blocks: blocks.length,
+        });
+      } catch (error) {
+        if (isAbortError(error)) return;
+        toast.error(getErrorMessage(error, "Не удалось загрузить показатели"));
+      } finally {
+        if (!controller.signal.aborted) setStatsLoading(false);
+      }
+    }
+    void loadStats();
+    return () => controller.abort();
+  }, []);
+
   if (!user) return null;
 
   const stats = [
-    { label: "Всего сотрудников", value: 142, icon: Users, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-personnel/manage" },
-    { label: "Всего точек", value: 47, icon: MapPin, color: "#22C55E", bg: "#F0FDF4", path: "/admin-personnel/locations" },
-    { label: "Всего блоков", value: 5, icon: Building2, color: "#F59E0B", bg: "#FFFBEB", path: "/admin-personnel/blocks" },
+    { label: "Всего сотрудников", value: statsData.employees, icon: Users, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-personnel/manage" },
+    { label: "Всего точек", value: statsData.locations, icon: MapPin, color: "#22C55E", bg: "#F0FDF4", path: "/admin-personnel/locations" },
+    { label: "Всего блоков", value: statsData.blocks, icon: Building2, color: "#F59E0B", bg: "#FFFBEB", path: "/admin-personnel/blocks" },
   ];
 
   return (
@@ -40,7 +78,9 @@ export default function AdminPersonnelDashboardPage() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: s.bg }}>
                 <s.icon size={20} color={s.color} />
               </div>
-              <p style={{ color: "#1E293B", fontSize: 28, fontWeight: 800, lineHeight: 1 }}>{s.value}</p>
+              <p style={{ color: "#1E293B", fontSize: 28, fontWeight: 800, lineHeight: 1 }}>
+                {statsLoading ? "..." : s.value}
+              </p>
               <p style={{ color: "#64748B", fontSize: 12, marginTop: 4 }}>{s.label}</p>
             </button>
           ))}

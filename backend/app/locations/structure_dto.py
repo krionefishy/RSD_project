@@ -35,6 +35,10 @@ class LocationListItemDTO(BaseModel):
     name: str
     address: str
     city: str | None = None
+    s1_start_at: str | None = None
+    s1_end_at: str | None = None
+    s2_start_at: str | None = None
+    s2_end_at: str | None = None
     block_id: int | None = None
     block_name: str | None = None
     employees: int = 0
