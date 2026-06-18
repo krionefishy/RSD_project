@@ -267,6 +267,12 @@ deploy-prod-logs service="":
 deploy-prod-rebuild: _docker
     {{ compose_prod }} up -d --build --force-recreate
 
+[doc('Remove orphan minio containers left from previous deploys')]
+cleanup-orphans: _docker
+    {{ compose_prod }} up -d --remove-orphans 2>/dev/null || true
+    {{ compose_demo1 }} up -d --remove-orphans 2>/dev/null || true
+    @echo "Orphans removed."
+
 [doc('Stop both prod and demo stacks')]
 deploy-down-all: _docker
     {{ compose_prod }} down --remove-orphans 2>/dev/null || true
@@ -430,7 +436,6 @@ all: _docker gateway-network
     @echo "=== Waiting for all services to be healthy ==="
     {{ compose_prod }} up -d --wait
     {{ compose_demo1 }} up -d --wait
-    @echo "=== Seeding prod demo data ==="
-    {{ compose_prod }} exec backend python -m scripts.seed_demo
     @echo ""
     @echo "Both stacks up: rsdobin.ru (prod) | rsdobin.online (demo)"
+    @echo "Orphan minio containers can be cleaned with: just cleanup-orphans"
