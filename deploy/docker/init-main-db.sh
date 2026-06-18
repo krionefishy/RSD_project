@@ -1,6 +1,15 @@
 #!/bin/sh
 set -eu
 
+# Allow replication connections from any host in the internal Docker network.
+# pg_hba.conf is written before postgres starts accepting connections,
+# so we append here and reload.
+cat >> "$PGDATA/pg_hba.conf" <<HBA
+
+# Allow streaming replication from Docker internal network
+host  replication  ${POSTGRES_REPLICATION_USER:-replicator}  0.0.0.0/0  md5
+HBA
+
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<SQL
 DO \$\$
 BEGIN
@@ -22,3 +31,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${MAIN_REPLICA_READONLY_USER:-rep
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT ON TABLES TO ${MAIN_REPLICA_READONLY_USER:-report_reader};
 SQL
+
+# Reload pg_hba.conf so the replication rule takes effect immediately.
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+    -c "SELECT pg_reload_conf();"
