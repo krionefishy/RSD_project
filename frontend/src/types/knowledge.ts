@@ -89,6 +89,8 @@ export interface Test {
   description: string | null;
   isFinal: boolean;
   passScorePercent: number;
+  timeLimitMinutes: number | null;
+  maxAttempts: number | null;
   tasksCount: number;
   totalPoints: number;
   courseId: number;

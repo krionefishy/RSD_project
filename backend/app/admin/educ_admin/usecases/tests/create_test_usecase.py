@@ -27,6 +27,8 @@ class CreateTestUseCase:
             description=request.description,
             is_final=request.is_final,
             pass_score_percent=request.pass_score_percent,
+            time_limit_minutes=request.time_limit_minutes,
+            max_attempts=request.max_attempts,
         )
         self.session.add(test)
         await self.session.commit()
@@ -39,6 +41,8 @@ class CreateTestUseCase:
             description=test.description,
             is_final=test.is_final,
             pass_score_percent=test.pass_score_percent,
+            time_limit_minutes=test.time_limit_minutes,
+            max_attempts=test.max_attempts,
             tasks_count=0,
             total_points=0,
             course_id=0,

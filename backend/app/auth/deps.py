@@ -132,3 +132,8 @@ async def require_education_admin(request: Request) -> AuthContext:
             UserRole.SUPER_ADMIN.value,
         },
     )
+
+
+async def require_super_admin(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(auth, {UserRole.SUPER_ADMIN.value})

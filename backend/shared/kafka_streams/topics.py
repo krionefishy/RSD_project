@@ -7,6 +7,7 @@ class StorageTopics:
     MATERIAL_ATTACHMENT_DELETE = f"{SERVICE}.{GROUP}.material_attachment.delete"
     TIMESHEET_UPLOAD = f"{SERVICE}.{GROUP}.timesheet.upload"
     TIMESHEET_SCHEDULE_UPLOAD = f"{SERVICE}.{GROUP}.timesheet_schedule.upload"
+    LEARNING_REPORT_UPLOAD = f"{SERVICE}.{GROUP}.learning_report.upload"
 
     @classmethod
     def all_s3_mutation_topics(cls) -> list[str]:
@@ -16,4 +17,5 @@ class StorageTopics:
             cls.MATERIAL_ATTACHMENT_DELETE,
             cls.TIMESHEET_UPLOAD,
             cls.TIMESHEET_SCHEDULE_UPLOAD,
+            cls.LEARNING_REPORT_UPLOAD,
         ]

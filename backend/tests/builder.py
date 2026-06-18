@@ -467,6 +467,8 @@ class Builder:
         description: str | None = "Test quiz description",
         is_final: bool = False,
         pass_score_percent: int = 70,
+        time_limit_minutes: int | None = None,
+        max_attempts: int | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
     ) -> TestModel:
@@ -476,6 +478,8 @@ class Builder:
             "description": description,
             "is_final": is_final,
             "pass_score_percent": pass_score_percent,
+            "time_limit_minutes": time_limit_minutes,
+            "max_attempts": max_attempts,
             "created_at": created_at or self._default_datetime,
             "updated_at": updated_at or self._default_datetime,
         }

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
@@ -74,10 +75,22 @@ class StartTestUseCase:
             )
         )
         user_test = user_test_result.scalar_one_or_none()
-        if user_test is not None and user_test.completed_at is not None:
-            return None
 
-        if user_test is None:
+        now = datetime.now()
+        if user_test is not None and user_test.completed_at is not None:
+            if test.max_attempts is not None and user_test.attempt_number >= test.max_attempts:
+                return None
+            user_test.attempt_number += 1
+            user_test.score = 0
+            user_test.max_score = test.total_points
+            user_test.is_passed = False
+            user_test.answers = {}
+            user_test.completed_at = None
+            user_test.started_at = now
+            await self.session.commit()
+        elif user_test is not None:
+            pass
+        else:
             user_test = UserCourseTestModel(
                 user_id=ctx.user_id,
                 course_id=request.course_id,
@@ -87,6 +100,7 @@ class StartTestUseCase:
                 max_score=test.total_points,
                 is_passed=False,
                 answers={},
+                started_at=now,
             )
             self.session.add(user_test)
             await self.session.commit()

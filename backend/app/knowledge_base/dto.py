@@ -73,6 +73,8 @@ class TestDTO(BaseModel):
     description: Optional[str]
     is_final: bool
     pass_score_percent: int
+    time_limit_minutes: Optional[int] = None
+    max_attempts: Optional[int] = None
     tasks_count: int
     total_points: int
     course_id: int

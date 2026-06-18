@@ -47,6 +47,10 @@ class UpdateTestUseCase:
             test.is_final = request.is_final
         if request.pass_score_percent is not None:
             test.pass_score_percent = request.pass_score_percent
+        if request.time_limit_minutes is not None:
+            test.time_limit_minutes = request.time_limit_minutes
+        if request.max_attempts is not None:
+            test.max_attempts = request.max_attempts
 
         course_id = test.course_tests[0].course_id if test.course_tests else 0
         tasks_count = test.tasks_count
@@ -61,6 +65,8 @@ class UpdateTestUseCase:
             description=test.description,
             is_final=test.is_final,
             pass_score_percent=test.pass_score_percent,
+            time_limit_minutes=test.time_limit_minutes,
+            max_attempts=test.max_attempts,
             tasks_count=tasks_count,
             total_points=total_points,
             course_id=course_id,

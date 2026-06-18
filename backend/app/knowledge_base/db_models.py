@@ -229,6 +229,7 @@ class UserCourseTestModel(Base):
     max_score: Mapped[int | None] = mapped_column(Integer, default=None)
     is_passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     answers: Mapped[dict | None] = mapped_column(JSON, default=None)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -320,6 +321,10 @@ class TestModel(Base):
             name="ck_tests_time_limit_positive",
         ),
         CheckConstraint("pass_score_percent BETWEEN 0 AND 100", name="ck_tests_pass_score_percent_valid"),
+        CheckConstraint(
+            "max_attempts IS NULL OR max_attempts > 0",
+            name="ck_tests_max_attempts_positive",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -328,6 +333,7 @@ class TestModel(Base):
     description: Mapped[str | None] = mapped_column(Text)
     is_final: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     time_limit_minutes: Mapped[int | None] = mapped_column(Integer)
+    max_attempts: Mapped[int | None] = mapped_column(Integer, nullable=True)
     pass_score_percent: Mapped[int] = mapped_column(Integer, default=70, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
     updated_at: Mapped[datetime] = mapped_column(

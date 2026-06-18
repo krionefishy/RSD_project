@@ -62,3 +62,8 @@ async def run_timesheet_upload_consumer(s3_client, payload: dict) -> None:
 @kafka_subscriber(StorageTopics.TIMESHEET_SCHEDULE_UPLOAD)
 async def run_timesheet_schedule_upload_consumer(s3_client, payload: dict) -> None:
     await _upload(s3_client, payload)
+
+
+@kafka_subscriber(StorageTopics.LEARNING_REPORT_UPLOAD)
+async def run_learning_report_upload_consumer(s3_client, payload: dict) -> None:
+    await _upload(s3_client, payload)

@@ -5,12 +5,15 @@ from uuid import UUID
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends
 
-from app.auth.deps import AuthContext, require_manager, require_personnel_viewer
+from app.auth.deps import AuthContext, require_manager, require_personnel_viewer, require_software_admin
 from app.personnel.domain import TimesheetPeriodQuery
 from app.personnel.dto import EmployeeCompensationDTO, EmployeeTimesheetDTO, LocationTimesheetDTO
+from app.personnel.usecases.create_hourly_earning_events_usecase import CreateHourlyEarningEventsUseCase
 from app.personnel.usecases.get_employee_compensation_usecase import GetEmployeeCompensationUseCase
+from app.personnel.usecases.get_employee_earnings_usecase import EmployeeEarningsDTO, GetEmployeeEarningsUseCase
 from app.personnel.usecases.get_employee_timesheet_usecase import GetEmployeeTimesheetUseCase
 from app.personnel.usecases.get_location_timesheet_usecase import GetLocationTimesheetUseCase
+from app.personnel.usecases.recalculate_earning_totals_usecase import RecalculateEarningTotalsUseCase
 from app.users.dto import UsersListDTO
 from app.users.usecases.list_users_usecase import ListUsersUseCase
 
@@ -85,3 +88,35 @@ async def get_employee_compensation(
     usecase: FromDishka[GetEmployeeCompensationUseCase],
 ) -> EmployeeCompensationDTO | None:
     return await usecase.execute(user_id, auth)
+
+
+@router.get(
+    "/users/{user_id}/earnings",
+    response_model=EmployeeEarningsDTO,
+    summary="Начисления сотрудника (агрегат по месяцам)",
+)
+async def get_employee_earnings(
+    user_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_personnel_viewer)],
+    usecase: FromDishka[GetEmployeeEarningsUseCase],
+    year: int | None = None,
+) -> EmployeeEarningsDTO:
+    return await usecase.execute(user_id, auth, year=year)
+
+
+@router.post(
+    "/users/{user_id}/earnings/recalculate",
+    response_model=dict,
+    summary="Пересчитать начисления за месяц (Admin ПО)",
+)
+async def recalculate_earnings(
+    user_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_software_admin)],
+    create_events_uc: FromDishka[CreateHourlyEarningEventsUseCase],
+    recalculate_uc: FromDishka[RecalculateEarningTotalsUseCase],
+    year: int,
+    month: int,
+) -> dict:
+    events_created = await create_events_uc.execute(user_id, year, month)
+    await recalculate_uc.execute(user_id, year, month)
+    return {"events_created": events_created, "year": year, "month": month}

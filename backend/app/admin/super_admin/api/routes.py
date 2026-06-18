@@ -5,6 +5,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.admin.super_admin.domain import CreateBlockRequest, CreateLocationRequest, UpdateBlockRequest, UpdateLocationRequest
+from app.admin.super_admin.usecases.assign_root_admin_usecase import AssignRootAdminUseCase
 from app.admin.super_admin.usecases.block_usecases import (
     CreateBlockUseCase,
     DeleteBlockUseCase,
@@ -21,7 +22,8 @@ from app.admin.super_admin.usecases.location_usecases import (
     RemoveLocationFromBlockUseCase,
     UpdateLocationUseCase,
 )
-from app.auth.deps import AuthContext, require_structure_admin, require_structure_viewer
+from app.admin.super_admin.usecases.remove_root_admin_usecase import RemoveRootAdminUseCase
+from app.auth.deps import AuthContext, require_structure_admin, require_structure_viewer, require_super_admin
 from app.locations.structure_dto import (
     BlockDetailDTO,
     BlockListItemDTO,
@@ -30,8 +32,46 @@ from app.locations.structure_dto import (
     LocationListItemDTO,
     LocationsListDTO,
 )
+from app.users.dto import UserDTO, UsersListDTO
+from app.users.usecases.list_users_usecase import ListUsersUseCase
 
 router = APIRouter(route_class=DishkaRoute)
+
+
+@router.get("/users", response_model=UsersListDTO, summary="Список всех пользователей (Super Admin)")
+async def list_all_users(
+    auth: Annotated[AuthContext, Depends(require_super_admin)],
+    usecase: FromDishka[ListUsersUseCase],
+    role: str | None = None,
+    is_active: bool | None = None,
+) -> UsersListDTO:
+    return await usecase.execute(role=role, is_active=is_active)
+
+
+@router.post(
+    "/users/{user_id}/root-admin",
+    response_model=UserDTO,
+    summary="Назначить root_admin",
+)
+async def assign_root_admin(
+    user_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_super_admin)],
+    usecase: FromDishka[AssignRootAdminUseCase],
+) -> UserDTO:
+    return await usecase.execute(user_id, auth)
+
+
+@router.delete(
+    "/users/{user_id}/root-admin",
+    response_model=UserDTO,
+    summary="Снять root_admin (понизить до seller)",
+)
+async def remove_root_admin(
+    user_id: UUID,
+    auth: Annotated[AuthContext, Depends(require_super_admin)],
+    usecase: FromDishka[RemoveRootAdminUseCase],
+) -> UserDTO:
+    return await usecase.execute(user_id, auth)
 
 
 @router.get("/blocks", response_model=BlocksListDTO, summary="Список блоков")

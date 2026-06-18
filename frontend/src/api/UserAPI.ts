@@ -126,6 +126,7 @@ function mapUserResponse(response: UserResponse): AppUser {
         : response.managed_block?.id
         ? String(response.managed_block.id)
         : undefined,
+    blockId: response.block?.id ?? response.managed_block?.id ?? undefined,
     blockName: response.block?.name ?? response.managed_block?.name,
     blockMemberStatus:
       response.block_member_status === "primary" || response.block_member_status === "reserve"

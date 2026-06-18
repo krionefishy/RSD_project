@@ -65,6 +65,7 @@ import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
 
 // Pages - Admin PO
 import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
+import AccountsPage from "../pages/admin-po/AccountsPage";
 import AdminPOPersonnelPreviewPage from "../pages/admin-po/preview/PersonnelPreviewPage";
 import AdminPOEduPreviewPage from "../pages/admin-po/preview/EduPreviewPage";
 import AdminPOEduAssignmentsPreviewPage from "../pages/admin-po/preview/EduAssignmentsPreviewPage";
@@ -226,6 +227,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminPODashboardPage /> },
+      { path: "accounts", element: <AccountsPage /> },
       { path: "preview/personnel", element: <AdminPOPersonnelPreviewPage /> },
       { path: "preview/edu", element: <AdminPOEduPreviewPage /> },
       { path: "preview/edu/assignments", element: <AdminPOEduAssignmentsPreviewPage /> },

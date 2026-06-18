@@ -1,14 +1,13 @@
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import AuthContext
 from app.personnel.dto import DeleteResultDTO
-from app.users.db_models import UserModel, UserRole
+from app.users.db_models import UserModel
 from app.users.profile_errors import ProfileConflictError, ProfileNotFoundError
-from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
+from app.users.profile_scope import ensure_can_manage_user, require_staff_admin
 
 
 class DeleteEmployeeProfileUseCase:
@@ -26,13 +25,7 @@ class DeleteEmployeeProfileUseCase:
         if user is None:
             raise ProfileNotFoundError()
 
-        ensure_staff_admin_can_manage_user(ctx, user.role)
-
-        if user.role in {UserRole.ROOT_ADMIN.value, UserRole.SUPER_ADMIN.value}:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot delete privileged admin",
-            )
+        ensure_can_manage_user(ctx, user.role)
 
         await self.session.delete(user)
         await self.session.commit()

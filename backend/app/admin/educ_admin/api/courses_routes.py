@@ -30,8 +30,10 @@ from app.knowledge_base.dto import (
     CourseEnrollmentsListDTO,
     CourseListItemDTO,
     CourseMaterialItemDTO,
+    CoursesListDTO,
     CourseTestItemDTO,
 )
+from app.knowledge_base.usecases.courses.list_courses_usecase import ListCoursesUseCase
 from app.users.db_models import UserRole
 
 router = APIRouter(route_class=DishkaRoute)
@@ -39,6 +41,15 @@ router = APIRouter(route_class=DishkaRoute)
 
 def _ctx(auth: AuthContext) -> UserContext:
     return UserContext(user_id=UUID(auth.user_id), role=UserRole(auth.role))
+
+
+@router.get("", response_model=CoursesListDTO, summary="Список всех курсов")
+async def list_courses(
+    auth: Annotated[AuthContext, Depends(require_education_admin)],
+    usecase: FromDishka[ListCoursesUseCase],
+) -> CoursesListDTO:
+    result = await usecase.execute(_ctx(auth))
+    return result or CoursesListDTO(items=[])
 
 
 @router.post("", response_model=CourseListItemDTO, summary="Создать курс")

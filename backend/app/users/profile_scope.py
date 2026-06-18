@@ -16,6 +16,8 @@ STAFF_ADMIN_ROLES = {
 UNRESTRICTED_ROLES = {UserRole.ROOT_ADMIN.value, UserRole.SUPER_ADMIN.value}
 SELLER_ROLES = {UserRole.SELLER.value}
 STAFF_MANAGEABLE_ROLES = {UserRole.SELLER.value, UserRole.MANAGER.value}
+# Roles that root_admin is not allowed to manage (only super_admin may manage super_admin)
+ROOT_ADMIN_FORBIDDEN_TARGET_ROLES = {UserRole.SUPER_ADMIN.value}
 
 
 def require_staff_admin(ctx: AuthContext) -> None:
@@ -28,8 +30,25 @@ def is_staff_manageable_role(role: str) -> bool:
 
 
 def ensure_staff_admin_can_manage_user(ctx: AuthContext, role: str) -> None:
+    """Legacy scope check — admin_staff may only manage seller/manager targets."""
     if ctx.role == UserRole.ADMIN_STAFF.value and role not in STAFF_MANAGEABLE_ROLES:
         raise ProfileForbiddenError()
+
+
+def ensure_can_manage_user(ctx: AuthContext, target_role: str) -> None:
+    """Unified scope check across all admin caller roles.
+
+    Rules (from ROLE_MODEL.md):
+    - admin_staff  → can manage seller and manager only
+    - root_admin   → can manage any role except super_admin
+    - super_admin  → can manage any role (self-deletion checked separately)
+    """
+    if ctx.role == UserRole.ADMIN_STAFF.value:
+        if target_role not in STAFF_MANAGEABLE_ROLES:
+            raise ProfileForbiddenError()
+    elif ctx.role == UserRole.ROOT_ADMIN.value:
+        if target_role in ROOT_ADMIN_FORBIDDEN_TARGET_ROLES:
+            raise ProfileForbiddenError("root_admin cannot manage super_admin accounts")
 
 
 async def can_view_user_profile(

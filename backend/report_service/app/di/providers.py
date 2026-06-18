@@ -10,6 +10,7 @@ from storage.pg.main_replica import MainReplicaDatabase
 from storage.redis.client import RedisClient
 from storage.s3.client import S3Client
 
+from app.reports.usecases.get_report_job_usecase import GetReportJobUseCase
 from app.reports.usecases.parse_report_usecase import ParseReportUseCase
 from app.reports.usecases.parse_timesheet_schedule_usecase import (
     ParseTimesheetScheduleUseCase,
@@ -42,6 +43,7 @@ class ReportsUsecaseProvider(Provider):
 
     parse_report = provide(ParseReportUseCase)
     parse_timesheet_schedule = provide(ParseTimesheetScheduleUseCase)
+    get_report_job = provide(GetReportJobUseCase)
 
 
 ALL_PROVIDERS = [

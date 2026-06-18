@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Clock, RotateCcw, CheckCircle } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
+import { KnowledgeAPI } from "../../api/KnowledgeAPI";
+import { toast } from "sonner";
 
 interface Question {
   id: number;
@@ -11,9 +13,14 @@ interface Question {
 
 export default function CreateTestPage() {
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [passScorePercent, setPassScorePercent] = useState<string>("70");
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<string>("");
+  const [maxAttempts, setMaxAttempts] = useState<string>("");
   const [questions, setQuestions] = useState<Question[]>([
     { id: 1, text: "", options: ["", ""], correct: 0 },
   ]);
+  const [saving, setSaving] = useState(false);
 
   const addQuestion = () => {
     setQuestions([...questions, { id: questions.length + 1, text: "", options: ["", "", ""], correct: 0 }]);
@@ -51,14 +58,135 @@ export default function CreateTestPage() {
     );
   };
 
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast.error("Введите название теста");
+      return;
+    }
+    if (!category.trim()) {
+      toast.error("Введите категорию теста");
+      return;
+    }
+    const invalidQ = questions.findIndex((q) => !q.text.trim() || q.options.some((o) => !o.trim()));
+    if (invalidQ >= 0) {
+      toast.error(`Заполните вопрос ${invalidQ + 1} и все варианты ответов`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const test = await KnowledgeAPI.createTest({
+        name: title.trim(),
+        category: category.trim(),
+        passScorePercent: Number(passScorePercent) || 70,
+        timeLimitMinutes: timeLimitMinutes ? Number(timeLimitMinutes) : null,
+        maxAttempts: maxAttempts ? Number(maxAttempts) : null,
+      });
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const task = await KnowledgeAPI.createTestTask({
+          name: q.text.trim(),
+          answerVariants: q.options.map((o) => o.trim()),
+          correctVariant: q.correct,
+          points: 1,
+        });
+        await KnowledgeAPI.assignTaskToTest(test.id, task.id, i);
+      }
+
+      toast.success("Тест создан");
+      setTitle("");
+      setCategory("");
+      setPassScorePercent("70");
+      setTimeLimitMinutes("");
+      setMaxAttempts("");
+      setQuestions([{ id: 1, text: "", options: ["", ""], correct: 0 }]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Не удалось создать тест");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <AppHeader title="Создание теста" showBack white />
 
       <div className="px-4 py-4 flex flex-col gap-4">
-        <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <label style={{ color: "#374151", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Название теста</label>
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Введите название теста" className="w-full h-11 px-4 rounded-xl border" style={{ border: "1.5px solid #E2E8F0", fontSize: 14, color: "#1E293B", outline: "none" }} />
+        {/* Basic info card */}
+        <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <label style={{ color: "#374151", fontSize: 13, fontWeight: 600, display: "block" }}>Название теста</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Введите название теста"
+            className="w-full h-11 px-4 rounded-xl border"
+            style={{ border: "1.5px solid #E2E8F0", fontSize: 14, color: "#1E293B", outline: "none" }}
+          />
+          <label style={{ color: "#374151", fontSize: 13, fontWeight: 600, display: "block" }}>Категория</label>
+          <input
+            type="text"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="Например: Базовый, Итоговый"
+            className="w-full h-11 px-4 rounded-xl border"
+            style={{ border: "1.5px solid #E2E8F0", fontSize: 14, color: "#1E293B", outline: "none" }}
+          />
+        </div>
+
+        {/* Test parameters card */}
+        <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <h3 style={{ color: "#1E293B", fontSize: 14, fontWeight: 600 }}>Параметры теста</h3>
+
+          <div className="flex items-center gap-3">
+            <CheckCircle size={16} color="#2E7D32" />
+            <div className="flex-1">
+              <label style={{ color: "#374151", fontSize: 12, fontWeight: 500 }}>Проходной балл (%)</label>
+              <input
+                type="number"
+                value={passScorePercent}
+                onChange={(e) => setPassScorePercent(e.target.value)}
+                min={1}
+                max={100}
+                className="w-full h-9 px-3 rounded-lg border mt-1"
+                style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Clock size={16} color="#F59E0B" />
+            <div className="flex-1">
+              <label style={{ color: "#374151", fontSize: 12, fontWeight: 500 }}>Лимит времени (минут, необязательно)</label>
+              <input
+                type="number"
+                value={timeLimitMinutes}
+                onChange={(e) => setTimeLimitMinutes(e.target.value)}
+                min={1}
+                placeholder="Без ограничений"
+                className="w-full h-9 px-3 rounded-lg border mt-1"
+                style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <RotateCcw size={16} color="#6366F1" />
+            <div className="flex-1">
+              <label style={{ color: "#374151", fontSize: 12, fontWeight: 500 }}>Макс. количество попыток (необязательно)</label>
+              <input
+                type="number"
+                value={maxAttempts}
+                onChange={(e) => setMaxAttempts(e.target.value)}
+                min={1}
+                placeholder="Без ограничений"
+                className="w-full h-9 px-3 rounded-lg border mt-1"
+                style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }}
+              />
+            </div>
+          </div>
         </div>
 
         {questions.map((q, qIdx) => (
@@ -94,8 +222,13 @@ export default function CreateTestPage() {
           Добавить вопрос
         </button>
 
-        <button className="w-full h-12 rounded-[10px] flex items-center justify-center" style={{ background: "#C41E3A", color: "#fff", fontSize: 15, fontWeight: 600, marginTop: 8 }}>
-          Создать тест
+        <button
+          onClick={() => void handleSave()}
+          disabled={saving}
+          className="w-full h-12 rounded-[10px] flex items-center justify-center"
+          style={{ background: saving ? "#94A3B8" : "#C41E3A", color: "#fff", fontSize: 15, fontWeight: 600, marginTop: 8 }}
+        >
+          {saving ? "Сохранение..." : "Создать тест"}
         </button>
       </div>
     </div>

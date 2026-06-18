@@ -90,7 +90,58 @@ function mapCompensation(dto: EmployeeCompensationDTO): EmployeeCompensation {
   };
 }
 
+export interface MonthlyEarning {
+  year: number;
+  month: number;
+  salaryAmount: number;
+  hourlyAmount: number;
+  bonusAmount: number;
+  totalAmount: number;
+  updatedAt: string;
+}
+
+export interface EmployeeEarnings {
+  userId: string;
+  months: MonthlyEarning[];
+  totalYtd: number;
+}
+
+interface MonthlyEarningDTO {
+  year: number;
+  month: number;
+  salary_amount: number;
+  hourly_amount: number;
+  bonus_amount: number;
+  total_amount: number;
+  updated_at: string;
+}
+
+interface EmployeeEarningsDTO {
+  user_id: string;
+  months: MonthlyEarningDTO[];
+  total_ytd: number;
+}
+
 class PersonnelAPIImpl {
+  async getEmployeeEarnings(userId: string, year?: number, signal?: AbortSignal): Promise<EmployeeEarnings> {
+    const query: Record<string, string | number> = {};
+    if (year !== undefined) query.year = year;
+    const response = await apiClient.get<EmployeeEarningsDTO>(`/personnel/users/${userId}/earnings`, { query, signal });
+    return {
+      userId: response.user_id,
+      months: response.months.map((m) => ({
+        year: m.year,
+        month: m.month,
+        salaryAmount: m.salary_amount,
+        hourlyAmount: m.hourly_amount,
+        bonusAmount: m.bonus_amount,
+        totalAmount: m.total_amount,
+        updatedAt: m.updated_at,
+      })),
+      totalYtd: response.total_ytd,
+    };
+  }
+
   async getEmployeeCompensation(userId: string, signal?: AbortSignal): Promise<EmployeeCompensation | null> {
     if (useMockAuth()) {
       return {

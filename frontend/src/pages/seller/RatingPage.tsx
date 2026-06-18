@@ -1,40 +1,99 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "../../components/Avatar";
 import { SellingsAPI, MotivationRating } from "../../api/SellingsAPI";
+import { ReportsAPI, LearningRatingItem } from "../../api/ReportsAPI";
+import { useApp } from "../../context/AppContext";
 import { formatMonthYear } from "../../utils/date";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
 
-export default function RatingPage() {
-  const [tab, setTab] = useState<"sales" | "learning">("sales");
-  const [rating, setRating] = useState<MotivationRating | null>(null);
-  const [loading, setLoading] = useState(true);
+interface RatingDisplay {
+  myPosition: number;
+  change: number;
+  myValue: string;
+  total: number;
+  list: Array<{
+    rank: number;
+    userId: string;
+    name: string;
+    store: string;
+    value: string;
+    isMe: boolean;
+  }>;
+}
 
+const EMPTY: RatingDisplay = { myPosition: 0, change: 0, myValue: "—", total: 0, list: [] };
+
+function mapLearningItems(items: LearningRatingItem[], currentUserId: string): RatingDisplay {
+  const me = items.find((i) => i.userId === currentUserId);
+  return {
+    myPosition: me?.rank ?? 0,
+    change: 0,
+    myValue: me?.metricDisplay ?? "—",
+    total: items.length,
+    list: items.map((i) => ({
+      rank: i.rank,
+      userId: i.userId,
+      name: i.userName,
+      store: "",
+      value: i.metricDisplay,
+      isMe: i.userId === currentUserId,
+    })),
+  };
+}
+
+export default function RatingPage() {
+  const { user } = useApp();
+  const [tab, setTab] = useState<"sales" | "learning">("sales");
+  const [salesRating, setSalesRating] = useState<MotivationRating | null>(null);
+  const [learningDisplay, setLearningDisplay] = useState<RatingDisplay | null>(null);
+  const [salesLoading, setSalesLoading] = useState(true);
+  const [learningLoading, setLearningLoading] = useState(true);
+
+  // Sales rating (existing SellingsAPI)
   useEffect(() => {
     const controller = new AbortController();
-    async function loadRating() {
-      try {
-        const data = await SellingsAPI.getMotivation(controller.signal);
-        setRating(data);
-      } catch (error) {
+    SellingsAPI.getMotivation(controller.signal)
+      .then((data) => setSalesRating(data))
+      .catch((error) => {
         if (isAbortError(error)) return;
-        toast.error(getErrorMessage(error, "Не удалось загрузить рейтинг"));
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadRating();
+        toast.error(getErrorMessage(error, "Не удалось загрузить рейтинг продаж"));
+      })
+      .finally(() => setSalesLoading(false));
     return () => controller.abort();
   }, []);
 
-  const emptyData = {
-    myPosition: 0,
-    change: 0,
-    myValue: "—",
-    total: 0,
-    list: [],
-  };
-  const data = rating ? (tab === "sales" ? rating.sales : rating.learning) : emptyData;
+  // Learning rating (real API /ratings/learning)
+  useEffect(() => {
+    let cancelled = false;
+    setLearningLoading(true);
+    ReportsAPI.getLearningRating()
+      .then((dto) => {
+        if (cancelled) return;
+        if (dto && user) {
+          setLearningDisplay(mapLearningItems(dto.items, user.id));
+        } else {
+          setLearningDisplay(EMPTY);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLearningDisplay(EMPTY);
+      })
+      .finally(() => {
+        if (!cancelled) setLearningLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const loading = tab === "sales" ? salesLoading : learningLoading;
+  const data: RatingDisplay =
+    tab === "sales"
+      ? salesRating
+        ? salesRating.sales
+        : EMPTY
+      : (learningDisplay ?? EMPTY);
 
   const medals = ["🥇", "🥈", "🥉"];
 
@@ -53,10 +112,10 @@ export default function RatingPage() {
           className="flex mt-4 rounded-xl overflow-hidden"
           style={{ background: "rgba(255,255,255,0.15)" }}
         >
-          {["sales", "learning"].map((t) => (
+          {(["sales", "learning"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t as any)}
+              onClick={() => setTab(t)}
               className="flex-1 py-2.5"
               style={{
                 background: tab === t ? "rgba(255,255,255,0.25)" : "transparent",
@@ -84,11 +143,13 @@ export default function RatingPage() {
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginBottom: 8 }}>Моя позиция</p>
           <div className="flex items-center gap-4">
             <span style={{ color: "#fff", fontSize: 52, fontWeight: 800, lineHeight: 1 }}>
-              #{loading ? "—" : data.myPosition}
+              #{loading ? "—" : data.myPosition || "—"}
             </span>
             <div>
               <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>
-                {loading ? "Загрузка..." : `Среди ${data.total} ${tab === "sales" ? "продавцов блока" : "сотрудников"}`}
+                {loading
+                  ? "Загрузка..."
+                  : `Среди ${data.total} ${tab === "sales" ? "продавцов блока" : "сотрудников"}`}
               </p>
               <p style={{ color: "#fff", fontSize: 14, fontWeight: 600, marginTop: 2 }}>
                 {loading ? "—" : data.myValue}
@@ -168,7 +229,9 @@ export default function RatingPage() {
                         </span>
                       )}
                     </p>
-                    <p style={{ color: "#94A3B8", fontSize: 11 }}>{item.store}</p>
+                    {item.store && (
+                      <p style={{ color: "#94A3B8", fontSize: 11 }}>{item.store}</p>
+                    )}
                   </div>
 
                   {/* Value */}

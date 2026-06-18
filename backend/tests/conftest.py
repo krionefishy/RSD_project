@@ -21,6 +21,7 @@ from shared.di.providers.knowledge_base import KnowledgeBaseUsecaseProvider
 from shared.di.providers.locations import LocationsUsecaseProvider
 from shared.di.providers.personnel import PersonnelUsecaseProvider
 from shared.di.providers.profile import ProfileUsecaseProvider
+from shared.di.providers.reports import ReportsUsecaseProvider
 from shared.di.providers.sellings import SellingsUsecaseProvider
 from shared.di.providers.users import UsersUsecaseProvider
 from shared.integrations.report_service import ReportServiceClient
@@ -253,6 +254,7 @@ async def application(
         PersonnelUsecaseProvider(),
         SellingsUsecaseProvider(),
         AdminUsecaseProvider(),
+        ReportsUsecaseProvider(),
         TestReportServiceProvider(),
     ]
 

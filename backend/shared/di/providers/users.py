@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.admin.software_admin.usecases.assign_manager_block_usecase import AssignManagerBlockUseCase
 from app.admin.software_admin.usecases.assign_user_block_usecase import AssignUserBlockUseCase
 from app.admin.software_admin.usecases.block_user_usecase import BlockUserUseCase
+from app.admin.software_admin.usecases.change_user_role_usecase import ChangeUserRoleUseCase
 from app.admin.software_admin.usecases.create_user_usecase import CreateUserUseCase
 from app.admin.software_admin.usecases.remove_user_block_usecase import RemoveUserBlockUseCase
 from app.admin.software_admin.usecases.unblock_user_usecase import UnblockUserUseCase
+from app.admin.staff_admin.usecases.profiles.delete_employee_profile_usecase import DeleteEmployeeProfileUseCase
 from app.admin.staff_admin.usecases.get_personnel_overview_usecase import GetPersonnelOverviewUseCase
 from app.admin.staff_admin.usecases.assign_user_location_usecase import AssignUserLocationUseCase
 from app.admin.staff_admin.usecases.remove_user_location_usecase import RemoveUserLocationUseCase
@@ -28,6 +30,8 @@ class UsersUsecaseProvider(Provider):
     update_user_admin = provide(UpdateUserAdminUseCase)
     block_user = provide(BlockUserUseCase)
     unblock_user = provide(UnblockUserUseCase)
+    change_user_role = provide(ChangeUserRoleUseCase)
+    delete_user = provide(DeleteEmployeeProfileUseCase)
     reset_password = provide(ResetPasswordUseCase)
     assign_manager_block = provide(AssignManagerBlockUseCase)
     assign_user_block = provide(AssignUserBlockUseCase)

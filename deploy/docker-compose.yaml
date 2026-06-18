@@ -175,6 +175,40 @@ services:
     networks:
       - internal
 
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - internal
+
+  minio-init:
+    image: minio/mc:latest
+    restart: on-failure
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin} &&
+        mc mb --ignore-existing local/${MINIO_BUCKET:-rsd-bucket} &&
+        mc anonymous set download local/${MINIO_BUCKET:-rsd-bucket} &&
+        echo 'MinIO bucket ready.'
+      "
+    networks:
+      - internal
+
   frontend:
     build:
       context: ../frontend
@@ -201,6 +235,8 @@ services:
       redis:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       report_service:
         condition: service_healthy
@@ -230,6 +266,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
       interval: 10s
@@ -241,6 +279,7 @@ volumes:
   postgres_replica_data:
   report_postgres_data:
   redis_data:
+  minio_data:
 
 networks:
   proxy:

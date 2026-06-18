@@ -1,5 +1,5 @@
+from datetime import datetime, timedelta
 from typing import Optional
-from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,6 +77,16 @@ class SubmitAnswerUseCase:
         if user_test is None:
             return None
         if user_test.completed_at is not None:
+            return None
+
+        if (
+            test.time_limit_minutes is not None
+            and user_test.started_at is not None
+            and datetime.now() > user_test.started_at + timedelta(minutes=test.time_limit_minutes)
+        ):
+            user_test.completed_at = datetime.now()
+            user_test.is_passed = False
+            await self.session.commit()
             return None
 
         is_correct = request.selected_variant == task.correct_variant

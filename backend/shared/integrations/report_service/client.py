@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 import httpx
 
@@ -137,3 +138,79 @@ class ReportServiceClient:
             rows=rows,
             raw=payload,
         )
+
+    # ------------------------------------------------------------------ #
+    # Learning report generation                                           #
+    # ------------------------------------------------------------------ #
+
+    async def request_report_generation(
+        self,
+        *,
+        report_type: str,
+        scope_type: str = "network",
+        scope_id: int | None = None,
+        period_from: str | None = None,
+        period_to: str | None = None,
+    ) -> UUID:
+        if not self.enabled:
+            raise ReportServiceError("Report service client is disabled in config")
+
+        payload: dict[str, Any] = {
+            "report_type": report_type,
+            "scope_type": scope_type,
+        }
+        if scope_id is not None:
+            payload["scope_id"] = scope_id
+        if period_from is not None:
+            payload["period_from"] = period_from
+        if period_to is not None:
+            payload["period_to"] = period_to
+
+        timeout = httpx.Timeout(self._client_config.timeout_seconds)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                f"{self._base_url()}/api/v1/reports/generate",
+                headers=self._auth_header(),
+                json=payload,
+            )
+
+        if response.status_code >= 400:
+            detail: Any
+            try:
+                detail = response.json()
+            except ValueError:
+                detail = response.text
+            raise ReportServiceError(
+                "Report service request failed",
+                status_code=response.status_code,
+                detail=detail,
+            )
+
+        return UUID(response.json()["job_id"])
+
+    async def get_report_job(self, job_id: UUID) -> dict[str, Any]:
+        if not self.enabled:
+            raise ReportServiceError("Report service client is disabled in config")
+
+        timeout = httpx.Timeout(self._client_config.timeout_seconds)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(
+                f"{self._base_url()}/api/v1/reports/jobs/{job_id}",
+                headers=self._auth_header(),
+            )
+
+        if response.status_code == 404:
+            raise ReportServiceError("Report job not found", status_code=404)
+        if response.status_code >= 400:
+            detail: Any
+            try:
+                detail = response.json()
+            except ValueError:
+                detail = response.text
+            raise ReportServiceError(
+                "Report service request failed",
+                status_code=response.status_code,
+                detail=detail,
+            )
+
+        return response.json()

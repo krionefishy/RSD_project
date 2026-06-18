@@ -1,5 +1,5 @@
-import { AppUser } from "../types/user";
-import { toFrontendRole } from "../utils/roleMap";
+import { AppUser, UserRole } from "../types/user";
+import { toFrontendRole, toBackendRole } from "../utils/roleMap";
 import { apiClient } from "./APIClient";
 
 export interface CreateUserData {
@@ -46,6 +46,11 @@ interface UserResponse {
   avatar_url?: string | null;
   managed_block?: { id: number; name: string } | null;
   location?: { id: number; name: string } | null;
+}
+
+interface UsersListResponse {
+  items: UserResponse[];
+  total: number;
 }
 
 interface BlockAssignmentDTO {
@@ -129,6 +134,27 @@ class AdminSoftwareAPIImpl {
 
   async removeUserBlock(userId: string): Promise<void> {
     await apiClient.delete(`/admin/software/users/${userId}/block`);
+  }
+
+  async listUsers(params?: { role?: string; isActive?: boolean }): Promise<AppUser[]> {
+    const query = new URLSearchParams();
+    if (params?.role) query.set("role", params.role);
+    if (params?.isActive !== undefined) query.set("is_active", String(params.isActive));
+    const qs = query.toString();
+    const response = await apiClient.get<UsersListResponse>(`/admin/software/users${qs ? `?${qs}` : ""}`);
+    return response.items.map(mapUserResponse);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await apiClient.delete(`/admin/software/users/${userId}`);
+  }
+
+  async changeUserRole(userId: string, newRole: UserRole): Promise<AppUser> {
+    const response = await apiClient.request<UserResponse>(`/admin/software/users/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role: toBackendRole(newRole) }),
+    });
+    return mapUserResponse(response);
   }
 }
 

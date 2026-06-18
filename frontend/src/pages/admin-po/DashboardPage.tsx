@@ -1,16 +1,17 @@
+import { useEffect, useState } from "react";
 import { Users, Shield, LogOut, UserCog, BookOpen, DollarSign, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
-import { accounts } from "../../mock/mockData";
-import { showDemoActionToast } from "../../utils/demoToast";
+import { AdminSoftwareAPI } from "../../api/AdminSoftwareAPI";
+import { AppUser } from "../../types/user";
 
 const MODULES = [
   {
     title: "Аккаунты",
     description: "Создание и управление учётными записями всех ролей",
     icon: UserCog,
-    path: null as string | null,
+    path: "/admin-po/accounts" as string | null,
     color: "#2E7D32",
     bg: "#E8F5E9",
   },
@@ -43,20 +44,26 @@ const MODULES = [
 export default function AdminPODashboardPage() {
   const { user, logout } = useApp();
   const navigate = useNavigate();
+  const [accounts, setAccounts] = useState<AppUser[]>([]);
+
+  useEffect(() => {
+    void AdminSoftwareAPI.listUsers().then(setAccounts).catch(() => {});
+  }, []);
+
   if (!user) return null;
 
   const stats = [
     { label: "Всего аккаунтов", value: accounts.length, icon: Users, color: "#2E7D32", bg: "#E8F5E9" },
     {
       label: "Активных",
-      value: accounts.filter((a) => a.status === "active").length,
+      value: accounts.filter((a) => a.isActive !== false).length,
       icon: Shield,
       color: "#22C55E",
       bg: "#F0FDF4",
     },
     {
       label: "Заблокированных",
-      value: accounts.filter((a) => a.status === "blocked").length,
+      value: accounts.filter((a) => a.isActive === false).length,
       icon: Shield,
       color: "#EF4444",
       bg: "#FEF2F2",
@@ -119,10 +126,7 @@ export default function AdminPODashboardPage() {
               <button
                 key={mod.title}
                 type="button"
-                onClick={() => {
-                  if (mod.path) navigate(mod.path);
-                  else showDemoActionToast("Управление аккаунтами — на этой странице");
-                }}
+                onClick={() => { if (mod.path) navigate(mod.path); }}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left"
                 style={{ background: "#F8FAFC" }}
               >
@@ -142,40 +146,6 @@ export default function AdminPODashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Учётные записи</p>
-          <div className="flex flex-col gap-2">
-            {accounts.map((acc, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl"
-                style={{ background: "#F8FAFC" }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: acc.status === "active" ? "#F0FDF4" : "#FEF2F2" }}
-                >
-                  <Users size={20} color={acc.status === "active" ? "#22C55E" : "#EF4444"} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{acc.name}</p>
-                  <p style={{ color: "#94A3B8", fontSize: 11 }}>{acc.externalSystemId}</p>
-                </div>
-                <span
-                  className="px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{
-                    background: acc.status === "active" ? "#F0FDF4" : "#FEF2F2",
-                    color: acc.status === "active" ? "#16A34A" : "#DC2626",
-                    fontSize: 10,
-                    fontWeight: 600,
-                  }}
-                >
-                  {acc.roleLabel}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

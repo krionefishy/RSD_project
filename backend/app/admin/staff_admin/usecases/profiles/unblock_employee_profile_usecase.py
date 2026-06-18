@@ -1,15 +1,14 @@
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import AuthContext
-from app.users.db_models import UserModel, UserRole
+from app.users.db_models import UserModel
 from app.users.dto import UserProfileDTO
 from app.users.profile_errors import ProfileNotFoundError
 from app.users.profile_mapper import load_user_for_profile, map_user_profile
-from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
+from app.users.profile_scope import ensure_can_manage_user, require_staff_admin
 
 
 class UnblockEmployeeProfileUseCase:
@@ -24,13 +23,7 @@ class UnblockEmployeeProfileUseCase:
         if user is None:
             raise ProfileNotFoundError()
 
-        ensure_staff_admin_can_manage_user(ctx, user.role)
-
-        if user.role in {UserRole.ROOT_ADMIN.value, UserRole.SUPER_ADMIN.value}:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot change privileged admin state",
-            )
+        ensure_can_manage_user(ctx, user.role)
 
         user.is_active = True
         await self.session.commit()

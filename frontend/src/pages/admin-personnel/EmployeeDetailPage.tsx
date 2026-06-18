@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Camera } from "lucide-react";
+import { ChevronLeft, Camera, TrendingUp } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { Avatar } from "../../components/Avatar";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import { PersonnelAPI } from "../../api/PersonnelAPI";
+import type { EmployeeEarnings } from "../../api/PersonnelAPI";
 import { UserAPI } from "../../api/UserAPI";
 import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
 import type { BlockMemberStatus, EmployeeCompensation, TimesheetEntry, UserProfile } from "../../types/profile";
@@ -13,6 +14,8 @@ import { toast } from "sonner";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
 import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 import { AppSelect } from "../../components/AppSelect";
+
+const MONTH_NAMES = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
 
 function profileDisplayName(profile: UserProfile): string {
   const parts = [profile.lastName, profile.firstName, profile.middleName].filter(Boolean);
@@ -29,6 +32,8 @@ export default function EmployeeDetailPage() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [compensation, setCompensation] = useState<EmployeeCompensation | null>(null);
+  const [earnings, setEarnings] = useState<EmployeeEarnings | null>(null);
+  const [earningsLoading, setEarningsLoading] = useState(false);
   const today = new Date();
   const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [timesheetEntries, setTimesheetEntries] = useState<TimesheetEntry[]>([]);
@@ -59,6 +64,18 @@ export default function EmployeeDetailPage() {
     hourlyRate: "",
     nightHourlyRate: "",
   });
+
+  useEffect(() => {
+    if (!userId) return;
+    const controller = new AbortController();
+    setEarningsLoading(true);
+    PersonnelAPI.getEmployeeEarnings(userId, undefined, controller.signal)
+      .then((data) => setEarnings(data))
+      .catch(() => setEarnings(null))
+      .finally(() => setEarningsLoading(false));
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -410,6 +427,48 @@ export default function EmployeeDetailPage() {
               </button>
             </section>
           )}
+
+          {/* Earnings section */}
+          <section className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 style={{ color: "#1E293B", fontSize: 15, fontWeight: 600 }}>Начисления</h3>
+              <TrendingUp size={16} color="#2E7D32" />
+            </div>
+            {earningsLoading ? (
+              <p style={{ color: "#94A3B8", fontSize: 13 }}>Загрузка...</p>
+            ) : !earnings || earnings.months.length === 0 ? (
+              <p style={{ color: "#94A3B8", fontSize: 13 }}>Начислений нет</p>
+            ) : (
+              <>
+                <div className="mb-3 p-3 rounded-lg" style={{ background: "#F0FDF4" }}>
+                  <p style={{ color: "#15803D", fontSize: 13, fontWeight: 600 }}>
+                    Итого за период: {earnings.totalYtd.toLocaleString("ru-RU", { minimumFractionDigits: 2 })} ₽
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {earnings.months.map((m) => (
+                    <div
+                      key={`${m.year}-${m.month}`}
+                      className="flex items-center justify-between py-2 px-3 rounded-lg"
+                      style={{ background: "#F8FAFC" }}
+                    >
+                      <div>
+                        <p style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>
+                          {MONTH_NAMES[m.month - 1]} {m.year}
+                        </p>
+                        <p style={{ color: "#94A3B8", fontSize: 11 }}>
+                          Оклад {m.salaryAmount.toLocaleString("ru-RU")} · Часы {m.hourlyAmount.toLocaleString("ru-RU")} · Бонус {m.bonusAmount.toLocaleString("ru-RU")}
+                        </p>
+                      </div>
+                      <p style={{ color: "#15803D", fontSize: 14, fontWeight: 700 }}>
+                        {m.totalAmount.toLocaleString("ru-RU", { minimumFractionDigits: 2 })} ₽
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
         </div>
       )}
     </div>

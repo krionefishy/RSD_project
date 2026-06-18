@@ -14,7 +14,7 @@ app_module := "app.main:app"
 backend_config_path := "shared/settings/config.yaml"
 test_config_path := backend_dir + "/shared/settings/config.test.yaml"
 demo_config_path := backend_dir + "/shared/settings/config.demo.yaml"
-python := env_var_or_default("PYTHON", backend_dir + "/venv/bin/python")
+python := env_var_or_default("PYTHON", justfile_directory() + "/" + backend_dir + "/venv/bin/python")
 
 export PGHOST := env_var_or_default("LOCAL_PGHOST", "localhost")
 export PGPORT := env_var_or_default("LOCAL_PGPORT", "5437")
@@ -118,7 +118,7 @@ demo1-setup: infra-up db-rebuild
 
 [doc('Apply report_service database migrations (demo config)')]
 report-db-migrate:
-    cd {{ backend_dir }}/report_service && env -u DATABASE_URL CONFIG_PATH=../shared/settings/config.demo.yaml PYTHONPATH=.. {{ python }} -m alembic upgrade head
+    cd {{ backend_dir }}/report_service && env -u DATABASE_URL CONFIG_PATH="{{ justfile_directory() }}/{{ backend_dir }}/shared/settings/config.demo.yaml" PYTHONPATH="{{ justfile_directory() }}/{{ backend_dir }}" {{ python }} -m alembic upgrade head
 
 [doc('Start full Demo 1 locally: infra, migrate, seed, backend, report_service, UI')]
 demo1-local *args:
@@ -298,3 +298,44 @@ frontend-demo:
 [doc('Run Demo 1 UI locally (frontend_demos, partial mock)')]
 frontend-demo1:
     cd frontend_demos && npm run dev
+
+
+# ─── MinIO (S3) helpers ───────────────────────────────────────────────────────
+
+[doc('Start local MinIO container (S3-compatible, port 9000 API / 9001 console)')]
+minio-up: _docker
+    {{ compose }} up -d minio
+
+[doc('Create rsd-bucket in local MinIO (run once after minio-up)')]
+minio-init: minio-up
+    @until docker compose -f docker-compose.local.yml exec -T minio curl -sf http://localhost:9000/minio/health/live >/dev/null 2>&1; do printf '.'; sleep 1; done
+    {{ compose }} run --rm minio-init
+
+[doc('Open MinIO console in browser (http://localhost:9001, user: minioadmin)')]
+minio-console:
+    @open http://localhost:9001 2>/dev/null || xdg-open http://localhost:9001 2>/dev/null || echo "Open http://localhost:9001 in browser"
+
+
+# ─── Production deploy ────────────────────────────────────────────────────────
+
+[doc('Generate production secrets (config.production.yaml) — run once before deploy-prod-up')]
+prod-secrets: deploy-secrets
+
+[doc('First-time production deploy: stop old stacks, start full production stack with all services')]
+deploy-prod-setup: _docker
+    @echo "Stopping any existing stacks on port 80/443..."
+    just deploy-down-all 2>/dev/null || true
+    @echo "Starting production stack (nginx + frontend + backend + report_service + db + replica + report_db + redis + kafka + minio)..."
+    {{ compose_prod }} up -d --build
+    @echo ""
+    @echo "Stack is starting. Run 'just deploy-prod-status' to check health."
+    @echo "Run 'just deploy-prod-logs' to follow logs."
+
+[doc('Show production stack service health')]
+deploy-prod-health: _docker
+    @echo "=== Production stack health ==="
+    {{ compose_prod }} ps
+
+[doc('Seed production demo data (only for demo/docker environments — skipped in production mode)')]
+deploy-prod-seed: _docker
+    {{ compose_prod }} exec backend python -m scripts.seed_demo

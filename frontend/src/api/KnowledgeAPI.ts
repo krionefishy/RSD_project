@@ -1008,6 +1008,8 @@ class KnowledgeAPIImpl {
         description: string | null;
         is_final: boolean;
         pass_score_percent: number;
+        time_limit_minutes: number | null;
+        max_attempts: number | null;
         tasks_count: number;
         total_points: number;
         course_id: number;
@@ -1021,6 +1023,8 @@ class KnowledgeAPIImpl {
       description: item.description,
       isFinal: item.is_final,
       passScorePercent: item.pass_score_percent,
+      timeLimitMinutes: item.time_limit_minutes ?? null,
+      maxAttempts: item.max_attempts ?? null,
       tasksCount: item.tasks_count,
       totalPoints: item.total_points,
       courseId: item.course_id,
@@ -1028,7 +1032,7 @@ class KnowledgeAPIImpl {
     }));
   }
 
-  async createTest(data: { name: string; category: string; description?: string; isFinal?: boolean; passScorePercent?: number }): Promise<Test> {
+  async createTest(data: { name: string; category: string; description?: string; isFinal?: boolean; passScorePercent?: number; timeLimitMinutes?: number | null; maxAttempts?: number | null }): Promise<Test> {
     if (isMockKB()) {
       mockAdminTestId += 1;
       const test: Test = {
@@ -1038,6 +1042,8 @@ class KnowledgeAPIImpl {
         description: data.description ?? null,
         isFinal: data.isFinal ?? false,
         passScorePercent: data.passScorePercent ?? 70,
+        timeLimitMinutes: data.timeLimitMinutes ?? null,
+        maxAttempts: data.maxAttempts ?? null,
         tasksCount: 0,
         totalPoints: 0,
         courseId: 0,
@@ -1053,6 +1059,8 @@ class KnowledgeAPIImpl {
       description: string | null;
       is_final: boolean;
       pass_score_percent: number;
+      time_limit_minutes: number | null;
+      max_attempts: number | null;
       tasks_count: number;
       total_points: number;
       course_id: number;
@@ -1063,6 +1071,8 @@ class KnowledgeAPIImpl {
       description: data.description,
       is_final: data.isFinal,
       pass_score_percent: data.passScorePercent,
+      time_limit_minutes: data.timeLimitMinutes,
+      max_attempts: data.maxAttempts,
     });
     return {
       id: response.id,
@@ -1071,6 +1081,8 @@ class KnowledgeAPIImpl {
       description: response.description,
       isFinal: response.is_final,
       passScorePercent: response.pass_score_percent,
+      timeLimitMinutes: response.time_limit_minutes ?? null,
+      maxAttempts: response.max_attempts ?? null,
       tasksCount: response.tasks_count,
       totalPoints: response.total_points,
       courseId: response.course_id,
@@ -1078,7 +1090,7 @@ class KnowledgeAPIImpl {
     };
   }
 
-  async updateTest(testId: number, data: { name?: string; category?: string; description?: string; isFinal?: boolean; passScorePercent?: number }): Promise<Test> {
+  async updateTest(testId: number, data: { name?: string; category?: string; description?: string; isFinal?: boolean; passScorePercent?: number; timeLimitMinutes?: number | null; maxAttempts?: number | null }): Promise<Test> {
     if (isMockKB()) {
       const test = MOCK_ADMIN_TESTS.find((t) => t.id === testId);
       if (!test) throw new Error("Test not found");
@@ -1087,6 +1099,8 @@ class KnowledgeAPIImpl {
       if (data.description !== undefined) test.description = data.description ?? null;
       if (data.isFinal !== undefined) test.isFinal = data.isFinal;
       if (data.passScorePercent !== undefined) test.passScorePercent = data.passScorePercent;
+      if (data.timeLimitMinutes !== undefined) test.timeLimitMinutes = data.timeLimitMinutes ?? null;
+      if (data.maxAttempts !== undefined) test.maxAttempts = data.maxAttempts ?? null;
       return test;
     }
     const response = await apiClient.put<{
@@ -1096,6 +1110,8 @@ class KnowledgeAPIImpl {
       description: string | null;
       is_final: boolean;
       pass_score_percent: number;
+      time_limit_minutes: number | null;
+      max_attempts: number | null;
       tasks_count: number;
       total_points: number;
       course_id: number;
@@ -1106,6 +1122,8 @@ class KnowledgeAPIImpl {
       description: data.description,
       is_final: data.isFinal,
       pass_score_percent: data.passScorePercent,
+      time_limit_minutes: data.timeLimitMinutes,
+      max_attempts: data.maxAttempts,
     });
     return {
       id: response.id,
@@ -1114,6 +1132,8 @@ class KnowledgeAPIImpl {
       description: response.description,
       isFinal: response.is_final,
       passScorePercent: response.pass_score_percent,
+      timeLimitMinutes: response.time_limit_minutes ?? null,
+      maxAttempts: response.max_attempts ?? null,
       tasksCount: response.tasks_count,
       totalPoints: response.total_points,
       courseId: response.course_id,
@@ -1252,6 +1272,14 @@ class KnowledgeAPIImpl {
       return;
     }
     await apiClient.delete(`/admin/education/tests/${testId}/tasks/${taskId}`);
+  }
+
+  async listAdminCourses(signal?: AbortSignal): Promise<CourseListItem[]> {
+    if (isMockKB()) {
+      return MOCK_COURSES_LIST;
+    }
+    const response = await apiClient.get<CoursesListDTO>("/admin/education/courses", { signal });
+    return response.items.map(mapCourseItem);
   }
 }
 

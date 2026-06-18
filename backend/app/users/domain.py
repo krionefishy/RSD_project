@@ -66,6 +66,10 @@ class ManagerBlockAssignRequest(BaseModel):
     block_id: int
 
 
+class ChangeUserRoleRequest(BaseModel):
+    role: UserRole = Field(..., description="Новая роль пользователя")
+
+
 class User(BaseModel):
     id: UUID = Field(..., description="ID пользователя")
     external_system_id: str = Field(..., description="ID пользователя во внешней системе")

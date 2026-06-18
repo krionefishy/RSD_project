@@ -23,6 +23,7 @@ export interface AppUser {
   store?: string;
   storeName?: string;
   block?: string;
+  blockId?: number;
   blockName?: string;
   blockMemberStatus?: BlockMemberStatus;
   isActive?: boolean;
