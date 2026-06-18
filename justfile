@@ -4,10 +4,8 @@ set dotenv-load
 compose_file := "docker-compose.local.yml"
 compose := "docker compose -f " + compose_file
 
-deploy_env_file := "deploy/.env.production"
-compose_prod := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.yaml"
-compose_demo := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo.yaml"
-compose_demo1 := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo1.yaml"
+compose_prod    := "docker compose -f deploy/docker-compose.yaml"
+compose_demo1   := "docker compose -f deploy/docker-compose.demo1.yaml"
 compose_gateway := "docker compose -f deploy/docker-compose.gateway.yaml"
 
 backend_dir := "backend"
@@ -225,72 +223,55 @@ mypy:
 deploy-secrets:
     ./deploy/generate-production-secrets.sh
 
-[doc('Start presentation demo on server (nginx + frontend, mock data)')]
-deploy-demo-up: _docker
-    {{ compose_demo }} up -d --build
+# ─── Demo stack (rsdobin.online) ─────────────────────────────────────────────
 
-[doc('Stop presentation demo stack (project rsd-demo)')]
-deploy-demo-down: _docker
-    {{ compose_demo }} down --remove-orphans
-
-[doc('Show presentation demo stack status')]
-deploy-demo-status: _docker
-    {{ compose_demo }} ps
-
-[doc('Follow presentation demo logs (optional service: nginx, frontend)')]
-deploy-demo-logs service="":
-    {{ compose_demo }} logs -f {{ service }}
-
-[doc('Rebuild and restart presentation demo')]
-deploy-demo-rebuild: _docker
-    {{ compose_demo }} up -d --build --force-recreate
-
-[doc('Start Demo 1 stack (backend + frontend_demos partial mock)')]
+[doc('Start demo stack')]
 deploy-demo1-up: _docker
     {{ compose_demo1 }} up -d --build
 
-[doc('Stop Demo 1 stack (project rsd-demo1)')]
+[doc('Stop demo stack')]
 deploy-demo1-down: _docker
     {{ compose_demo1 }} down --remove-orphans
 
-[doc('Show Demo 1 stack status')]
+[doc('Show demo stack status')]
 deploy-demo1-status: _docker
     {{ compose_demo1 }} ps
 
-[doc('Follow Demo 1 logs (optional service: nginx, backend, frontend, ...)')]
+[doc('Follow demo logs (optional: service name)')]
 deploy-demo1-logs service="":
     {{ compose_demo1 }} logs -f {{ service }}
 
-[doc('Rebuild and restart Demo 1 stack')]
+[doc('Rebuild and restart demo stack')]
 deploy-demo1-rebuild: _docker
     {{ compose_demo1 }} up -d --build --force-recreate
 
-[doc('Start full production stack (nginx + frontend + backend + db + redis + kafka)')]
+# ─── Prod stack (rsdobin.ru) ──────────────────────────────────────────────────
+
+[doc('Start prod stack')]
 deploy-prod-up: _docker
     {{ compose_prod }} up -d --build
 
-[doc('Stop full production stack')]
+[doc('Stop prod stack')]
 deploy-prod-down: _docker
     {{ compose_prod }} down --remove-orphans
 
-[doc('Show production stack status')]
+[doc('Show prod stack status')]
 deploy-prod-status: _docker
     {{ compose_prod }} ps
 
-[doc('Follow production logs (optional service: nginx, backend, db, ...)')]
+[doc('Follow prod logs (optional: service name)')]
 deploy-prod-logs service="":
     {{ compose_prod }} logs -f {{ service }}
 
-[doc('Rebuild and restart production stack')]
+[doc('Rebuild and restart prod stack')]
 deploy-prod-rebuild: _docker
     {{ compose_prod }} up -d --build --force-recreate
 
-[doc('Stop demo, demo1 and production deploy stacks (free ports 80/443)')]
+[doc('Stop both prod and demo stacks')]
 deploy-down-all: _docker
     {{ compose_prod }} down --remove-orphans 2>/dev/null || true
-    {{ compose_demo }} down --remove-orphans 2>/dev/null || true
     {{ compose_demo1 }} down --remove-orphans 2>/dev/null || true
-    @echo "Deploy stacks stopped."
+    @echo "All deploy stacks stopped."
 
 [doc('Run frontend locally in presentation mode (Vite, mock APIs)')]
 frontend-demo:

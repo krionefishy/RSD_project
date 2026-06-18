@@ -238,6 +238,7 @@ services:
     restart: unless-stopped
     environment:
       CONFIG_PATH: /backend/shared/settings/config.docker.yaml
+      RUN_DEMO_SEED: "true"
     networks:
       - proxy
       - internal

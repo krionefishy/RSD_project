@@ -216,7 +216,7 @@ services:
       dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
-      CONFIG_PATH: /backend/shared/settings/config.docker.yaml
+      CONFIG_PATH: /backend/shared/settings/config.production.yaml
     networks:
       - proxy
       - internal
@@ -245,7 +245,7 @@ services:
       dockerfile: backend/report_service/Dockerfile
     restart: unless-stopped
     environment:
-      CONFIG_PATH: /service/shared/settings/config.docker.yaml
+      CONFIG_PATH: /service/shared/settings/config.production.yaml
     networks:
       - internal
     depends_on:
