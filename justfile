@@ -8,6 +8,7 @@ deploy_env_file := "deploy/.env.production"
 compose_prod := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.yaml"
 compose_demo := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo.yaml"
 compose_demo1 := "docker compose --env-file " + deploy_env_file + " -f deploy/docker-compose.demo1.yaml"
+compose_gateway := "docker compose -f deploy/docker-compose.gateway.yaml"
 
 backend_dir := "backend"
 app_module := "app.main:app"
@@ -339,3 +340,116 @@ deploy-prod-health: _docker
 [doc('Seed production demo data (only for demo/docker environments — skipped in production mode)')]
 deploy-prod-seed: _docker
     {{ compose_prod }} exec backend python -m scripts.seed_demo
+
+
+# ─── Gateway (dual-domain reverse proxy) ─────────────────────────────────────
+# Architecture: rsdobin.ru → prod | rsdobin.online → demo1
+# Both prod and demo nginx containers are on the rsd_gateway Docker network.
+# The gateway nginx is the ONLY container that binds ports 80/443 on the host.
+
+[doc('Create the shared rsd_gateway Docker network (run once on server)')]
+gateway-network: _docker
+    @docker network inspect rsd_gateway >/dev/null 2>&1 && echo "rsd_gateway network already exists" || (docker network create rsd_gateway && echo "rsd_gateway network created")
+
+[doc('Start gateway with HTTPS (SSL certs must already exist in deploy/certbot/conf/)')]
+gateway-up: _docker gateway-network
+    {{ compose_gateway }} up -d --build
+
+[doc('Stop gateway')]
+gateway-down: _docker
+    {{ compose_gateway }} down --remove-orphans
+
+[doc('Rebuild and restart gateway')]
+gateway-rebuild: _docker
+    {{ compose_gateway }} up -d --build --force-recreate
+
+[doc('Show gateway status')]
+gateway-status: _docker
+    {{ compose_gateway }} ps
+
+[doc('Follow gateway logs')]
+gateway-logs:
+    {{ compose_gateway }} logs -f nginx
+
+[doc('STEP 1 — First-time SSL setup: start gateway with HTTP-only config for ACME challenge')]
+gateway-init: _docker gateway-network
+    @echo "Starting gateway in HTTP-only mode (for ACME challenge)..."
+    docker run -d --name rsd-gateway-nginx-init \
+        --network rsd_gateway \
+        -p 80:80 \
+        -v "$(pwd)/deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+        -v "$(pwd)/deploy/nginx/gateway-init.conf:/etc/nginx/conf.d/gateway.conf:ro" \
+        -v "$(pwd)/deploy/certbot/www:/var/www/certbot:ro" \
+        nginx:1.27-alpine 2>/dev/null || docker start rsd-gateway-nginx-init
+    @echo "HTTP gateway running. Now run: just gateway-certonly-prod && just gateway-certonly-demo"
+
+[doc('STEP 2a — Get SSL cert for rsdobin.ru (run after gateway-init)')]
+gateway-certonly-prod:
+    docker run --rm \
+        -v "$(pwd)/deploy/certbot/www:/var/www/certbot" \
+        -v "$(pwd)/deploy/certbot/conf:/etc/letsencrypt" \
+        certbot/certbot certonly \
+        --webroot -w /var/www/certbot \
+        -d rsdobin.ru \
+        --email admin@rsdobin.ru --agree-tos --no-eff-email
+
+[doc('STEP 2b — Get SSL cert for rsdobin.online (run after gateway-init)')]
+gateway-certonly-demo:
+    docker run --rm \
+        -v "$(pwd)/deploy/certbot/www:/var/www/certbot" \
+        -v "$(pwd)/deploy/certbot/conf:/etc/letsencrypt" \
+        certbot/certbot certonly \
+        --webroot -w /var/www/certbot \
+        -d rsdobin.online \
+        --email admin@rsdobin.ru --agree-tos --no-eff-email
+
+[doc('STEP 3 — After certs obtained: stop HTTP-only gateway and start full HTTPS gateway')]
+gateway-ssl-activate: _docker
+    @docker stop rsd-gateway-nginx-init 2>/dev/null || true
+    @docker rm rsd-gateway-nginx-init 2>/dev/null || true
+    just gateway-up
+    @echo "Gateway running with HTTPS for rsdobin.ru and rsdobin.online"
+
+[doc('Renew SSL certificates for both domains')]
+gateway-renew:
+    docker run --rm \
+        -v "$(pwd)/deploy/certbot/www:/var/www/certbot" \
+        -v "$(pwd)/deploy/certbot/conf:/etc/letsencrypt" \
+        certbot/certbot renew
+    {{ compose_gateway }} exec nginx nginx -s reload
+
+# ─── One-command launchers ────────────────────────────────────────────────────
+
+[doc('Start prod: stop all app stacks → build & start prod → seed — ONE command')]
+prod: _docker gateway-network
+    @echo "=== Stopping prod/demo app stacks (gateway stays up) ==="
+    just deploy-down-all
+    @echo "=== Building and starting production stack ==="
+    {{ compose_prod }} up -d --build --wait
+    @echo "=== Seeding demo data ==="
+    {{ compose_prod }} exec backend python -m scripts.seed_demo
+    @echo ""
+    @echo "Production is up → rsdobin.ru | Logs: just deploy-prod-logs"
+
+[doc('Start demo1: stop all app stacks → build & start demo1 — ONE command')]
+demo1: _docker gateway-network
+    @echo "=== Stopping prod/demo app stacks (gateway stays up) ==="
+    just deploy-down-all
+    @echo "=== Building and starting Demo 1 stack ==="
+    {{ compose_demo1 }} up -d --build --wait
+    @echo ""
+    @echo "Demo 1 is up → rsdobin.online | Logs: just deploy-demo1-logs"
+
+[doc('Start BOTH prod (rsdobin.ru) and demo1 (rsdobin.online) simultaneously')]
+all: _docker gateway-network
+    @echo "=== Building and starting production stack ==="
+    {{ compose_prod }} up -d --build
+    @echo "=== Building and starting Demo 1 stack ==="
+    {{ compose_demo1 }} up -d --build
+    @echo "=== Waiting for all services to be healthy ==="
+    {{ compose_prod }} up -d --wait
+    {{ compose_demo1 }} up -d --wait
+    @echo "=== Seeding prod demo data ==="
+    {{ compose_prod }} exec backend python -m scripts.seed_demo
+    @echo ""
+    @echo "Both stacks up: rsdobin.ru (prod) | rsdobin.online (demo)"
