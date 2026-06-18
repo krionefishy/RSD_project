@@ -35,13 +35,13 @@ backend:
     consumer_group: rsd-backend-docker-group
     max_request_size: 10485760
   s3:
-    endpoint_url: http://minio:9000
+    endpoint_url: https://s3.cloud.ru
     tenant_id: ""
-    key_id: minioadmin
-    secret_key: minioadmin
+    key_id: REPLACE_WITH_ACCESS_KEY
+    secret_key: REPLACE_WITH_SECRET_KEY
     bucket_name: rsd-bucket
     region: ru-central-1
-    verify: false
+    verify: true
 
 inter_service_auth:
   jwt:
