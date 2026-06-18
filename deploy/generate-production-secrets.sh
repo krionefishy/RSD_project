@@ -11,15 +11,18 @@ gen_alnum() {
   openssl rand -hex 32 | tr -dc 'a-zA-Z0-9' | cut -c1-"$len"
 }
 
-DB_PASSWORD="$(gen_alnum 16)"
-REPORT_DB_PASSWORD="$(gen_alnum 16)"
 USER_JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
 SERVICE_JWT_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
-REDIS_PASSWORD="$(gen_alnum 16)"
+
+# DB passwords are hardcoded in docker-compose.yaml to match these defaults.
+# Change both here AND in docker-compose.yaml if you need different passwords.
+DB_PASSWORD="appsecret"
+REPLICA_READONLY_PASSWORD="reportreadersecret"
+REPORT_DB_PASSWORD="reportsecret"
 
 cat >"$OUTPUT" <<EOF
 # Generated: $(date '+%Y-%m-%d %H:%M:%S %z')
-# Mount or copy to server; do not commit.
+# Do not commit — gitignored.
 
 environment: production
 log_level: INFO
@@ -32,13 +35,16 @@ database:
   database: rsd_db
   echo: false
 
+# Replica is enabled in prod — db_replica service runs in docker-compose.yaml.
+# report_reader user is created automatically by deploy/docker/init-main-db.sh.
 main_replica_database:
-  enabled: false
-  host: db
+  enabled: true
+  host: db_replica
   port: 5432
-  user: app_readonly
-  password: ${DB_PASSWORD}
+  user: report_reader
+  password: ${REPLICA_READONLY_PASSWORD}
   database: rsd_db
+  echo: false
 
 backend:
   jwt:
@@ -52,7 +58,6 @@ backend:
     host: redis
     port: 6379
     db: 0
-    password: ${REDIS_PASSWORD}
   kafka:
     bootstrap_servers: kafka:9092
     consumer_group: rsd-backend-production-group
@@ -64,7 +69,7 @@ backend:
     secret_key: minioadmin
     bucket_name: rsd-bucket
     region: ru-central-1
-    verify: true
+    verify: false
 
 inter_service_auth:
   jwt:
@@ -84,9 +89,9 @@ services:
 
 report_service:
   database:
-    host: db
+    host: report_db
     port: 5432
-    user: report_app
+    user: report_service
     password: ${REPORT_DB_PASSWORD}
     database: rsd_reports
     echo: false
@@ -98,7 +103,6 @@ chmod 600 "$OUTPUT"
 
 echo "Written: $OUTPUT"
 echo ""
-echo "Remember these:"
-echo "  DB_PASSWORD=${DB_PASSWORD}"
-echo "  REPORT_DB_PASSWORD=${REPORT_DB_PASSWORD}"
-echo "  REDIS_PASSWORD=${REDIS_PASSWORD}"
+echo "Random secrets generated (save these):"
+echo "  USER_JWT_SECRET    = ${USER_JWT_SECRET}"
+echo "  SERVICE_JWT_SECRET = ${SERVICE_JWT_SECRET}"
