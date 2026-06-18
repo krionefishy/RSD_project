@@ -5,7 +5,6 @@ import {
   Trash2,
   UserCheck,
   UserPlus,
-  RefreshCw,
   Shield,
 } from "lucide-react";
 import { useNavigate } from "react-router";

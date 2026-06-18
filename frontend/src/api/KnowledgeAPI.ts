@@ -285,11 +285,11 @@ const MOCK_TEST_RESULTS: Record<number, TestResult> = {
 };
 
 const MOCK_ADMIN_TESTS: Test[] = [
-  { id: 201, name: "Итоговый тест: Базовый курс", category: "Итоговый", description: "Финальный тест курса", isFinal: true, passScorePercent: 70, tasksCount: 3, totalPoints: 3, courseId: 1, createdAt: "2024-01-15T00:00:00Z" },
-  { id: 202, name: "Проверка знаний: Касса", category: "Касса", description: null, isFinal: false, passScorePercent: 80, tasksCount: 1, totalPoints: 1, courseId: 1, createdAt: "2024-01-20T00:00:00Z" },
-  { id: 203, name: "Тест: Стандарты обслуживания", category: "Сервис", description: null, isFinal: true, passScorePercent: 75, tasksCount: 1, totalPoints: 1, courseId: 2, createdAt: "2024-02-01T00:00:00Z" },
-  { id: 204, name: "Тест: Ассортимент", category: "Итоговый", description: null, isFinal: true, passScorePercent: 70, tasksCount: 1, totalPoints: 1, courseId: 3, createdAt: "2024-03-01T00:00:00Z" },
-  { id: 205, name: "Повторный тест: Хранение", category: "Повторный", description: null, isFinal: false, passScorePercent: 80, tasksCount: 1, totalPoints: 1, courseId: 3, createdAt: "2024-03-10T00:00:00Z" },
+  { id: 201, name: "Итоговый тест: Базовый курс", category: "Итоговый", description: "Финальный тест курса", isFinal: true, passScorePercent: 70, tasksCount: 3, totalPoints: 3, courseId: 1, createdAt: "2024-01-15T00:00:00Z", timeLimitMinutes: null, maxAttempts: null },
+  { id: 202, name: "Проверка знаний: Касса", category: "Касса", description: null, isFinal: false, passScorePercent: 80, tasksCount: 1, totalPoints: 1, courseId: 1, createdAt: "2024-01-20T00:00:00Z", timeLimitMinutes: 30, maxAttempts: 3 },
+  { id: 203, name: "Тест: Стандарты обслуживания", category: "Сервис", description: null, isFinal: true, passScorePercent: 75, tasksCount: 1, totalPoints: 1, courseId: 2, createdAt: "2024-02-01T00:00:00Z", timeLimitMinutes: null, maxAttempts: null },
+  { id: 204, name: "Тест: Ассортимент", category: "Итоговый", description: null, isFinal: true, passScorePercent: 70, tasksCount: 1, totalPoints: 1, courseId: 3, createdAt: "2024-03-01T00:00:00Z", timeLimitMinutes: null, maxAttempts: null },
+  { id: 205, name: "Повторный тест: Хранение", category: "Повторный", description: null, isFinal: false, passScorePercent: 80, tasksCount: 1, totalPoints: 1, courseId: 3, createdAt: "2024-03-10T00:00:00Z", timeLimitMinutes: null, maxAttempts: null },
 ];
 
 const MOCK_COURSE_ENROLLMENTS: Record<number, Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> = {
