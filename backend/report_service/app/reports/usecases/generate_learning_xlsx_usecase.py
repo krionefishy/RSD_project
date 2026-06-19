@@ -43,7 +43,14 @@ class GenerateLearningXlsxUseCase:
             await self._update_status(job_id, ParseStatus.PROCESSING)
 
             async with self._main_replica.read_only_transaction() as replica:
-                rows = await self._fetch_data(replica, report_type, scope_type, scope_id)
+                rows = await self._fetch_data(
+                    replica,
+                    report_type,
+                    scope_type,
+                    scope_id,
+                    period_from=period_from,
+                    period_to=period_to,
+                )
 
             xlsx_bytes = await asyncio.to_thread(
                 self._build_xlsx, report_type, rows
@@ -93,6 +100,8 @@ class GenerateLearningXlsxUseCase:
         report_type: str,
         scope_type: str,
         scope_id: int | None,
+        period_from: str | None = None,
+        period_to: str | None = None,
     ) -> list[dict]:
         if report_type == "learning_users":
             return await self._query_learning_users(session, scope_type, scope_id)
@@ -101,7 +110,13 @@ class GenerateLearningXlsxUseCase:
         if report_type == "learning_by_location":
             return await self._query_learning_by_location(session, scope_type, scope_id)
         if report_type == "learning_rating":
-            return await self._query_learning_rating(session, scope_type, scope_id)
+            return await self._query_learning_rating(
+                session,
+                scope_type,
+                scope_id,
+                period_from=period_from,
+                period_to=period_to,
+            )
         return []
 
     # ------------------------------------------------------------------ #
@@ -124,18 +139,53 @@ class GenerateLearningXlsxUseCase:
                 b.name        AS block_name,
                 l.name        AS location_name,
                 c.name        AS course_name,
-                cu.user_points_by_course  AS points_earned,
-                c.rating_points           AS points_max,
+                count(DISTINCT CASE WHEN ucm.is_completed THEN ucm.material_id END) AS completed_materials,
+                count(DISTINCT cm.material_id) AS total_materials,
+                count(DISTINCT CASE WHEN uct.is_passed AND uct.completed_at IS NOT NULL THEN uct.test_id END) AS passed_tests,
+                count(DISTINCT ct.test_id) AS total_tests,
+                cu.user_points_by_course AS points_earned,
                 cu.is_course_completed_successfully,
-                cu.is_course_completed
+                cu.is_course_completed,
+                CASE
+                    WHEN c.rating_points > 0
+                        THEN round(LEAST(cu.user_points_by_course::numeric / c.rating_points * 100, 100), 1)
+                    WHEN cu.is_course_completed
+                        THEN 100.0
+                    ELSE 0.0
+                END AS completion_pct
             FROM course_users cu
             JOIN users   u ON u.id  = cu.user_id
             JOIN courses c ON c.id  = cu.course_id
+            LEFT JOIN course_materials cm
+                ON cm.course_id = cu.course_id
+            LEFT JOIN user_course_materials ucm
+                ON ucm.user_id = cu.user_id
+               AND ucm.course_id = cu.course_id
+               AND ucm.material_id = cm.material_id
+               AND ucm.is_completed = true
+            LEFT JOIN course_tests ct
+                ON ct.course_id = cu.course_id
+            LEFT JOIN user_course_tests uct
+                ON uct.user_id = cu.user_id
+               AND uct.course_id = cu.course_id
+               AND uct.test_id = ct.test_id
             LEFT JOIN block_members  bm ON bm.user_id  = u.id
             LEFT JOIN blocks          b ON b.id         = bm.block_id
             LEFT JOIN block_locations bl ON bl.block_id = bm.block_id
             LEFT JOIN locations        l ON l.id        = bl.location_id
             {scope_filter}
+            GROUP BY
+                u.last_name,
+                u.first_name,
+                u.middle_name,
+                u.external_system_id,
+                b.name,
+                l.name,
+                c.name,
+                c.rating_points,
+                cu.user_points_by_course,
+                cu.is_course_completed_successfully,
+                cu.is_course_completed
             ORDER BY u.last_name, u.first_name, c.name
         """)
         params = self._scope_params(scope_type, scope_id)
@@ -220,7 +270,19 @@ class GenerateLearningXlsxUseCase:
         session: AsyncSession,
         scope_type: str,
         scope_id: int | None,
+        *,
+        period_from: str | None = None,
+        period_to: str | None = None,
     ) -> list[dict]:
+        period_filter = ""
+        params = {"scope_type": scope_type, "scope_id": scope_id}
+        if period_from is not None:
+            period_filter += " AND period_from >= :period_from"
+            params["period_from"] = period_from
+        if period_to is not None:
+            period_filter += " AND period_to <= :period_to"
+            params["period_to"] = period_to
+
         sql = text("""
             WITH latest_snapshot AS (
                 SELECT id FROM rating_snapshots
@@ -230,6 +292,7 @@ class GenerateLearningXlsxUseCase:
                            THEN scope_id IS NULL
                            ELSE scope_id = :scope_id
                       END
+                  {period_filter}
                 ORDER BY calculated_at DESC
                 LIMIT 1
             )
@@ -250,10 +313,8 @@ class GenerateLearningXlsxUseCase:
             LEFT JOIN block_locations bl ON bl.block_id = bm.block_id
             LEFT JOIN locations        l ON l.id        = bl.location_id
             ORDER BY rsi.rank
-        """)
-        result = await session.execute(
-            sql, {"scope_type": scope_type, "scope_id": scope_id}
-        )
+        """.replace("{period_filter}", period_filter))
+        result = await session.execute(sql, params)
         return [dict(r._mapping) for r in result]
 
     # ------------------------------------------------------------------ #
@@ -293,19 +354,16 @@ class GenerateLearningXlsxUseCase:
             headers = [
                 "Фамилия", "Имя", "Отчество", "Таб. номер",
                 "Блок", "Точка", "Курс",
-                "Баллы набрано", "Баллы макс", "% прохождения", "Статус",
+                "Материалы", "Тесты", "Баллы", "Статус курса", "Процент обучения",
             ]
             ws.append(headers)
             for row in rows:
-                pts = row.get("points_earned") or 0
-                max_pts = row.get("points_max") or 0
-                pct = round(pts / max_pts * 100, 1) if max_pts else 0.0
                 if row.get("is_course_completed_successfully"):
                     status = "Завершён успешно"
                 elif row.get("is_course_completed"):
                     status = "Завершён"
                 else:
-                    status = "В процессе" if pts else "Не начат"
+                    status = "Не завершён"
                 ws.append([
                     row.get("last_name") or "",
                     row.get("first_name") or "",
@@ -314,7 +372,11 @@ class GenerateLearningXlsxUseCase:
                     row.get("block_name") or "",
                     row.get("location_name") or "",
                     row.get("course_name") or "",
-                    pts, max_pts, pct, status,
+                    f"{int(row.get('completed_materials') or 0)}/{int(row.get('total_materials') or 0)}",
+                    f"{int(row.get('passed_tests') or 0)}/{int(row.get('total_tests') or 0)}",
+                    int(row.get("points_earned") or 0),
+                    status,
+                    float(row.get("completion_pct") or 0),
                 ])
 
         elif report_type == "learning_by_block":

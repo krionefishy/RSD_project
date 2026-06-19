@@ -134,6 +134,48 @@ async def require_education_admin(request: Request) -> AuthContext:
     )
 
 
+async def require_learning_report_viewer(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.MANAGER.value,
+            UserRole.ADMIN_EDUCATION.value,
+            UserRole.ADMIN_STAFF.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )
+
+
+async def require_report_exporter(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.MANAGER.value,
+            UserRole.ADMIN_EDUCATION.value,
+            UserRole.ADMIN_STAFF.value,
+            UserRole.ADMIN_SALES.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )
+
+
+async def require_learning_rating_admin(request: Request) -> AuthContext:
+    auth = await _get_auth_context(request)
+    return require_any_role(
+        auth,
+        {
+            UserRole.ADMIN_EDUCATION.value,
+            UserRole.ADMIN_SALES.value,
+            UserRole.ROOT_ADMIN.value,
+            UserRole.SUPER_ADMIN.value,
+        },
+    )
+
+
 async def require_super_admin(request: Request) -> AuthContext:
     auth = await _get_auth_context(request)
     return require_any_role(auth, {UserRole.SUPER_ADMIN.value})

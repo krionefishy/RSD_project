@@ -80,3 +80,42 @@ class TestUploadMaterialAttachmentUseCase:
             )
 
         assert exc_info.value.status_code == 422
+
+    async def test_rejects_non_pdf_attachment_for_pdf_material(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        education_admin: UserModel,
+    ) -> None:
+        material = await builder.build_material(text="")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await UploadMaterialAttachmentUseCase(db_session, FakeKafkaBroker()).execute(
+                material.id,
+                filename="image.png",
+                content_type="image/png",
+                payload=b"png",
+                ctx=admin_ctx(education_admin),
+            )
+
+        assert exc_info.value.status_code == 422
+
+    async def test_rejects_second_attachment_for_pdf_material(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        education_admin: UserModel,
+    ) -> None:
+        material = await builder.build_material(text="")
+        await builder.build_material_attachment(material=material, name="guide", format="pdf")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await UploadMaterialAttachmentUseCase(db_session, FakeKafkaBroker()).execute(
+                material.id,
+                filename="guide-2.pdf",
+                content_type="application/pdf",
+                payload=b"pdf",
+                ctx=admin_ctx(education_admin),
+            )
+
+        assert exc_info.value.status_code == 409

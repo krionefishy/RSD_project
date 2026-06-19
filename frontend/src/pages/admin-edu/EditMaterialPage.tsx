@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { ChevronLeft, ExternalLink, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import type { Material } from "../../types/knowledge";
 import { getErrorMessage } from "../../utils/errors";
+import { isPdfOnlyMaterial } from "../../utils/knowledgeMaterials";
 import { ConfirmDialog } from "./manage/ConfirmDialog";
 
 export default function EditMaterialPage() {
@@ -18,6 +19,7 @@ export default function EditMaterialPage() {
   const [saving, setSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   const [form, setForm] = useState({ name: "", category: "", description: "", text: "" });
 
@@ -48,6 +50,28 @@ export default function EditMaterialPage() {
     void load();
   }, [id, navigate]);
 
+  useEffect(() => {
+    if (!material || !isPdfOnlyMaterial(material)) {
+      setPdfUrl(null);
+      return;
+    }
+    let cancelled = false;
+    KnowledgeAPI.resolveAdminMaterialAttachments(material.id, material.attachments.map((item) => item.id))
+      .then((items) => {
+        if (!cancelled) {
+          setPdfUrl(items[0]?.url ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPdfUrl(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [material]);
+
   const handleSave = async () => {
     if (!material) return;
     setSaving(true);
@@ -56,7 +80,7 @@ export default function EditMaterialPage() {
         name: form.name.trim(),
         category: form.category.trim(),
         description: form.description.trim() || undefined,
-        text: form.text,
+        text: pdfMaterial ? "" : form.text,
       });
       setMaterial(updated);
       toast.success("Материал сохранён");
@@ -117,6 +141,8 @@ export default function EditMaterialPage() {
     );
   }
 
+  const pdfMaterial = isPdfOnlyMaterial(material);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="px-4 pt-4 pb-5 bg-gradient-to-br from-[#2E7D32] to-[#1B5E20]">
@@ -151,13 +177,19 @@ export default function EditMaterialPage() {
             className="px-3 py-2 rounded-lg border text-sm resize-none"
             placeholder="Описание"
           />
-          <textarea
-            value={form.text}
-            onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
-            rows={12}
-            className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
-            placeholder="Содержание (Markdown)"
-          />
+          {pdfMaterial ? (
+            <div className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">
+              Для PDF-материала текстовый контент отключён. Материал отображается из единственного PDF-вложения.
+            </div>
+          ) : (
+            <textarea
+              value={form.text}
+              onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
+              rows={12}
+              className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
+              placeholder="Содержание (Markdown)"
+            />
+          )}
           <button
             onClick={() => void handleSave()}
             disabled={saving}
@@ -189,7 +221,7 @@ export default function EditMaterialPage() {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept=".pdf,image/jpeg,image/png,image/webp"
+            accept={pdfMaterial ? ".pdf,application/pdf" : ".pdf,image/jpeg,image/png,image/webp"}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) void handleUpload(file);
@@ -210,12 +242,40 @@ export default function EditMaterialPage() {
               </div>
             ))
           )}
+          {pdfMaterial && material.attachments.length > 0 && (
+            <p className="text-xs text-slate-500 mt-3">
+              Чтобы заменить PDF, сначала удалите текущее вложение, затем загрузите новый файл.
+            </p>
+          )}
         </div>
 
-        {form.text && (
+        {!pdfMaterial && form.text && (
           <div className="rounded-2xl bg-white shadow-sm p-4">
             <p className="text-xs font-medium text-slate-500 mb-2">Предпросмотр</p>
             <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">{form.text}</pre>
+          </div>
+        )}
+
+        {pdfMaterial && pdfUrl && (
+          <div className="rounded-2xl bg-white shadow-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium text-slate-500">Предпросмотр PDF</p>
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-[#2E7D32]"
+              >
+                <ExternalLink size={12} />
+                Открыть отдельно
+              </a>
+            </div>
+            <iframe
+              src={pdfUrl}
+              title={material.name}
+              className="w-full rounded-lg"
+              style={{ height: "70vh", border: "1px solid #E2E8F0" }}
+            />
           </div>
         )}
       </div>

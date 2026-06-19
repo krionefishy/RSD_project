@@ -21,14 +21,14 @@ class CreateMaterialRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     category: str = Field(min_length=1, max_length=100)
     description: str | None = None
-    text: str = Field(min_length=1)
+    text: str = Field(default="")
 
 
 class UpdateMaterialRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     category: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = None
-    text: str | None = Field(default=None, min_length=1)
+    text: str | None = None
 
 
 class CreateTestRequest(BaseModel):

@@ -38,6 +38,24 @@ class UploadMaterialAttachmentUseCase:
         if material is None:
             return None
 
+        is_pdf_material = not (material.text or "").strip()
+        if is_pdf_material and content_type != "application/pdf":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="PDF material accepts only PDF attachments",
+            )
+
+        existing_attachments = (
+            await self.session.execute(
+                select(MaterialAttachmentModel.id).where(MaterialAttachmentModel.material_id == material_id)
+            )
+        ).scalars().all()
+        if is_pdf_material and existing_attachments:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="PDF material can contain only one attachment",
+            )
+
         safe_name = sanitize_key_segment(filename, "attachment")
         extension = safe_name.rsplit(".", 1)[-1].lower() if "." in safe_name else "bin"
         display_name = safe_name.rsplit(".", 1)[0] if "." in safe_name else safe_name

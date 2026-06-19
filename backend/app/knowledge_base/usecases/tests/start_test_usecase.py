@@ -76,21 +76,11 @@ class StartTestUseCase:
         )
         user_test = user_test_result.scalar_one_or_none()
 
-        now = datetime.now()
         if user_test is not None and user_test.completed_at is not None:
-            if test.max_attempts is not None and user_test.attempt_number >= test.max_attempts:
-                return None
-            user_test.attempt_number += 1
-            user_test.score = 0
-            user_test.max_score = test.total_points
-            user_test.is_passed = False
-            user_test.answers = {}
-            user_test.completed_at = None
-            user_test.started_at = now
-            await self.session.commit()
-        elif user_test is not None:
-            pass
-        else:
+            return None
+
+        now = datetime.now()
+        if user_test is None:
             user_test = UserCourseTestModel(
                 user_id=ctx.user_id,
                 course_id=request.course_id,
@@ -105,9 +95,17 @@ class StartTestUseCase:
             self.session.add(user_test)
             await self.session.commit()
 
-        first_assignment = test.task_assignments[0]
-        first_task = first_assignment.task if first_assignment else None
-        if first_task is None:
+        answered_task_ids = {
+            int(task_id)
+            for task_id in (user_test.answers or {}).keys()
+            if str(task_id).isdigit()
+        }
+        next_assignment = next(
+            (assignment for assignment in test.task_assignments if assignment.task_id not in answered_task_ids),
+            None,
+        )
+        next_task = next_assignment.task if next_assignment else None
+        if next_task is None:
             return None
 
         return StartTestResultDTO(
@@ -115,10 +113,10 @@ class StartTestUseCase:
             test_name=test.name,
             tasks_count=test.tasks_count,
             first_task=TestTaskDTO(
-                id=first_task.id,
-                name=first_task.name,
-                description=first_task.description,
-                points=first_task.points,
-                answer_variants=first_task.answer_variants,
+                id=next_task.id,
+                name=next_task.name,
+                description=next_task.description,
+                points=next_task.points,
+                answer_variants=next_task.answer_variants,
             ),
         )

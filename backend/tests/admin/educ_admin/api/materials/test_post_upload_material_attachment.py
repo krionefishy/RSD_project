@@ -41,3 +41,22 @@ class TestPostUploadMaterialAttachment:
         )
 
         assert response.status_code == 422
+
+    async def test_returns_409_when_second_pdf_uploaded_for_pdf_material(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        bearer_headers,
+        education_admin,
+    ) -> None:
+        material = await builder.build_material(text="")
+        await builder.build_material_attachment(material=material, name="guide", format="pdf")
+        files = {"file": ("guide2.pdf", b"pdf-bytes", "application/pdf")}
+
+        response = await client.post(
+            f"/api/v1/admin/education/materials/{material.id}/attachments",
+            headers=bearer_headers(education_admin),
+            files=files,
+        )
+
+        assert response.status_code == 409

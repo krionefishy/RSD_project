@@ -15,6 +15,7 @@ from app.knowledge_base.db_models import (
 )
 from app.knowledge_base.domain import SubmitAnswerRequest, UserContext
 from app.knowledge_base.dto import SubmitAnswerResultDTO, TestTaskDTO
+from app.knowledge_base.usecases.progress import recalculate_course_user_points
 from app.users.db_models import UserRole
 
 
@@ -86,6 +87,11 @@ class SubmitAnswerUseCase:
         ):
             user_test.completed_at = datetime.now()
             user_test.is_passed = False
+            await recalculate_course_user_points(
+                self.session,
+                course_id=request.course_id,
+                user_id=ctx.user_id,
+            )
             await self.session.commit()
             return None
 
@@ -114,17 +120,14 @@ class SubmitAnswerUseCase:
             )
             user_test.completed_at = datetime.now()
 
-            enrollment_result = await self.session.execute(
-                select(CourseUserModel).where(
-                    CourseUserModel.user_id == ctx.user_id,
-                    CourseUserModel.course_id == request.course_id,
-                )
+            enrollment = await recalculate_course_user_points(
+                self.session,
+                course_id=request.course_id,
+                user_id=ctx.user_id,
             )
-            enrollment = enrollment_result.scalar_one_or_none()
             if enrollment is not None:
-                enrollment.user_points_by_course = (
-                    enrollment.user_points_by_course or 0
-                ) + (user_test.score or 0)
+                enrollment.is_course_completed = False
+                enrollment.is_course_completed_successfully = False
                 enrollment.updated_at = datetime.now()
 
             await self.session.commit()

@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const demoMode = isDemoMode();
   const presentationMode = isPresentationMode();
+  const showDemoAccounts = demoMode && presentationMode;
 
   const completeLogin = async (id: string, pass: string) => {
     setLoading(true);
@@ -187,7 +188,7 @@ export default function LoginPage() {
           </>
         )}
 
-        {demoMode && (
+        {showDemoAccounts && (
           <div
             className={`rounded-[12px] border px-4 py-4 ${presentationMode ? "" : "mt-6"}`}
             style={{ borderColor: "#BBF7D0", background: "#F0FDF4" }}

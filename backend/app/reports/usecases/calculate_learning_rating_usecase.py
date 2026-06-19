@@ -1,10 +1,10 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
-from sqlalchemy import Integer, func, select
+from sqlalchemy import Integer, case, distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.knowledge_base.db_models import CourseUserModel
+from app.knowledge_base.db_models import UserCourseTestModel
 from app.locations.db_models import BlockLocationModel, BlockMemberModel
 from app.reports.db_models import RatingSnapshotItemModel, RatingSnapshotModel
 
@@ -20,24 +20,33 @@ class CalculateLearningRatingUseCase:
         scope_type: str = "network",
         scope_id: int | None = None,
     ) -> RatingSnapshotModel:
+        period_start = datetime.combine(period_from, time.min)
+        period_end = datetime.combine(period_to, time.max)
         base_query = (
             select(
-                CourseUserModel.user_id,
-                func.sum(CourseUserModel.user_points_by_course).label("total_points"),
-                func.count(CourseUserModel.course_id).label("course_count"),
-                func.sum(
-                    CourseUserModel.is_course_completed_successfully.cast(Integer)
+                UserCourseTestModel.user_id,
+                func.sum(func.coalesce(UserCourseTestModel.score, 0)).label("total_points"),
+                func.count(distinct(UserCourseTestModel.course_id)).label("course_count"),
+                func.count(
+                    distinct(
+                        case((UserCourseTestModel.is_passed.is_(True), UserCourseTestModel.course_id), else_=None)
+                    )
                 ).label("completed_count"),
             )
-            .group_by(CourseUserModel.user_id)
-            .order_by(func.sum(CourseUserModel.user_points_by_course).desc())
+            .where(
+                UserCourseTestModel.completed_at.is_not(None),
+                UserCourseTestModel.completed_at >= period_start,
+                UserCourseTestModel.completed_at <= period_end,
+            )
+            .group_by(UserCourseTestModel.user_id)
+            .order_by(func.sum(func.coalesce(UserCourseTestModel.score, 0)).desc())
         )
 
         if scope_type == "block" and scope_id is not None:
             scoped_users = select(BlockMemberModel.user_id).where(
                 BlockMemberModel.block_id == scope_id
             )
-            base_query = base_query.where(CourseUserModel.user_id.in_(scoped_users))
+            base_query = base_query.where(UserCourseTestModel.user_id.in_(scoped_users))
         elif scope_type == "location" and scope_id is not None:
             location_blocks = select(BlockLocationModel.block_id).where(
                 BlockLocationModel.location_id == scope_id
@@ -45,7 +54,7 @@ class CalculateLearningRatingUseCase:
             scoped_users = select(BlockMemberModel.user_id).where(
                 BlockMemberModel.block_id.in_(location_blocks)
             )
-            base_query = base_query.where(CourseUserModel.user_id.in_(scoped_users))
+            base_query = base_query.where(UserCourseTestModel.user_id.in_(scoped_users))
 
         user_totals_result = await self.session.execute(base_query)
         rows = user_totals_result.all()
@@ -58,7 +67,7 @@ class CalculateLearningRatingUseCase:
             period_type="custom",
             period_from=period_from,
             period_to=period_to,
-            metric_code="total_learning_points",
+            metric_code="learning_points",
             calculated_at=now,
         )
         self.session.add(snapshot)

@@ -4,7 +4,24 @@ from tests.builder import Builder
 
 
 class TestGetUsers:
-    async def test_returns_200_when_authenticated_user_lists_users(
+    async def test_returns_200_when_personnel_viewer_lists_users(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        bearer_headers,
+    ) -> None:
+        manager = await builder.default_manager
+
+        response = await client.get(
+            "/api/v1/users/",
+            headers=bearer_headers(manager),
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert "items" in body
+
+    async def test_returns_403_when_seller_lists_users(
         self,
         client: AsyncClient,
         builder: Builder,
@@ -17,9 +34,7 @@ class TestGetUsers:
             headers=bearer_headers(seller),
         )
 
-        assert response.status_code == 200
-        body = response.json()
-        assert "items" in body
+        assert response.status_code == 403
 
     async def test_returns_401_when_authorization_header_missing(
         self,

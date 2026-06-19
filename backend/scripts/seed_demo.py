@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import sys
-from datetime import date, time
+from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -37,6 +37,8 @@ from app.knowledge_base.db_models import (
     TestModel,
     TestTaskAssignmentModel,
     TestTaskModel,
+    UserCourseMaterialModel,
+    UserCourseTestModel,
 )
 from app.locations.db_models import (
     BlockLocationModel,
@@ -333,11 +335,18 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
         time_limit_minutes=20,
         pass_score_percent=70,
     )
-    task = TestTaskModel(
+    task_greeting = TestTaskModel(
         name="Приветствие гостя",
         description="Какой первый шаг в стандарте обслуживания?",
-        points=1,
+        points=5,
         answer_variants=["Сразу предложить десерт", "Поздороваться и установить контакт", "Попросить оплатить заказ"],
+        correct_variant=1,
+    )
+    task_register = TestTaskModel(
+        name="Работа с кассой",
+        description="Что нужно сделать в начале смены на кассе?",
+        points=5,
+        answer_variants=["Сразу пробить первый заказ", "Открыть смену и проверить кассу", "Сделать возврат"],
         correct_variant=1,
     )
     course = CourseModel(
@@ -347,16 +356,19 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
         mrp=5,
     )
 
-    session.add_all([material_service, material_register, final_test, task, course])
+    session.add_all([material_service, material_register, final_test, task_greeting, task_register, course])
     await session.flush()
+
+    completed_at = datetime(2026, 6, 10, 10, 0, 0)
 
     session.add_all(
         [
-            TestTaskAssignmentModel(test_id=final_test.id, task_id=task.id, order=0),
+            TestTaskAssignmentModel(test_id=final_test.id, task_id=task_greeting.id, order=0),
+            TestTaskAssignmentModel(test_id=final_test.id, task_id=task_register.id, order=1),
             CourseMaterialModel(course_id=course.id, material_id=material_service.id),
             CourseMaterialModel(course_id=course.id, material_id=material_register.id),
             CourseTestModel(course_id=course.id, test_id=final_test.id, is_final=True),
-            CourseUserModel(user_id=users["seller_anna"].id, course_id=course.id, user_points_by_course=5),
+            CourseUserModel(user_id=users["seller_anna"].id, course_id=course.id, user_points_by_course=0),
             CourseUserModel(
                 user_id=users["seller_kirill"].id,
                 course_id=course.id,
@@ -364,7 +376,72 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
                 is_course_completed=True,
                 is_course_completed_successfully=True,
             ),
-            CourseUserModel(user_id=users["seller_olga"].id, course_id=course.id, user_points_by_course=0),
+            CourseUserModel(user_id=users["seller_olga"].id, course_id=course.id, user_points_by_course=5),
+            UserCourseMaterialModel(
+                user_id=users["seller_anna"].id,
+                course_id=course.id,
+                material_id=material_service.id,
+                is_completed=True,
+                completed_at=completed_at,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_kirill"].id,
+                course_id=course.id,
+                material_id=material_service.id,
+                is_completed=True,
+                completed_at=completed_at,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_kirill"].id,
+                course_id=course.id,
+                material_id=material_register.id,
+                is_completed=True,
+                completed_at=completed_at,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_olga"].id,
+                course_id=course.id,
+                material_id=material_service.id,
+                is_completed=True,
+                completed_at=completed_at,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_olga"].id,
+                course_id=course.id,
+                material_id=material_register.id,
+                is_completed=True,
+                completed_at=completed_at,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_kirill"].id,
+                course_id=course.id,
+                test_id=final_test.id,
+                attempt_number=1,
+                score=10,
+                max_score=10,
+                is_passed=True,
+                answers={
+                    str(task_greeting.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                    str(task_register.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                },
+                started_at=completed_at,
+                completed_at=completed_at,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_olga"].id,
+                course_id=course.id,
+                test_id=final_test.id,
+                attempt_number=1,
+                score=5,
+                max_score=10,
+                is_passed=False,
+                answers={
+                    str(task_greeting.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                    str(task_register.id): {"selected_variant": 0, "is_correct": False, "points_earned": 0},
+                },
+                started_at=completed_at,
+                completed_at=completed_at,
+            ),
         ]
     )
 

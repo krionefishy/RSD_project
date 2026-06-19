@@ -29,6 +29,9 @@ from app.admin.educ_admin.usecases.materials.delete_material_attachment_usecase 
 )
 from app.admin.educ_admin.usecases.materials.delete_material_usecase import DeleteMaterialUseCase
 from app.admin.educ_admin.usecases.materials.list_materials_usecase import ListMaterialsUseCase
+from app.admin.educ_admin.usecases.materials.resolve_material_attachment_links_usecase import (
+    ResolveMaterialAttachmentLinksUseCase,
+)
 from app.admin.educ_admin.usecases.materials.update_material_usecase import UpdateMaterialUseCase
 from app.admin.educ_admin.usecases.materials.upload_material_attachment_usecase import (
     UploadMaterialAttachmentUseCase,
@@ -43,6 +46,7 @@ from app.admin.educ_admin.usecases.tests.delete_test_usecase import DeleteTestUs
 from app.admin.educ_admin.usecases.tests.list_tests_usecase import ListTestsUseCase
 from app.admin.educ_admin.usecases.tests.update_test_usecase import UpdateTestUseCase
 from shared.kafka_streams.producer import KafkaProducerWrapper
+from storage.s3.client import S3Client
 
 
 class EducAdminUsecaseProvider(Provider):
@@ -65,7 +69,6 @@ class EducAdminUsecaseProvider(Provider):
     create_material = provide(CreateMaterialUseCase)
     update_material = provide(UpdateMaterialUseCase)
     delete_material = provide(DeleteMaterialUseCase)
-
     list_tests = provide(ListTestsUseCase)
     create_test = provide(CreateTestUseCase)
     update_test = provide(UpdateTestUseCase)
@@ -92,3 +95,11 @@ class EducAdminUsecaseProvider(Provider):
         kafka_producer: KafkaProducerWrapper,
     ) -> DeleteMaterialAttachmentUseCase:
         return DeleteMaterialAttachmentUseCase(session, kafka_producer)
+
+    @provide
+    def resolve_material_attachment_links(
+        self,
+        session: AsyncSession,
+        s3_client: S3Client,
+    ) -> ResolveMaterialAttachmentLinksUseCase:
+        return ResolveMaterialAttachmentLinksUseCase(session, s3_client)

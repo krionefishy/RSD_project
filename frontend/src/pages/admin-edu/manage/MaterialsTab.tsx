@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
 import type { Material } from "../../../types/knowledge";
 import { getErrorMessage } from "../../../utils/errors";
+import { isPdfOnlyMaterial } from "../../../utils/knowledgeMaterials";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 export function MaterialsTab() {
@@ -14,7 +15,14 @@ export function MaterialsTab() {
   const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: "", category: "", description: "", text: "" });
+  const [form, setForm] = useState({
+    name: "",
+    category: "",
+    description: "",
+    text: "",
+    mode: "text" as "text" | "pdf",
+    pdfFile: null as File | null,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadMaterialId, setUploadMaterialId] = useState<number | null>(null);
 
@@ -29,13 +37,23 @@ export function MaterialsTab() {
     }
   }, []);
 
+  const uploadTarget = uploadMaterialId === null ? null : materials.find((material) => material.id === uploadMaterialId) ?? null;
+
   useEffect(() => {
     void load();
   }, [load]);
 
   const handleCreate = async () => {
-    if (!form.name.trim() || !form.category.trim() || !form.text.trim()) {
-      toast.error("Заполните название, категорию и текст");
+    if (!form.name.trim() || !form.category.trim()) {
+      toast.error("Заполните название и категорию");
+      return;
+    }
+    if (form.mode === "text" && !form.text.trim()) {
+      toast.error("Заполните текст материала");
+      return;
+    }
+    if (form.mode === "pdf" && !form.pdfFile) {
+      toast.error("Загрузите PDF-файл");
       return;
     }
     try {
@@ -43,11 +61,20 @@ export function MaterialsTab() {
         name: form.name.trim(),
         category: form.category.trim(),
         description: form.description.trim() || undefined,
-        text: form.text,
+        text: form.mode === "pdf" ? "" : form.text,
       });
+      if (form.mode === "pdf" && form.pdfFile) {
+        try {
+          await KnowledgeAPI.uploadMaterialAttachment(material.id, form.pdfFile);
+        } catch (error) {
+          toast.error(getErrorMessage(error, "Материал создан, но PDF не удалось загрузить"));
+          navigate(`/admin-edu/manage/edit-material/${material.id}`);
+          return;
+        }
+      }
       toast.success("Материал создан");
       setShowCreate(false);
-      setForm({ name: "", category: "", description: "", text: "" });
+      setForm({ name: "", category: "", description: "", text: "", mode: "text", pdfFile: null });
       await load();
       navigate(`/admin-edu/manage/edit-material/${material.id}`);
     } catch (error) {
@@ -115,7 +142,7 @@ export function MaterialsTab() {
         ref={fileInputRef}
         type="file"
         className="hidden"
-        accept=".pdf,image/jpeg,image/png,image/webp"
+        accept={uploadTarget && isPdfOnlyMaterial(uploadTarget) ? ".pdf,application/pdf" : ".pdf,image/jpeg,image/png,image/webp"}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) void handleUpload(file);
@@ -144,6 +171,9 @@ export function MaterialsTab() {
                 {material.name}
               </button>
               <p className="text-xs text-slate-400">{material.category}</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {isPdfOnlyMaterial(material) ? "PDF-материал" : "Текстовый материал"}
+              </p>
               {material.attachments.length > 0 && (
                 <div className="mt-2 flex flex-col gap-1">
                   {material.attachments.map((att) => (
@@ -163,12 +193,13 @@ export function MaterialsTab() {
               <button
                 type="button"
                 className="text-xs text-[#2E7D32]"
+                disabled={isPdfOnlyMaterial(material) && material.attachments.length > 0}
                 onClick={() => {
                   setUploadMaterialId(material.id);
                   fileInputRef.current?.click();
                 }}
               >
-                Файл
+                {isPdfOnlyMaterial(material) ? "PDF" : "Файл"}
               </button>
               <button type="button" onClick={() => setDeleteTarget(material)}>
                 <Trash2 size={16} color="#DC2626" />
@@ -182,6 +213,22 @@ export function MaterialsTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="w-full max-w-sm rounded-2xl bg-white p-4 flex flex-col gap-2 max-h-[90vh] overflow-y-auto">
             <h3 className="font-semibold text-slate-800">Новый материал</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, mode: "text", pdfFile: null }))}
+                className={`h-10 rounded-lg text-sm ${form.mode === "text" ? "bg-[#C41E3A] text-white" : "bg-slate-100 text-slate-700"}`}
+              >
+                Текстовый
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, mode: "pdf", text: "" }))}
+                className={`h-10 rounded-lg text-sm ${form.mode === "pdf" ? "bg-[#C41E3A] text-white" : "bg-slate-100 text-slate-700"}`}
+              >
+                PDF
+              </button>
+            </div>
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -201,13 +248,35 @@ export function MaterialsTab() {
               rows={2}
               className="px-3 py-2 rounded-lg border text-sm resize-none"
             />
-            <textarea
-              value={form.text}
-              onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
-              placeholder="Содержание (Markdown)"
-              rows={6}
-              className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
-            />
+            {form.mode === "text" ? (
+              <textarea
+                value={form.text}
+                onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
+                placeholder="Содержание (Markdown)"
+                rows={6}
+                className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
+              />
+            ) : (
+              <div className="rounded-lg border border-dashed border-slate-300 p-3">
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setForm((prev) => ({ ...prev, pdfFile: file }));
+                  }}
+                  className="block w-full text-sm"
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  Разрешён только один PDF-файл. Текст для этого типа материала не используется.
+                </p>
+                {form.pdfFile && (
+                  <p className="text-xs text-slate-700 mt-2">
+                    Выбран файл: {form.pdfFile.name}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <button onClick={() => setShowCreate(false)} className="flex-1 h-10 rounded-lg bg-slate-100 text-sm">
                 Отмена

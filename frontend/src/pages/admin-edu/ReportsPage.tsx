@@ -5,6 +5,21 @@ import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { ReportsAPI, LearningRatingDTO } from "../../api/ReportsAPI";
 import type { CourseListItem } from "../../api/KnowledgeAPI";
 
+function toInputDate(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function currentMonthRange() {
+  const today = new Date();
+  return {
+    from: toInputDate(new Date(today.getFullYear(), today.getMonth(), 1)),
+    to: toInputDate(today),
+  };
+}
+
 interface CourseEnrollmentSummary {
   courseId: number;
   courseName: string;
@@ -27,6 +42,7 @@ export default function AdminEduReportsPage() {
   const [loading, setLoading] = useState(true);
   const [recalculating, setRecalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState(currentMonthRange);
 
   // Export state
   const [reportType, setReportType] = useState("learning_users");
@@ -40,7 +56,10 @@ export default function AdminEduReportsPage() {
     try {
       const [courseList, ratingData] = await Promise.all([
         KnowledgeAPI.listAdminCourses(),
-        ReportsAPI.getLearningRating(),
+        ReportsAPI.getLearningRating({
+          periodFrom: period.from,
+          periodTo: period.to,
+        }),
       ]);
       setCourses(courseList);
       setRating(ratingData);
@@ -65,7 +84,7 @@ export default function AdminEduReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period.from, period.to]);
 
   useEffect(() => {
     void loadData();
@@ -80,8 +99,14 @@ export default function AdminEduReportsPage() {
   const handleRecalculate = async () => {
     setRecalculating(true);
     try {
-      await ReportsAPI.recalculateLearningRating();
-      const ratingData = await ReportsAPI.getLearningRating();
+      await ReportsAPI.recalculateLearningRating({
+        periodFrom: period.from,
+        periodTo: period.to,
+      });
+      const ratingData = await ReportsAPI.getLearningRating({
+        periodFrom: period.from,
+        periodTo: period.to,
+      });
       setRating(ratingData);
     } catch (err) {
       console.error("Recalculate failed", err);
@@ -94,7 +119,11 @@ export default function AdminEduReportsPage() {
     setExporting(true);
     setExportError(null);
     try {
-      const { jobId } = await ReportsAPI.createExport({ reportType });
+      const { jobId } = await ReportsAPI.createExport({
+        reportType,
+        periodFrom: period.from,
+        periodTo: period.to,
+      });
 
       const POLL_INTERVAL_MS = 2000;
       const MAX_POLL_ATTEMPTS = 90; // 3 minutes total
@@ -180,6 +209,32 @@ export default function AdminEduReportsPage() {
               <p style={{ color: "#64748B", fontSize: 12, marginTop: 4 }}>{s.label}</p>
             </div>
           ))}
+        </div>
+
+        <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>Период отчёта</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex flex-col gap-1">
+              <span style={{ color: "#64748B", fontSize: 12 }}>С</span>
+              <input
+                type="date"
+                value={period.from}
+                max={period.to}
+                onChange={(e) => setPeriod((prev) => ({ ...prev, from: e.target.value }))}
+                className="h-10 px-3 rounded-lg border text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span style={{ color: "#64748B", fontSize: 12 }}>По</span>
+              <input
+                type="date"
+                value={period.to}
+                min={period.from}
+                onChange={(e) => setPeriod((prev) => ({ ...prev, to: e.target.value }))}
+                className="h-10 px-3 rounded-lg border text-sm"
+              />
+            </label>
+          </div>
         </div>
 
         {/* Course progress section */}

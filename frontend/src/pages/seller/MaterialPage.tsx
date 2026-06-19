@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { CheckCircle, Paperclip } from "lucide-react";
+import { CheckCircle, ExternalLink, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "../../components/AppHeader";
 import { PageLoader } from "../../components/PageLoader";
 import { APIError } from "../../api/APIClient";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { Material } from "../../types/knowledge";
+import { isPdfOnlyMaterial } from "../../utils/knowledgeMaterials";
 
 function renderMarkdownLine(line: string, index: number) {
   if (line.startsWith("## ")) {
@@ -78,6 +79,7 @@ export default function MaterialPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(courseId) || !Number.isFinite(materialIdNum)) {
@@ -106,6 +108,29 @@ export default function MaterialPage() {
       cancelled = true;
     };
   }, [courseId, materialIdNum]);
+
+  useEffect(() => {
+    if (!material || !isPdfOnlyMaterial(material)) {
+      setPdfUrl(null);
+      return;
+    }
+    let cancelled = false;
+    KnowledgeAPI.resolveMaterialAttachments(material.id, courseId, material.attachments.map((item) => item.id))
+      .then((items) => {
+        if (!cancelled) {
+          setPdfUrl(items[0]?.url ?? null);
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message = err instanceof APIError ? err.message : "Не удалось открыть PDF";
+        toast.error(message);
+        setPdfUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, material]);
 
   const lines = useMemo(() => (material?.text ?? "").split("\n"), [material]);
 
@@ -168,7 +193,35 @@ export default function MaterialPage() {
         </div>
 
         <div className="px-4 py-4">
-          {lines.length > 0 && lines.some((l) => l.trim()) ? (
+          {isPdfOnlyMaterial(material) ? (
+            pdfUrl ? (
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+              >
+                <iframe
+                  src={pdfUrl}
+                  title={material.name}
+                  className="w-full"
+                  style={{ height: "70vh", border: "none" }}
+                />
+                <div className="px-4 py-3 border-t border-slate-100">
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium"
+                    style={{ color: "#2E7D32" }}
+                  >
+                    <ExternalLink size={14} />
+                    Открыть PDF отдельно
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: "#64748B", fontSize: 14 }}>PDF загружается...</p>
+            )
+          ) : lines.length > 0 && lines.some((l) => l.trim()) ? (
             <div>{lines.map((line, i) => renderMarkdownLine(line, i))}</div>
           ) : (
             <p style={{ color: "#64748B", fontSize: 14 }}>

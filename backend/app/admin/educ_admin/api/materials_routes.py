@@ -9,11 +9,19 @@ from app.admin.educ_admin.usecases.materials.create_material_usecase import Crea
 from app.admin.educ_admin.usecases.materials.delete_material_attachment_usecase import DeleteMaterialAttachmentUseCase
 from app.admin.educ_admin.usecases.materials.delete_material_usecase import DeleteMaterialUseCase
 from app.admin.educ_admin.usecases.materials.list_materials_usecase import ListMaterialsUseCase
+from app.admin.educ_admin.usecases.materials.resolve_material_attachment_links_usecase import (
+    ResolveMaterialAttachmentLinksUseCase,
+)
 from app.admin.educ_admin.usecases.materials.update_material_usecase import UpdateMaterialUseCase
 from app.admin.educ_admin.usecases.materials.upload_material_attachment_usecase import UploadMaterialAttachmentUseCase
 from app.auth.deps import AuthContext, require_education_admin
 from app.knowledge_base.domain import UserContext
-from app.knowledge_base.dto import MaterialAttachmentDTO, MaterialDTO, MaterialsListDTO
+from app.knowledge_base.dto import (
+    MaterialAttachmentDTO,
+    MaterialAttachmentLinksDTO,
+    MaterialDTO,
+    MaterialsListDTO,
+)
 from app.users.db_models import UserRole
 
 router = APIRouter(route_class=DishkaRoute)
@@ -92,6 +100,23 @@ async def upload_material_attachment(
         payload=payload,
         ctx=_ctx(auth),
     )
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+    return result
+
+
+@router.post(
+    "/{material_id}/attachments/resolve",
+    response_model=MaterialAttachmentLinksDTO,
+    summary="Получить ссылки на вложения материала для админа обучения",
+)
+async def resolve_material_attachments(
+    material_id: int,
+    attachment_ids: list[int],
+    auth: Annotated[AuthContext, Depends(require_education_admin)],
+    usecase: FromDishka[ResolveMaterialAttachmentLinksUseCase],
+) -> MaterialAttachmentLinksDTO:
+    result = await usecase.execute(material_id, attachment_ids, _ctx(auth))
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
     return result

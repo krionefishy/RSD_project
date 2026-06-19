@@ -4,8 +4,7 @@ import { Building2, MapPin, Users } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
-import { LocationsAPI } from "../../api/LocationsAPI";
-import { UserAPI } from "../../api/UserAPI";
+import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
 
@@ -24,15 +23,11 @@ export default function AdminPersonnelDashboardPage() {
     async function loadStats() {
       setStatsLoading(true);
       try {
-        const [employees, locations, blocks] = await Promise.all([
-          UserAPI.listUsers({ role: "seller" }, controller.signal),
-          LocationsAPI.listLocations(undefined, controller.signal),
-          LocationsAPI.listBlocks(undefined, controller.signal),
-        ]);
+        const overview = await AdminStaffAPI.getOverview(controller.signal);
         setStatsData({
-          employees: employees.filter((employee) => employee.storeName).length,
-          locations: locations.length,
-          blocks: blocks.length,
+          employees: overview.employeesCount,
+          locations: overview.locationsCount,
+          blocks: overview.blocksCount,
         });
       } catch (error) {
         if (isAbortError(error)) return;

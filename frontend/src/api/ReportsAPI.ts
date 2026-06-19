@@ -99,11 +99,13 @@ class ReportsAPIImpl {
     };
   }
 
-  async getLearningRating(params?: { scopeType?: string; scopeId?: number }): Promise<LearningRatingDTO | null> {
+  async getLearningRating(params?: { scopeType?: string; scopeId?: number; periodFrom?: string; periodTo?: string }): Promise<LearningRatingDTO | null> {
     try {
       const query: Record<string, string | number> = {};
       if (params?.scopeType) query.scope_type = params.scopeType;
       if (params?.scopeId !== undefined) query.scope_id = params.scopeId;
+      if (params?.periodFrom) query.period_from = params.periodFrom;
+      if (params?.periodTo) query.period_to = params.periodTo;
 
       const response = await apiClient.get<LearningRatingResponse>("/ratings/learning", { query });
       return {

@@ -628,6 +628,9 @@ class Builder:
         max_score: int = 100,
         is_passed: bool = False,
         answers: dict | None = None,
+        attempt_number: int = 1,
+        started_at: datetime | None = None,
+        completed_at: datetime | None = None,
         created_at: datetime | None = None,
     ) -> UserCourseTestModel:
         user_obj = user or await self.build_user()
@@ -639,12 +642,15 @@ class Builder:
                 user_id=user_obj.id,
                 course_id=course_obj.id,
                 test_id=test_obj.id,
+                attempt_number=attempt_number,
                 score=score,
                 max_score=max_score,
                 is_passed=is_passed,
                 answers=answers or {},
+                started_at=started_at or created_at or self._default_datetime,
                 created_at=created_at or self._default_datetime,
                 updated_at=created_at or self._default_datetime,
+                completed_at=completed_at,
             )
             .returning(UserCourseTestModel)
         )

@@ -189,9 +189,14 @@ async def application(
         verify=False,
     )
     mock_s3_client._client = type(
-        "Boto3PutObjectStub",
+        "Boto3S3Stub",
         (),
-        {"put_object": mock_s3_inner.put_object_boto},
+        {
+            "put_object": mock_s3_inner.put_object_boto,
+            "generate_presigned_url": lambda self, operation_name, Params, ExpiresIn, HttpMethod=None: (
+                f"http://localhost:9000/test-bucket/{Params['Key']}?X-Amz-Signature=test"
+            ),
+        },
     )()
 
     # Build providers list manually without AppProvider to avoid S3Client from_context conflict

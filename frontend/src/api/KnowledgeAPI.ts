@@ -994,6 +994,19 @@ class KnowledgeAPIImpl {
     }));
   }
 
+  async resolveAdminMaterialAttachments(
+    materialId: number,
+    attachmentIds: number[],
+  ): Promise<MaterialAttachmentLink[]> {
+    const response = await apiClient.post<{
+      items: Array<{ attachment_id: number; url: string }>;
+    }>(`/admin/education/materials/${materialId}/attachments/resolve`, attachmentIds);
+    return response.items.map((item) => ({
+      attachmentId: item.attachment_id,
+      url: item.url,
+    }));
+  }
+
   // ============ TEST CRUD ============
 
   async listTests(): Promise<Test[]> {

@@ -6,7 +6,12 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
-from app.auth.deps import AuthContext, require_personnel_viewer, require_software_admin
+from app.auth.deps import (
+    AuthContext,
+    require_learning_report_viewer,
+    require_report_exporter,
+    require_software_admin,
+)
 from app.reports.usecases.exports.get_report_export_usecase import (
     GetReportExportUseCase,
     ReportExportStatusDTO,
@@ -31,7 +36,7 @@ reports_router = APIRouter(route_class=DishkaRoute)
     summary="Отчёт по обучению (прогресс всех пользователей)",
 )
 async def get_learning_report(
-    auth: Annotated[AuthContext, Depends(require_personnel_viewer)],
+    auth: Annotated[AuthContext, Depends(require_learning_report_viewer)],
     usecase: FromDishka[GetLearningReportUseCase],
 ) -> LearningReportDTO:
     return await usecase.execute()
@@ -81,7 +86,7 @@ class ExportStatusResponse(BaseModel):
 )
 async def request_report_export(
     body: RequestExportBody,
-    auth: Annotated[AuthContext, Depends(require_software_admin)],
+    auth: Annotated[AuthContext, Depends(require_report_exporter)],
     usecase: FromDishka[RequestReportExportUseCase],
 ) -> RequestExportResponse:
     try:
@@ -107,7 +112,7 @@ async def request_report_export(
 )
 async def get_report_export(
     job_id: UUID,
-    auth: Annotated[AuthContext, Depends(require_software_admin)],
+    auth: Annotated[AuthContext, Depends(require_report_exporter)],
     usecase: FromDishka[GetReportExportUseCase],
 ) -> ExportStatusResponse:
     try:

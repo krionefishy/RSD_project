@@ -38,3 +38,20 @@ class TestUpdateMaterialUseCase:
         )
 
         assert result is None
+
+    async def test_allows_switching_material_text_to_empty(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        education_admin: UserModel,
+    ) -> None:
+        material = await builder.build_material(text="Legacy text")
+
+        result = await UpdateMaterialUseCase(db_session).execute(
+            material.id,
+            UpdateMaterialRequest(text=""),
+            admin_ctx(education_admin),
+        )
+
+        assert result is not None
+        assert result.text == ""

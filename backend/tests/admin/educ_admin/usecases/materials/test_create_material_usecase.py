@@ -46,3 +46,21 @@ class TestCreateMaterialUseCase:
         )
 
         assert result is None
+
+    async def test_allows_creating_pdf_material_without_text(
+        self,
+        db_session: AsyncSession,
+        education_admin: UserModel,
+    ) -> None:
+        result = await CreateMaterialUseCase(db_session).execute(
+            CreateMaterialRequest(
+                name="PDF Material",
+                category="docs",
+                description="PDF only",
+                text="",
+            ),
+            admin_ctx(education_admin),
+        )
+
+        assert result is not None
+        assert result.text == ""

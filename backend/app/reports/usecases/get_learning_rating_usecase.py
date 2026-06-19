@@ -42,9 +42,10 @@ class GetLearningRatingUseCase:
         self,
         scope_type: str = "network",
         scope_id: Optional[int] = None,
+        period_from: Optional[date] = None,
+        period_to: Optional[date] = None,
     ) -> Optional[LearningRatingDTO]:
-        # Find latest snapshot
-        snapshot_result = await self.session.execute(
+        query = (
             select(RatingSnapshotModel)
             .where(
                 RatingSnapshotModel.rating_type == "learning",
@@ -59,6 +60,12 @@ class GetLearningRatingUseCase:
                 )
             )
         )
+        if period_from is not None and period_to is not None:
+            query = query.where(
+                RatingSnapshotModel.period_from == period_from,
+                RatingSnapshotModel.period_to == period_to,
+            )
+        snapshot_result = await self.session.execute(query)
         snapshot = snapshot_result.scalar_one_or_none()
         if snapshot is None:
             return None

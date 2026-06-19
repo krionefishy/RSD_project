@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.knowledge_base.access import KB_ADMIN_ROLES
 from app.knowledge_base.db_models import CourseTestModel, CourseUserModel, UserCourseTestModel
 from app.knowledge_base.domain import UserContext
+from app.knowledge_base.usecases.progress import recalculate_course_user_points
 
 
 class ResetTestProgressUseCase:
@@ -50,6 +51,13 @@ class ResetTestProgressUseCase:
                 UserCourseTestModel.user_id == user_id,
                 UserCourseTestModel.test_id == test_id,
             )
+        )
+        enrollment.is_course_completed = False
+        enrollment.is_course_completed_successfully = False
+        await recalculate_course_user_points(
+            self.session,
+            course_id=course_id,
+            user_id=user_id,
         )
         await self.session.commit()
         return True
