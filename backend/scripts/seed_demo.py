@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import sys
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -144,13 +144,69 @@ def _log_demo_credentials(password: str, accounts: list[dict[str, Any]]) -> None
     logger.info("Config path: %s", Path(_config_path() or "").resolve() if _config_path() else "default")
 
 
+def _hours(value: str) -> Decimal:
+    return Decimal(value)
+
+
+def _completed_at(day: int, hour: int = 10) -> datetime:
+    return datetime(2026, 6, day, hour, 0, 0)
+
+
+def _append_shift(
+    entries: list[EmployeeTimeEntryModel],
+    user_id,
+    work_date: date,
+    shift_code: str,
+    *,
+    hours: str,
+    starts_at: time | None = None,
+    ends_at: time | None = None,
+) -> None:
+    if shift_code in {"С1", "С2"}:
+        activity_code = "Я"
+        shift_type = ShiftType.DAY.value
+    elif shift_code == "В":
+        activity_code = "В"
+        shift_type = ShiftType.NONE.value
+    else:
+        activity_code = "Б"
+        shift_type = ShiftType.NONE.value
+
+    entries.append(
+        EmployeeTimeEntryModel(
+            user_id=user_id,
+            work_date=work_date,
+            activity_code=activity_code,
+            hours=_hours(hours),
+            shift_type=shift_type,
+            shift_code=shift_code,
+            starts_at=starts_at,
+            ends_at=ends_at,
+        )
+    )
+
+
+def _schedule_range(start: date, codes: list[str]) -> list[tuple[date, str]]:
+    return [(start + timedelta(days=index), code) for index, code in enumerate(codes)]
+
+
 async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) -> None:
     north = BlockModel(name="Северный блок", description="Демо-блок для менеджера")
-    south = BlockModel(name="Южный блок", description="Резервный демо-блок")
+    south = BlockModel(name="Южный блок", description="Демо-блок для второго менеджера")
     metro = LocationModel(
         code="MSK-METRO",
         name="ТЦ Метрополис",
         address="Москва, Ленинградское шоссе, 16А",
+        city="Москва",
+        s1_start_at=time(5, 0),
+        s1_end_at=time(13, 30),
+        s2_start_at=time(13, 30),
+        s2_end_at=time(22, 0),
+    )
+    aviapark = LocationModel(
+        code="MSK-AVIAPARK",
+        name="ТЦ Авиапарк",
+        address="Москва, Ходынский бульвар, 4",
         city="Москва",
         s1_start_at=time(5, 0),
         s1_end_at=time(13, 30),
@@ -178,15 +234,17 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
         s2_end_at=time(22, 0),
     )
 
-    session.add_all([north, south, metro, europe, crocus])
+    session.add_all([north, south, metro, aviapark, europe, crocus])
     await session.flush()
 
     session.add_all(
         [
             BlockLocationModel(block_id=north.id, location_id=metro.id),
-            BlockLocationModel(block_id=north.id, location_id=crocus.id),
+            BlockLocationModel(block_id=north.id, location_id=aviapark.id),
             BlockLocationModel(block_id=south.id, location_id=europe.id),
+            BlockLocationModel(block_id=south.id, location_id=crocus.id),
             ManagerBlockModel(manager_id=users["manager_north"].id, block_id=north.id),
+            ManagerBlockModel(manager_id=users["manager_south"].id, block_id=south.id),
             BlockMemberModel(
                 user_id=users["seller_anna"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value
             ),
@@ -194,10 +252,26 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
                 user_id=users["seller_kirill"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value
             ),
             BlockMemberModel(
-                user_id=users["seller_olga"].id, block_id=north.id, status=BlockMemberStatus.RESERVE.value
+                user_id=users["seller_maria"].id, block_id=north.id, status=BlockMemberStatus.PRIMARY.value
+            ),
+            BlockMemberModel(
+                user_id=users["seller_ivan"].id, block_id=north.id, status=BlockMemberStatus.RESERVE.value
+            ),
+            BlockMemberModel(
+                user_id=users["seller_denis"].id, block_id=south.id, status=BlockMemberStatus.PRIMARY.value
+            ),
+            BlockMemberModel(
+                user_id=users["seller_svetlana"].id, block_id=south.id, status=BlockMemberStatus.PRIMARY.value
+            ),
+            BlockMemberModel(
+                user_id=users["seller_olga"].id, block_id=south.id, status=BlockMemberStatus.RESERVE.value
             ),
             UserLocationModel(user_id=users["seller_anna"].id, location_id=metro.id),
             UserLocationModel(user_id=users["seller_kirill"].id, location_id=metro.id),
+            UserLocationModel(user_id=users["seller_maria"].id, location_id=aviapark.id),
+            UserLocationModel(user_id=users["seller_ivan"].id, location_id=aviapark.id),
+            UserLocationModel(user_id=users["seller_denis"].id, location_id=europe.id),
+            UserLocationModel(user_id=users["seller_svetlana"].id, location_id=crocus.id),
             UserLocationModel(user_id=users["seller_olga"].id, location_id=crocus.id),
         ]
     )
@@ -238,6 +312,14 @@ async def _seed_personnel(session: AsyncSession, users: dict[str, UserModel]) ->
                 is_paid=False,
                 is_worked_time=False,
             ),
+            ActivityCodeModel(
+                code="О",
+                name="Отпуск",
+                entry_type=ActivityEntryType.ABSENCE.value,
+                default_hours=Decimal("0.00"),
+                is_paid=True,
+                is_worked_time=False,
+            ),
         ]
     )
     session.add_all(
@@ -260,58 +342,107 @@ async def _seed_personnel(session: AsyncSession, users: dict[str, UserModel]) ->
                 hourly_rate=Decimal("280.00"),
                 night_hourly_rate=None,
             ),
-        ]
-    )
-    session.add_all(
-        [
-            EmployeeTimeEntryModel(
-                user_id=users["seller_anna"].id,
-                work_date=date(2026, 6, 15),
-                activity_code="Я",
-                hours=Decimal("8.50"),
-                shift_type=ShiftType.DAY.value,
-                shift_code="С1",
-                starts_at=time(5, 0),
-                ends_at=time(13, 30),
+            EmployeeCompensationModel(
+                user_id=users["seller_maria"].id,
+                base_salary=Decimal("47000.00"),
+                hourly_rate=Decimal("360.00"),
+                night_hourly_rate=Decimal("460.00"),
             ),
-            EmployeeTimeEntryModel(
-                user_id=users["seller_kirill"].id,
-                work_date=date(2026, 6, 15),
-                activity_code="Я",
-                hours=Decimal("8.50"),
-                shift_type=ShiftType.DAY.value,
-                shift_code="С2",
-                starts_at=time(13, 30),
-                ends_at=time(22, 0),
+            EmployeeCompensationModel(
+                user_id=users["seller_ivan"].id,
+                base_salary=Decimal("44000.00"),
+                hourly_rate=Decimal("340.00"),
+                night_hourly_rate=Decimal("440.00"),
             ),
-            EmployeeTimeEntryModel(
-                user_id=users["seller_anna"].id,
-                work_date=date(2026, 6, 16),
-                activity_code="Я",
-                hours=Decimal("8.50"),
-                shift_type=ShiftType.DAY.value,
-                shift_code="С2",
-                starts_at=time(13, 30),
-                ends_at=time(22, 0),
+            EmployeeCompensationModel(
+                user_id=users["seller_denis"].id,
+                base_salary=Decimal("55000.00"),
+                hourly_rate=Decimal("430.00"),
+                night_hourly_rate=Decimal("530.00"),
             ),
-            EmployeeTimeEntryModel(
-                user_id=users["seller_kirill"].id,
-                work_date=date(2026, 6, 16),
-                activity_code="В",
-                hours=Decimal("0.00"),
-                shift_type=ShiftType.NONE.value,
-                shift_code="В",
-            ),
-            EmployeeTimeEntryModel(
-                user_id=users["seller_olga"].id,
-                work_date=date(2026, 6, 15),
-                activity_code="Б",
-                hours=Decimal("0.00"),
-                shift_type=ShiftType.NONE.value,
-                shift_code="О/Б",
+            EmployeeCompensationModel(
+                user_id=users["seller_svetlana"].id,
+                base_salary=Decimal("46000.00"),
+                hourly_rate=Decimal("355.00"),
+                night_hourly_rate=Decimal("455.00"),
             ),
         ]
     )
+    entries: list[EmployeeTimeEntryModel] = []
+    june_start = date(2026, 6, 15)
+
+    for work_date, shift_code in _schedule_range(june_start, ["С1", "С2", "В", "С1", "С1", "В", "С2"]):
+        _append_shift(
+            entries,
+            users["seller_anna"].id,
+            work_date,
+            shift_code,
+            hours="8.50" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+    for work_date, shift_code in _schedule_range(june_start, ["С2", "В", "С1", "С2", "В", "С2", "С1"]):
+        _append_shift(
+            entries,
+            users["seller_kirill"].id,
+            work_date,
+            shift_code,
+            hours="8.50" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+    for work_date, shift_code in _schedule_range(june_start, ["С1", "С1", "С2", "В", "С1", "С2", "В"]):
+        _append_shift(
+            entries,
+            users["seller_maria"].id,
+            work_date,
+            shift_code,
+            hours="8.50" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+    for work_date, shift_code in _schedule_range(june_start, ["В", "С2", "С1", "С1", "О/Б", "С2", "С1"]):
+        _append_shift(
+            entries,
+            users["seller_ivan"].id,
+            work_date,
+            shift_code,
+            hours="8.50" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+    for work_date, shift_code in _schedule_range(june_start, ["С1", "С2", "С1", "С2", "В", "С1", "С2"]):
+        _append_shift(
+            entries,
+            users["seller_denis"].id,
+            work_date,
+            shift_code,
+            hours="8.00" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+    for work_date, shift_code in _schedule_range(june_start, ["С2", "С1", "В", "С2", "С1", "В", "С2"]):
+        _append_shift(
+            entries,
+            users["seller_svetlana"].id,
+            work_date,
+            shift_code,
+            hours="8.00" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+    for work_date, shift_code in _schedule_range(june_start, ["О/Б", "О/Б", "О/Б", "С1", "В", "О/Б", "С2"]):
+        _append_shift(
+            entries,
+            users["seller_olga"].id,
+            work_date,
+            shift_code,
+            hours="8.50" if shift_code in {"С1", "С2"} else "0.00",
+            starts_at=time(5, 0) if shift_code == "С1" else time(13, 30) if shift_code == "С2" else None,
+            ends_at=time(13, 30) if shift_code == "С1" else time(22, 0) if shift_code == "С2" else None,
+        )
+
+    session.add_all(entries)
 
 
 async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel]) -> None:
@@ -327,12 +458,32 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
         description="Кассовая дисциплина",
         text="Открытие смены, пробитие заказа, возвраты и закрытие смены.",
     )
+    material_hygiene = MaterialModel(
+        name="Личная гигиена сотрудника",
+        category="hygiene",
+        description="Требования к внешнему виду и санитарным нормам",
+        text="Чистая форма, аккуратный внешний вид, соблюдение санитарных правил и чек-листов открытия.",
+    )
+    material_guest_recovery = MaterialModel(
+        name="Работа с возражениями",
+        category="service",
+        description="Сценарии восстановления сервиса",
+        text="Выслушать гостя, извиниться, предложить решение и закрыть ситуацию по стандарту сети.",
+    )
     final_test = TestModel(
         name="Итоговый тест продавца",
         category="service",
         description="Проверка базовых знаний продавца",
         is_final=True,
         time_limit_minutes=20,
+        pass_score_percent=70,
+    )
+    hygiene_test = TestModel(
+        name="Проверка по гигиене",
+        category="hygiene",
+        description="Короткий тест по санитарным требованиям",
+        is_final=True,
+        time_limit_minutes=10,
         pass_score_percent=70,
     )
     task_greeting = TestTaskModel(
@@ -349,72 +500,209 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
         answer_variants=["Сразу пробить первый заказ", "Открыть смену и проверить кассу", "Сделать возврат"],
         correct_variant=1,
     )
-    course = CourseModel(
+    task_hands = TestTaskModel(
+        name="Гигиена рук",
+        description="Когда сотрудник обязан обработать руки?",
+        points=5,
+        answer_variants=["Только в начале смены", "Перед работой и после контакта с потенциально загрязненными поверхностями", "Только после обеда"],
+        correct_variant=1,
+    )
+    task_uniform = TestTaskModel(
+        name="Форма сотрудника",
+        description="Какой вариант соответствует стандарту формы?",
+        points=5,
+        answer_variants=["Любая удобная одежда", "Чистая форма по стандарту и бейдж", "Только фартук"],
+        correct_variant=1,
+    )
+    onboarding_course = CourseModel(
         name="Онбординг продавца",
         description="Демо-курс для новых сотрудников",
         rating_points=10,
         mrp=5,
     )
+    hygiene_course = CourseModel(
+        name="Гигиена и стандарты смены",
+        description="Обязательный курс по санитарным нормам и поведению на точке",
+        rating_points=10,
+        mrp=4,
+    )
 
-    session.add_all([material_service, material_register, final_test, task_greeting, task_register, course])
+    session.add_all(
+        [
+            material_service,
+            material_register,
+            material_hygiene,
+            material_guest_recovery,
+            final_test,
+            hygiene_test,
+            task_greeting,
+            task_register,
+            task_hands,
+            task_uniform,
+            onboarding_course,
+            hygiene_course,
+        ]
+    )
     await session.flush()
 
-    completed_at = datetime(2026, 6, 10, 10, 0, 0)
+    onboarding_done = _completed_at(10)
+    hygiene_done = _completed_at(12)
 
     session.add_all(
         [
             TestTaskAssignmentModel(test_id=final_test.id, task_id=task_greeting.id, order=0),
             TestTaskAssignmentModel(test_id=final_test.id, task_id=task_register.id, order=1),
-            CourseMaterialModel(course_id=course.id, material_id=material_service.id),
-            CourseMaterialModel(course_id=course.id, material_id=material_register.id),
-            CourseTestModel(course_id=course.id, test_id=final_test.id, is_final=True),
-            CourseUserModel(user_id=users["seller_anna"].id, course_id=course.id, user_points_by_course=0),
+            TestTaskAssignmentModel(test_id=hygiene_test.id, task_id=task_hands.id, order=0),
+            TestTaskAssignmentModel(test_id=hygiene_test.id, task_id=task_uniform.id, order=1),
+            CourseMaterialModel(course_id=onboarding_course.id, material_id=material_service.id),
+            CourseMaterialModel(course_id=onboarding_course.id, material_id=material_register.id),
+            CourseTestModel(course_id=onboarding_course.id, test_id=final_test.id, is_final=True),
+            CourseMaterialModel(course_id=hygiene_course.id, material_id=material_hygiene.id),
+            CourseMaterialModel(course_id=hygiene_course.id, material_id=material_guest_recovery.id),
+            CourseTestModel(course_id=hygiene_course.id, test_id=hygiene_test.id, is_final=True),
+            CourseUserModel(user_id=users["seller_anna"].id, course_id=onboarding_course.id, user_points_by_course=0),
             CourseUserModel(
                 user_id=users["seller_kirill"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 user_points_by_course=10,
                 is_course_completed=True,
                 is_course_completed_successfully=True,
             ),
-            CourseUserModel(user_id=users["seller_olga"].id, course_id=course.id, user_points_by_course=5),
+            CourseUserModel(user_id=users["seller_olga"].id, course_id=onboarding_course.id, user_points_by_course=5),
+            CourseUserModel(
+                user_id=users["seller_maria"].id,
+                course_id=onboarding_course.id,
+                user_points_by_course=10,
+                is_course_completed=True,
+                is_course_completed_successfully=True,
+            ),
+            CourseUserModel(
+                user_id=users["seller_ivan"].id,
+                course_id=onboarding_course.id,
+                user_points_by_course=10,
+                is_course_completed=True,
+                is_course_completed_successfully=True,
+            ),
+            CourseUserModel(
+                user_id=users["seller_kirill"].id,
+                course_id=hygiene_course.id,
+                user_points_by_course=10,
+                is_course_completed=True,
+                is_course_completed_successfully=True,
+            ),
+            CourseUserModel(
+                user_id=users["seller_denis"].id,
+                course_id=hygiene_course.id,
+                user_points_by_course=10,
+                is_course_completed=True,
+                is_course_completed_successfully=True,
+            ),
+            CourseUserModel(
+                user_id=users["seller_svetlana"].id,
+                course_id=hygiene_course.id,
+                user_points_by_course=0,
+            ),
             UserCourseMaterialModel(
                 user_id=users["seller_anna"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 material_id=material_service.id,
                 is_completed=True,
-                completed_at=completed_at,
+                completed_at=onboarding_done,
             ),
             UserCourseMaterialModel(
                 user_id=users["seller_kirill"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 material_id=material_service.id,
                 is_completed=True,
-                completed_at=completed_at,
+                completed_at=onboarding_done,
             ),
             UserCourseMaterialModel(
                 user_id=users["seller_kirill"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 material_id=material_register.id,
                 is_completed=True,
-                completed_at=completed_at,
+                completed_at=onboarding_done,
             ),
             UserCourseMaterialModel(
                 user_id=users["seller_olga"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 material_id=material_service.id,
                 is_completed=True,
-                completed_at=completed_at,
+                completed_at=onboarding_done,
             ),
             UserCourseMaterialModel(
                 user_id=users["seller_olga"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 material_id=material_register.id,
                 is_completed=True,
-                completed_at=completed_at,
+                completed_at=onboarding_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_maria"].id,
+                course_id=onboarding_course.id,
+                material_id=material_service.id,
+                is_completed=True,
+                completed_at=onboarding_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_maria"].id,
+                course_id=onboarding_course.id,
+                material_id=material_register.id,
+                is_completed=True,
+                completed_at=onboarding_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_ivan"].id,
+                course_id=onboarding_course.id,
+                material_id=material_service.id,
+                is_completed=True,
+                completed_at=onboarding_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_ivan"].id,
+                course_id=onboarding_course.id,
+                material_id=material_register.id,
+                is_completed=True,
+                completed_at=onboarding_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_kirill"].id,
+                course_id=hygiene_course.id,
+                material_id=material_hygiene.id,
+                is_completed=True,
+                completed_at=hygiene_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_kirill"].id,
+                course_id=hygiene_course.id,
+                material_id=material_guest_recovery.id,
+                is_completed=True,
+                completed_at=hygiene_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_denis"].id,
+                course_id=hygiene_course.id,
+                material_id=material_hygiene.id,
+                is_completed=True,
+                completed_at=hygiene_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_denis"].id,
+                course_id=hygiene_course.id,
+                material_id=material_guest_recovery.id,
+                is_completed=True,
+                completed_at=hygiene_done,
+            ),
+            UserCourseMaterialModel(
+                user_id=users["seller_svetlana"].id,
+                course_id=hygiene_course.id,
+                material_id=material_hygiene.id,
+                is_completed=True,
+                completed_at=hygiene_done,
             ),
             UserCourseTestModel(
                 user_id=users["seller_kirill"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 test_id=final_test.id,
                 attempt_number=1,
                 score=10,
@@ -424,12 +712,12 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
                     str(task_greeting.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
                     str(task_register.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
                 },
-                started_at=completed_at,
-                completed_at=completed_at,
+                started_at=onboarding_done,
+                completed_at=onboarding_done,
             ),
             UserCourseTestModel(
                 user_id=users["seller_olga"].id,
-                course_id=course.id,
+                course_id=onboarding_course.id,
                 test_id=final_test.id,
                 attempt_number=1,
                 score=5,
@@ -439,8 +727,83 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
                     str(task_greeting.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
                     str(task_register.id): {"selected_variant": 0, "is_correct": False, "points_earned": 0},
                 },
-                started_at=completed_at,
-                completed_at=completed_at,
+                started_at=onboarding_done,
+                completed_at=onboarding_done,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_maria"].id,
+                course_id=onboarding_course.id,
+                test_id=final_test.id,
+                attempt_number=1,
+                score=10,
+                max_score=10,
+                is_passed=True,
+                answers={
+                    str(task_greeting.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                    str(task_register.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                },
+                started_at=onboarding_done,
+                completed_at=onboarding_done,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_ivan"].id,
+                course_id=onboarding_course.id,
+                test_id=final_test.id,
+                attempt_number=1,
+                score=10,
+                max_score=10,
+                is_passed=True,
+                answers={
+                    str(task_greeting.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                    str(task_register.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                },
+                started_at=onboarding_done,
+                completed_at=onboarding_done,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_kirill"].id,
+                course_id=hygiene_course.id,
+                test_id=hygiene_test.id,
+                attempt_number=1,
+                score=10,
+                max_score=10,
+                is_passed=True,
+                answers={
+                    str(task_hands.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                    str(task_uniform.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                },
+                started_at=hygiene_done,
+                completed_at=hygiene_done,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_denis"].id,
+                course_id=hygiene_course.id,
+                test_id=hygiene_test.id,
+                attempt_number=1,
+                score=10,
+                max_score=10,
+                is_passed=True,
+                answers={
+                    str(task_hands.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                    str(task_uniform.id): {"selected_variant": 1, "is_correct": True, "points_earned": 5},
+                },
+                started_at=hygiene_done,
+                completed_at=hygiene_done,
+            ),
+            UserCourseTestModel(
+                user_id=users["seller_svetlana"].id,
+                course_id=hygiene_course.id,
+                test_id=hygiene_test.id,
+                attempt_number=1,
+                score=0,
+                max_score=10,
+                is_passed=False,
+                answers={
+                    str(task_hands.id): {"selected_variant": 0, "is_correct": False, "points_earned": 0},
+                    str(task_uniform.id): {"selected_variant": 2, "is_correct": False, "points_earned": 0},
+                },
+                started_at=hygiene_done,
+                completed_at=hygiene_done,
             ),
         ]
     )

@@ -36,6 +36,24 @@ class TestGetUserById:
 
         assert response.status_code == 404
 
+    async def test_returns_200_when_admin_education_requests_user_profile(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        bearer_headers,
+    ) -> None:
+        admin_edu = await builder.default_admin_education
+        seller = await builder.default_seller
+
+        response = await client.get(
+            f"/api/v1/users/{seller.id}",
+            headers=bearer_headers(admin_edu),
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["id"] == str(seller.id)
+
     async def test_returns_401_when_authorization_header_missing(
         self,
         client: AsyncClient,

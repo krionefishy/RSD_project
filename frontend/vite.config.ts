@@ -14,4 +14,9 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/__tests__/setup.ts'],
+  },
 })

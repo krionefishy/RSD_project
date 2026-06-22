@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 
 from sqlalchemy import Integer, case, distinct, func, select
@@ -59,7 +59,7 @@ class CalculateLearningRatingUseCase:
         user_totals_result = await self.session.execute(base_query)
         rows = user_totals_result.all()
 
-        now = datetime.now()
+        now = datetime.now(UTC)
         snapshot = RatingSnapshotModel(
             rating_type="learning",
             scope_type=scope_type,

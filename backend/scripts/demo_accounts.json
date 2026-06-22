@@ -50,10 +50,19 @@
       "key": "manager_north",
       "external_system_id": "manager_north_001",
       "role": "manager",
-      "label": "Менеджер",
+      "label": "Менеджер Север",
       "first_name": "Марина",
       "last_name": "Северная",
       "show_on_login": true
+    },
+    {
+      "key": "manager_south",
+      "external_system_id": "manager_south_001",
+      "role": "manager",
+      "label": "Менеджер Юг",
+      "first_name": "Игорь",
+      "last_name": "Южный",
+      "show_on_login": false
     },
     {
       "key": "seller_anna",
@@ -89,6 +98,54 @@
       "phone": "+7 900 100-10-03",
       "position": "Стажер",
       "is_active": false,
+      "show_on_login": false
+    },
+    {
+      "key": "seller_maria",
+      "external_system_id": "seller_maria_001",
+      "role": "seller",
+      "label": "Продавец Мария",
+      "first_name": "Мария",
+      "last_name": "Петрова",
+      "phone": "+7 900 100-10-04",
+      "position": "Продавец",
+      "is_active": true,
+      "show_on_login": false
+    },
+    {
+      "key": "seller_ivan",
+      "external_system_id": "seller_ivan_001",
+      "role": "seller",
+      "label": "Продавец Иван",
+      "first_name": "Иван",
+      "last_name": "Сидоров",
+      "phone": "+7 900 100-10-05",
+      "position": "Продавец",
+      "is_active": true,
+      "show_on_login": false
+    },
+    {
+      "key": "seller_denis",
+      "external_system_id": "seller_denis_001",
+      "role": "seller",
+      "label": "Продавец Денис",
+      "first_name": "Денис",
+      "last_name": "Лукин",
+      "phone": "+7 900 100-10-06",
+      "position": "Старший продавец",
+      "is_active": true,
+      "show_on_login": false
+    },
+    {
+      "key": "seller_svetlana",
+      "external_system_id": "seller_svetlana_001",
+      "role": "seller",
+      "label": "Продавец Светлана",
+      "first_name": "Светлана",
+      "last_name": "Громова",
+      "phone": "+7 900 100-10-07",
+      "position": "Продавец",
+      "is_active": true,
       "show_on_login": false
     }
   ]

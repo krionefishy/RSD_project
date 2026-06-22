@@ -47,6 +47,7 @@ class Builder:
         self.__seller: UserModel | None = None
         self.__manager: UserModel | None = None
         self.__admin_staff: UserModel | None = None
+        self.__admin_education: UserModel | None = None
         self.__location: LocationModel | None = None
         self.__block: BlockModel | None = None
         self.__activity_code: ActivityCodeModel | None = None
@@ -106,6 +107,17 @@ class Builder:
                 last_name="Staff",
             )
         return self.__admin_staff
+
+    @property
+    async def default_admin_education(self) -> UserModel:
+        if self.__admin_education is None:
+            self.__admin_education = await self.build_user(
+                external_system_id="default_admin_education",
+                role=UserRole.ADMIN_EDUCATION,
+                first_name="Admin",
+                last_name="Education",
+            )
+        return self.__admin_education
 
     @property
     async def default_activity_code(self) -> ActivityCodeModel:

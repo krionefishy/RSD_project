@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Optional
 
 from sqlalchemy import delete, select
@@ -75,12 +75,12 @@ class UpdateUserAdminUseCase:
                 assignment = UserLocationModel(
                     user_id=user_id,
                     location_id=request.location_id,
-                    assigned_at=datetime.now(),
+                    assigned_at=datetime.now(UTC),
                 )
                 self.session.add(assignment)
             else:
                 assignment.location_id = request.location_id
-                assignment.assigned_at = datetime.now()
+                assignment.assigned_at = datetime.now(UTC)
 
         await self.session.commit()
         await self.session.refresh(user)

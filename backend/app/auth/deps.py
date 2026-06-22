@@ -83,6 +83,7 @@ async def require_personnel_viewer(request: Request) -> AuthContext:
         {
             UserRole.MANAGER.value,
             UserRole.ADMIN_STAFF.value,
+            UserRole.ADMIN_EDUCATION.value,
             UserRole.ROOT_ADMIN.value,
             UserRole.SUPER_ADMIN.value,
         },

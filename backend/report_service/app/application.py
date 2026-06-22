@@ -68,8 +68,13 @@ class Application:
         )
 
     def _get_cors_origins(self) -> list[str]:
-        raw = os.getenv("CORS_ORIGINS", "*").strip()
+        raw = os.getenv("CORS_ORIGINS", "").strip()
         if not raw or raw == "*":
+            if self.settings.env_mode == "production":
+                raise RuntimeError(
+                    "CORS_ORIGINS must be explicitly set in production mode. "
+                    "Set the CORS_ORIGINS environment variable to a comma-separated list of allowed origins."
+                )
             return ["*"]
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
@@ -92,8 +97,27 @@ class Application:
         except Exception as e:
             logging.getLogger("main").warning("S3 not available: %s", e)
 
+    def _validate_production_secrets(self) -> None:
+        """Refuse to start in production mode with placeholder or missing secrets."""
+        if self.settings.env_mode != "production":
+            return
+
+        _PLACEHOLDER_SECRETS = {
+            "change-me-user-jwt-secret-min-32-chars",
+            "change-inter-service-secret-in-production",
+            "change-me-inter-service-secret-min-32-chars",
+            "secret",
+        }
+
+        if self.settings.service_jwt.secret in _PLACEHOLDER_SECRETS:
+            raise RuntimeError(
+                "Inter-service JWT secret is a placeholder value. "
+                "Set a secure secret in config before running in production."
+            )
+
     async def _on_startup(self):
         logger = logging.getLogger("main")
+        self._validate_production_secrets()
         logger.info("RSD Report Service starting...")
 
         await self.db.connect(

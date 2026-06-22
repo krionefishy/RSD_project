@@ -31,6 +31,23 @@ class TestGetEmployeeTimesheet:
         body = response.json()
         assert body["user"]["id"] == str(seller.id)
 
+    async def test_returns_200_when_admin_education_requests_employee_timesheet(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        bearer_headers,
+    ) -> None:
+        admin_edu = await builder.default_admin_education
+        seller = await builder.default_seller
+
+        response = await client.get(
+            f"/api/v1/personnel/users/{seller.id}/timesheet",
+            headers=bearer_headers(admin_edu),
+            params={"period_from": "2024-10-01", "period_to": "2024-10-31"},
+        )
+
+        assert response.status_code == 200
+
     async def test_returns_403_when_seller_requests_another_employee_timesheet(
         self,
         client: AsyncClient,

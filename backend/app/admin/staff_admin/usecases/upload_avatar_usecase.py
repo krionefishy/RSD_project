@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 from shared.kafka_streams.producer import KafkaProducerWrapper
@@ -53,6 +53,15 @@ class UploadAvatarUseCase:
 
         safe_name = sanitize_key_segment(filename, "avatar")
         key = f"avatars/{user_id}/{safe_name}"
+
+        user.avatar_url = key
+        user.updated_at = datetime.now(UTC)
+        await self.session.commit()
+
+        # Publish Kafka event after DB commit so the avatar_url is persisted
+        # before the S3 upload is triggered. If Kafka is unavailable the
+        # avatar_url stays in DB but the file won't be uploaded until the next
+        # publish attempt (best-effort; full transactional outbox is a follow-up).
         await publish_s3_upload(
             self.kafka_producer,
             StorageTopics.AVATAR_UPLOAD,
@@ -62,9 +71,5 @@ class UploadAvatarUseCase:
             metadata={"user_id": str(user_id)},
             original_filename=filename,
         )
-
-        user.avatar_url = key
-        user.updated_at = datetime.now()
-        await self.session.commit()
 
         return key

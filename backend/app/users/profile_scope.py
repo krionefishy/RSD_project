@@ -51,6 +51,14 @@ def ensure_can_manage_user(ctx: AuthContext, target_role: str) -> None:
             raise ProfileForbiddenError("root_admin cannot manage super_admin accounts")
 
 
+PROFILE_VIEWER_ROLES = {
+    UserRole.ADMIN_STAFF.value,
+    UserRole.ADMIN_EDUCATION.value,
+    UserRole.ROOT_ADMIN.value,
+    UserRole.SUPER_ADMIN.value,
+}
+
+
 async def can_view_user_profile(
     session: AsyncSession,
     ctx: AuthContext,
@@ -58,12 +66,10 @@ async def can_view_user_profile(
 ) -> bool:
     if str(target_user_id) == ctx.user_id:
         return True
-    if ctx.role in UNRESTRICTED_ROLES or ctx.role == UserRole.ADMIN_STAFF.value:
+    if ctx.role in PROFILE_VIEWER_ROLES:
         return True
     if ctx.role == UserRole.MANAGER.value:
         return await _user_in_manager_blocks(session, UUID(ctx.user_id), target_user_id)
-    if ctx.role in SELLER_ROLES:
-        return False
     return False
 
 

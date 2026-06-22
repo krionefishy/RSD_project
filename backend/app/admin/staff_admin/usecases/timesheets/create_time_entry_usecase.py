@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import UTC, datetime, time
 from decimal import Decimal
 
 from fastapi import HTTPException, status
@@ -74,7 +74,7 @@ class CreateTimeEntryUseCase:
             existing.shift_code = request.shift_code
             existing.starts_at = starts_at
             existing.ends_at = ends_at
-            existing.updated_at = datetime.now()
+            existing.updated_at = datetime.now(UTC)
             entry = existing
         else:
             entry = EmployeeTimeEntryModel(

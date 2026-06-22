@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +41,7 @@ class CompleteMaterialUseCase:
         if access_result.scalar_one_or_none() is None:
             return None
 
-        completed_at = datetime.now()
+        completed_at = datetime.now(UTC)
         self.session.add(
             UserCourseMaterialModel(
                 user_id=ctx.user_id,

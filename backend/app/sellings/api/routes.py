@@ -1,15 +1,26 @@
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
 
-@router.get("/stats")
+@router.get(
+    "/stats",
+    include_in_schema=False,
+)
 async def get_sales_stats():
-    """Get sales statistics."""
-    return {"total": 0, "period": "month"}
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "Sales statistics are not yet implemented."},
+    )
 
 
-@router.get("/motivation")
+@router.get(
+    "/motivation",
+    include_in_schema=False,
+)
 async def get_motivation():
-    """Get motivation data."""
-    return {"score": 0, "bonus": 0}
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "Sales motivation is not yet implemented."},
+    )

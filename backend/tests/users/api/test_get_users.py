@@ -21,6 +21,23 @@ class TestGetUsers:
         body = response.json()
         assert "items" in body
 
+    async def test_returns_200_when_admin_education_lists_users(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        bearer_headers,
+    ) -> None:
+        admin_edu = await builder.default_admin_education
+
+        response = await client.get(
+            "/api/v1/users/",
+            headers=bearer_headers(admin_edu),
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert "items" in body
+
     async def test_returns_403_when_seller_lists_users(
         self,
         client: AsyncClient,

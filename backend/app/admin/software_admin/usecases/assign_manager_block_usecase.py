@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import Optional
 
 from sqlalchemy import select
@@ -46,7 +46,7 @@ class AssignManagerBlockUseCase:
         assignment = ManagerBlockModel(
             manager_id=manager_id,
             block_id=block_id,
-            assigned_at=datetime.now(),
+            assigned_at=datetime.now(UTC),
         )
         self.session.add(assignment)
         await self.session.commit()
