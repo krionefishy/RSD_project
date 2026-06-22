@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user) return;
     const controller = new AbortController();
     async function loadData() {
       try {
@@ -74,7 +75,7 @@ export default function DashboardPage() {
     }
     loadData();
     return () => controller.abort();
-  }, []);
+  }, [user]);
 
   if (!user) return null;
 
