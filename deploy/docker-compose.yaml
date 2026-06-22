@@ -173,6 +173,11 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+      args:
+        VITE_DEMO_MODE: "false"
+        VITE_PRESENTATION_MODE: "false"
+        VITE_MOCK_AUTH: "false"
+        VITE_MOCK_KB: "false"
     restart: unless-stopped
     networks:
       - proxy

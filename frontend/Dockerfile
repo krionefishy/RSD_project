@@ -2,7 +2,7 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-ARG VITE_DEMO_MODE=true
+ARG VITE_DEMO_MODE=false
 ARG VITE_PRESENTATION_MODE=false
 ARG VITE_MOCK_AUTH=false
 ARG VITE_MOCK_KB=false

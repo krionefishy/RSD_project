@@ -110,6 +110,9 @@ class GetCourseByIdUseCase:
         tests = []
         for ct in course.course_tests or []:
             ut = user_tests_by_test_id.get(ct.test_id)
+            score_percent = None
+            if ut and ut.score is not None and ut.max_score:
+                score_percent = round((ut.score / ut.max_score) * 100)
             tests.append(
                 CourseTestItemDTO(
                     id=ct.id,
@@ -119,7 +122,7 @@ class GetCourseByIdUseCase:
                     is_final=ct.is_final,
                     tasks_count=ct.test.tasks_count if ct.test else 0,
                     is_passed=ut.is_passed if ut else False,
-                    score=ut.score if ut else None,
+                    score=score_percent,
                 )
             )
 

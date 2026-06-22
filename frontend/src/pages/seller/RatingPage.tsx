@@ -76,8 +76,13 @@ export default function RatingPage() {
           setLearningDisplay(EMPTY);
         }
       })
-      .catch(() => {
-        if (!cancelled) setLearningDisplay(EMPTY);
+      .catch((error) => {
+        if (!cancelled) {
+          setLearningDisplay(EMPTY);
+          if (!isAbortError(error)) {
+            toast.error(getErrorMessage(error, "Не удалось загрузить рейтинг обучения"));
+          }
+        }
       })
       .finally(() => {
         if (!cancelled) setLearningLoading(false);

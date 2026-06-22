@@ -128,7 +128,9 @@ export default function KnowledgeSectionPage() {
         </div>
         <div className="w-px h-10" style={{ background: "#E2E8F0" }} />
         <div className="text-center flex-1">
-          <p style={{ color: palette.color, fontSize: 20, fontWeight: 700 }}>{progressPercent}%</p>
+          <p className="whitespace-nowrap" style={{ color: palette.color, fontSize: 18, fontWeight: 700 }}>
+            {progressPercent}%
+          </p>
           <p style={{ color: "#64748B", fontSize: 11 }}>Прогресс</p>
         </div>
       </div>
@@ -184,7 +186,11 @@ export default function KnowledgeSectionPage() {
                   key={test.id}
                   onClick={() => {
                     if (!isBlocked) {
-                      navigate(`/seller/tests/${test.testId}?course_id=${course.id}`);
+                      navigate(
+                        test.isPassed
+                          ? `/seller/tests/${test.testId}/result?course_id=${course.id}`
+                          : `/seller/tests/${test.testId}?course_id=${course.id}`,
+                      );
                     }
                   }}
                   disabled={isBlocked}

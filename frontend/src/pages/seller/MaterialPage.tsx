@@ -22,6 +22,7 @@ export default function MaterialPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [attachmentUrls, setAttachmentUrls] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (!Number.isFinite(courseId) || !Number.isFinite(materialIdNum)) {
@@ -52,22 +53,27 @@ export default function MaterialPage() {
   }, [courseId, materialIdNum]);
 
   useEffect(() => {
-    if (!material || !isPdfOnlyMaterial(material)) {
+    if (!material || material.attachments.length === 0) {
       setPdfUrl(null);
+      setAttachmentUrls({});
       return;
     }
     let cancelled = false;
     KnowledgeAPI.resolveMaterialAttachments(material.id, courseId, material.attachments.map((item) => item.id))
       .then((items) => {
         if (!cancelled) {
-          setPdfUrl(items[0]?.url ?? null);
+          const urls = Object.fromEntries(items.map((item) => [item.attachmentId, item.url]));
+          const pdfAttachment = material.attachments.find((item) => item.format.toLowerCase() === "pdf");
+          setAttachmentUrls(urls);
+          setPdfUrl(pdfAttachment ? urls[pdfAttachment.id] ?? null : null);
         }
       })
       .catch((err) => {
         if (cancelled) return;
-        const message = err instanceof APIError ? err.message : "Не удалось открыть PDF";
+        const message = err instanceof APIError ? err.message : "Не удалось открыть вложения";
         toast.error(message);
         setPdfUrl(null);
+        setAttachmentUrls({});
       });
     return () => {
       cancelled = true;
@@ -81,7 +87,7 @@ export default function MaterialPage() {
       await KnowledgeAPI.completeMaterial(courseId, material.id);
       setDone(true);
       toast.success("Материал отмечен как пройденный");
-      setTimeout(() => navigate(-1), 800);
+      setTimeout(() => navigate(`/seller/knowledge/${courseId}`, { replace: true }), 800);
     } catch (err) {
       const message = err instanceof APIError ? err.message : "Не удалось отметить материал";
       toast.error(message);
@@ -207,8 +213,51 @@ export default function MaterialPage() {
                     </p>
                     <p style={{ color: "#94A3B8", fontSize: 11 }}>{a.format.toUpperCase()}</p>
                   </div>
+                  {attachmentUrls[a.id] && (
+                    <a
+                      href={attachmentUrls[a.id]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium"
+                      style={{ color: "#2E7D32" }}
+                    >
+                      <ExternalLink size={12} />
+                      Открыть
+                    </a>
+                  )}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {material.attachments.some((item) => ["jpg", "jpeg", "png", "webp"].includes(item.format.toLowerCase())) && (
+          <div className="px-4 pb-4">
+            <p style={{ color: "#64748B", fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
+              Изображения
+            </p>
+            <div className="grid grid-cols-1 gap-3">
+              {material.attachments
+                .filter((item) => ["jpg", "jpeg", "png", "webp"].includes(item.format.toLowerCase()))
+                .map((item) =>
+                  attachmentUrls[item.id] ? (
+                    <a
+                      key={item.id}
+                      href={attachmentUrls[item.id]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="overflow-hidden rounded-2xl"
+                      style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+                    >
+                      <img
+                        src={attachmentUrls[item.id]}
+                        alt={item.name}
+                        className="w-full object-cover"
+                        style={{ maxHeight: 360 }}
+                      />
+                    </a>
+                  ) : null,
+                )}
             </div>
           </div>
         )}

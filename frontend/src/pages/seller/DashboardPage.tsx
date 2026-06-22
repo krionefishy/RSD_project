@@ -6,27 +6,65 @@ import { ProgressCircle } from "../../components/ProgressCircle";
 import { Avatar } from "../../components/Avatar";
 import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
 import { KnowledgeAPI, type CourseListItem } from "../../api/KnowledgeAPI";
+import { ReportsAPI } from "../../api/ReportsAPI";
+import type { Course } from "../../types/knowledge";
 import { formatFullDate } from "../../utils/date";
 import { getErrorMessage, isAbortError } from "../../utils/errors";
 import { toast } from "sonner";
+
+interface CourseEntry {
+  item: CourseListItem;
+  course: Course | null;
+  progressPercent: number;
+}
 
 export default function DashboardPage() {
   const { user } = useApp();
   const navigate = useNavigate();
   const [stats, setStats] = useState<SellingStats | null>(null);
-  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [courses, setCourses] = useState<CourseEntry[]>([]);
+  const [learningRank, setLearningRank] = useState<{ position: number; total: number; value: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
     async function loadData() {
       try {
-        const [statsData, coursesData] = await Promise.all([
+        const [statsData, coursesData, learningRating] = await Promise.all([
           SellingsAPI.getStats(controller.signal),
           KnowledgeAPI.listCourses(controller.signal),
+          ReportsAPI.getLearningRating(),
         ]);
         setStats(statsData);
-        setCourses(coursesData);
+        const courseEntries = await Promise.all(
+          coursesData.map(async (item) => {
+            try {
+              const course = await KnowledgeAPI.getCourse(item.id, controller.signal);
+              const totalItems = course.materials.length + course.tests.length;
+              const completedItems =
+                course.materials.filter((material) => material.isCompleted).length +
+                course.tests.filter((test) => test.isPassed).length;
+              return {
+                item,
+                course,
+                progressPercent: totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100),
+              };
+            } catch {
+              return { item, course: null, progressPercent: 0 };
+            }
+          }),
+        );
+        setCourses(courseEntries);
+        if (learningRating && user) {
+          const me = learningRating.items.find((item) => item.userId === user.id);
+          setLearningRank({
+            position: me?.rank ?? 0,
+            total: learningRating.items.length,
+            value: me?.metricDisplay ?? "—",
+          });
+        } else {
+          setLearningRank(null);
+        }
       } catch (error) {
         if (isAbortError(error)) return;
         toast.error(getErrorMessage(error, "Не удалось загрузить данные"));
@@ -43,6 +81,10 @@ export default function DashboardPage() {
   const planPercent = stats?.percent ?? 0;
   const planColor = planPercent >= 100 ? "#22C55E" : planPercent >= 70 ? "#2E7D32" : "#F59E0B";
   const remainingCourses = courses.length;
+  const overallLearningProgress = remainingCourses
+    ? Math.round(courses.reduce((sum, entry) => sum + entry.progressPercent, 0) / remainingCourses)
+    : 0;
+  const nextCourse = courses.find((entry) => entry.course?.isCourseCompleted !== true) ?? courses[0] ?? null;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -134,7 +176,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <button
-              onClick={() => navigate("/seller/knowledge")}
+              onClick={() => navigate(nextCourse ? `/seller/knowledge/${nextCourse.item.id}` : "/seller/knowledge")}
               className="px-3 py-1.5 rounded-[8px]"
               style={{ background: "#C41E3A", color: "#fff", fontSize: 12, fontWeight: 500 }}
             >
@@ -144,10 +186,13 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between mb-1">
               <span style={{ color: "#64748B", fontSize: 12 }}>Прогресс обучения</span>
-              <span style={{ color: "#C41E3A", fontSize: 12, fontWeight: 600 }}>58%</span>
+              <span style={{ color: "#C41E3A", fontSize: 12, fontWeight: 600 }}>{overallLearningProgress}%</span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
-              <div className="h-full rounded-full" style={{ width: "58%", background: "#C41E3A" }} />
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${overallLearningProgress}%`, background: "#C41E3A" }}
+              />
             </div>
           </div>
         </div>
@@ -171,15 +216,16 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <div className="text-center">
               <span style={{ fontSize: 44, fontWeight: 800, color: "#1E293B", lineHeight: 1 }}>
-                #{loading ? "—" : stats?.positions?.find(p => p.name === "Моя позиция") ? "?" : "—"}
+                #{loading ? "—" : learningRank?.position || "—"}
               </span>
             </div>
             <div>
               <p style={{ color: "#64748B", fontSize: 12 }}>
-                {loading ? "Загрузка данных..." : "Данные рейтинга обновляются"}
+                {loading ? "Загрузка данных..." : `Среди ${learningRank?.total ?? 0} сотрудников`}
               </p>
               <p style={{ color: "#64748B", fontSize: 12 }}>
-                Продажи: <span style={{ color: "#1E293B", fontWeight: 600 }}>{loading ? "—" : `${(stats?.fact ?? 0).toLocaleString("ru")} ₽`}</span>
+                Обучение:{" "}
+                <span style={{ color: "#1E293B", fontWeight: 600 }}>{loading ? "—" : learningRank?.value ?? "—"}</span>
               </p>
             </div>
           </div>

@@ -140,6 +140,7 @@ async def require_learning_report_viewer(request: Request) -> AuthContext:
     return require_any_role(
         auth,
         {
+            UserRole.SELLER.value,
             UserRole.MANAGER.value,
             UserRole.ADMIN_EDUCATION.value,
             UserRole.ADMIN_STAFF.value,

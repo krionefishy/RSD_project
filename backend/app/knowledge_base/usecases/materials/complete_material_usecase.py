@@ -1,5 +1,5 @@
-from typing import Optional
 from datetime import UTC, datetime, timezone
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,15 +42,28 @@ class CompleteMaterialUseCase:
             return None
 
         completed_at = datetime.now(UTC)
-        self.session.add(
-            UserCourseMaterialModel(
-                user_id=ctx.user_id,
-                course_id=request.course_id,
-                material_id=request.material_id,
-                is_completed=True,
-                completed_at=completed_at,
+        existing_completion_result = await self.session.execute(
+            select(UserCourseMaterialModel).where(
+                UserCourseMaterialModel.user_id == ctx.user_id,
+                UserCourseMaterialModel.course_id == request.course_id,
+                UserCourseMaterialModel.material_id == request.material_id,
             )
         )
+        completion = existing_completion_result.scalar_one_or_none()
+        if completion is None:
+            self.session.add(
+                UserCourseMaterialModel(
+                    user_id=ctx.user_id,
+                    course_id=request.course_id,
+                    material_id=request.material_id,
+                    is_completed=True,
+                    completed_at=completed_at,
+                )
+            )
+        else:
+            completion.is_completed = True
+            completion.completed_at = completion.completed_at or completed_at
+            completion.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await self.session.commit()
 
         return CompleteMaterialResultDTO(
