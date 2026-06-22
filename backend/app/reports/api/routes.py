@@ -29,6 +29,11 @@ async def get_learning_rating(
     period_from: Optional[date] = Query(default=None),
     period_to: Optional[date] = Query(default=None),
 ) -> LearningRatingDTO:
+    if period_from is None or period_to is None:
+        today = date.today()
+        period_from = period_from or date(today.year, today.month, 1)
+        period_to = period_to or today
+
     result = await usecase.execute(
         scope_type=scope_type,
         scope_id=scope_id,
@@ -36,22 +41,18 @@ async def get_learning_rating(
         period_to=period_to,
     )
     if result is None:
-        if period_from is None and period_to is None:
-            today = date.today()
-            period_from = date(today.year, today.month, 1)
-            period_to = today
-            await calculate_usecase.execute(
-                period_from=period_from,
-                period_to=period_to,
-                scope_type=scope_type,
-                scope_id=scope_id,
-            )
-            result = await usecase.execute(
-                scope_type=scope_type,
-                scope_id=scope_id,
-                period_from=period_from,
-                period_to=period_to,
-            )
+        await calculate_usecase.execute(
+            period_from=period_from,
+            period_to=period_to,
+            scope_type=scope_type,
+            scope_id=scope_id,
+        )
+        result = await usecase.execute(
+            scope_type=scope_type,
+            scope_id=scope_id,
+            period_from=period_from,
+            period_to=period_to,
+        )
         if result is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Рейтинг ещё не сформирован")
     return result

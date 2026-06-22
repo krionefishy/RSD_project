@@ -77,6 +77,7 @@ export interface TestTaskAdmin extends TestTask {
 
 export interface CourseEnrollment {
   userId: string;
+  externalSystemId: string;
   name: string;
   progress: number;
   isCompleted: boolean;

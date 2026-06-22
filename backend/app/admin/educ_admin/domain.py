@@ -78,7 +78,14 @@ class UpdateTestTaskRequest(BaseModel):
 
 
 class AssignCourseEnrollmentRequest(BaseModel):
-    user_id: UUID
+    user_id: UUID | None = None
+    external_system_id: str | None = Field(default=None, min_length=1, max_length=255)
+
+    @model_validator(mode="after")
+    def validate_user_reference(self):
+        if self.user_id is None and not self.external_system_id:
+            raise ValueError("user_id or external_system_id is required")
+        return self
 
 
 class AssignMaterialToCourseRequest(BaseModel):

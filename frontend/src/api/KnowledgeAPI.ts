@@ -775,30 +775,36 @@ class KnowledgeAPIImpl {
 
   async listCourseEnrollments(
     courseId: number,
-  ): Promise<Array<{ userId: string; name: string; progress: number; isCompleted: boolean }>> {
+  ): Promise<Array<{ userId: string; externalSystemId: string; name: string; progress: number; isCompleted: boolean }>> {
     if (isMockKB()) {
-      return MOCK_COURSE_ENROLLMENTS[courseId] ?? [];
+      return (MOCK_COURSE_ENROLLMENTS[courseId] ?? []).map((item) => ({
+        ...item,
+        externalSystemId: item.userId,
+      }));
     }
     const response = await apiClient.get<{
-      items: Array<{ user_id: string; name: string; progress: number; is_completed: boolean }>;
+      items: Array<{ user_id: string; external_system_id: string; name: string; progress: number; is_completed: boolean }>;
     }>(`/admin/education/courses/${courseId}/enrollments`);
     return response.items.map((item) => ({
       userId: item.user_id,
+      externalSystemId: item.external_system_id,
       name: item.name,
       progress: item.progress,
       isCompleted: item.is_completed,
     }));
   }
 
-  async assignCourseToUser(courseId: number, userId: string): Promise<void> {
+  async assignCourseToUser(courseId: number, externalSystemId: string): Promise<void> {
     if (isMockKB()) {
       const list = MOCK_COURSE_ENROLLMENTS[courseId] ?? (MOCK_COURSE_ENROLLMENTS[courseId] = []);
-      if (!list.some((e) => e.userId === userId)) {
-        list.push({ userId, name: userId, progress: 0, isCompleted: false });
+      if (!list.some((e) => e.userId === externalSystemId)) {
+        list.push({ userId: externalSystemId, name: externalSystemId, progress: 0, isCompleted: false });
       }
       return;
     }
-    await apiClient.post(`/admin/education/courses/${courseId}/enrollments`, { user_id: userId });
+    await apiClient.post(`/admin/education/courses/${courseId}/enrollments`, {
+      external_system_id: externalSystemId,
+    });
   }
 
   async removeCourseFromUser(courseId: number, userId: string): Promise<void> {

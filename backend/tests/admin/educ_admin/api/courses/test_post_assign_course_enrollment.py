@@ -25,7 +25,29 @@ class TestPostAssignCourseEnrollment:
         assert response.status_code == 200
         body = response.json()
         assert body["user_id"] == str(seller.id)
+        assert body["external_system_id"] == seller.external_system_id
         assert body["progress"] == 0.0
+
+    async def test_returns_200_when_assigning_by_external_system_id(
+        self,
+        client: AsyncClient,
+        builder: Builder,
+        bearer_headers,
+        education_admin,
+    ) -> None:
+        course = await builder.build_course()
+        seller = await builder.default_seller
+
+        response = await client.post(
+            f"/api/v1/admin/education/courses/{course.id}/enrollments",
+            headers=bearer_headers(education_admin),
+            json={"external_system_id": seller.external_system_id},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["user_id"] == str(seller.id)
+        assert body["external_system_id"] == seller.external_system_id
 
     async def test_returns_404_when_user_not_found(
         self,

@@ -102,7 +102,10 @@ export function CoursesTab() {
 
   const assignMaterial = async (courseId: number) => {
     const materialId = Number(assignMaterialId[courseId]);
-    if (!materialId) return;
+    if (!materialId) {
+      toast.error("Сначала выберите материал");
+      return;
+    }
     try {
       await KnowledgeAPI.assignMaterialToCourse(courseId, materialId);
       setAssignMaterialId((prev) => ({ ...prev, [courseId]: "" }));
@@ -129,7 +132,10 @@ export function CoursesTab() {
 
   const assignTest = async (courseId: number) => {
     const testId = Number(assignTestId[courseId]);
-    if (!testId) return;
+    if (!testId) {
+      toast.error("Сначала выберите тест");
+      return;
+    }
     try {
       await KnowledgeAPI.assignTestToCourse(courseId, testId, false);
       setAssignTestId((prev) => ({ ...prev, [courseId]: "" }));
@@ -231,6 +237,7 @@ export function CoursesTab() {
                     <button
                       type="button"
                       onClick={() => void assignMaterial(course.id)}
+                      disabled={!assignMaterialId[course.id]}
                       className="h-9 px-3 rounded-lg bg-[#2E7D32] text-white text-xs font-semibold"
                     >
                       OK
@@ -262,6 +269,7 @@ export function CoursesTab() {
                     <button
                       type="button"
                       onClick={() => void assignTest(course.id)}
+                      disabled={!assignTestId[course.id]}
                       className="h-9 px-3 rounded-lg bg-[#2E7D32] text-white text-xs font-semibold"
                     >
                       OK

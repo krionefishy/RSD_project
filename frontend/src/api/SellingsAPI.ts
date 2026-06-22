@@ -4,7 +4,7 @@ import {
   mockSellingStatsDaily,
   mockSellingStatsPeriodic,
 } from "../mock/fixtures/sellings";
-import { apiClient } from "./APIClient";
+import { APIError, apiClient } from "./APIClient";
 
 export interface PlanBonusRule {
   fromQuantity: number;
@@ -164,19 +164,41 @@ class SellingsAPIImpl {
     const requestSignal = userIdOrPeriodOrSignal instanceof AbortSignal ? userIdOrPeriodOrSignal : signal;
     const query: Record<string, string> = {};
     if (userId) query.user_id = userId;
-    const response = await apiClient.get<SellingStatsDTO>("/sales/stats", {
-      query,
-      signal: requestSignal,
-    });
-    return mapSellingStats(response);
+    try {
+      const response = await apiClient.get<SellingStatsDTO>("/sales/stats", {
+        query,
+        signal: requestSignal,
+      });
+      return mapSellingStats(response);
+    } catch (error) {
+      if (error instanceof APIError && error.status === 501) {
+        return {
+          userId: userId ?? "me",
+          plan: 0,
+          fact: 0,
+          percent: 0,
+          bonus: 0,
+          chart: [],
+          positions: [],
+        };
+      }
+      throw error;
+    }
   }
 
   async getMotivation(signal?: AbortSignal): Promise<MotivationRating> {
     if (useMockAuth()) {
       return mockMotivationRating();
     }
-    const response = await apiClient.get<MotivationRatingDTO>("/sales/motivation", { signal });
-    return mapMotivationRating(response);
+    try {
+      const response = await apiClient.get<MotivationRatingDTO>("/sales/motivation", { signal });
+      return mapMotivationRating(response);
+    } catch (error) {
+      if (error instanceof APIError && error.status === 501) {
+        return mockMotivationRating();
+      }
+      throw error;
+    }
   }
 
   async getBlockStats(blockId: string, from?: string, to?: string): Promise<SellingStats> {

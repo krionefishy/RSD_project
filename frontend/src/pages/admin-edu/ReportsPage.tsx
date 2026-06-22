@@ -162,12 +162,12 @@ export default function AdminEduReportsPage() {
 
   const totalEnrolled = enrollmentSummaries.reduce((s, e) => s + e.total, 0);
   const totalCompleted = enrollmentSummaries.reduce((s, e) => s + e.completed, 0);
-  const avgProgress = enrollmentSummaries.length > 0
-    ? Math.round(enrollmentSummaries.reduce((s, e) => s + e.progressPct, 0) / enrollmentSummaries.length)
+  const avgPoints = rating && rating.items.length > 0
+    ? Math.round(rating.items.reduce((sum, item) => sum + item.totalPoints, 0) / rating.items.length)
     : 0;
 
   const stats = [
-    { label: "Среднее прохождение", value: loading ? "—" : `${avgProgress}%`, color: "#C41E3A" },
+    { label: "Средний балл", value: loading ? "—" : String(avgPoints), color: "#C41E3A" },
     { label: "Всего курсов", value: loading ? "—" : String(courses.length), color: "#2E7D32" },
     { label: "Завершили курс", value: loading ? "—" : String(totalCompleted), color: "#22C55E" },
     { label: "Всего зачислений", value: loading ? "—" : String(totalEnrolled), color: "#F59E0B" },

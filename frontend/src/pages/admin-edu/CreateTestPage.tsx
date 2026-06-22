@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Clock, RotateCcw, CheckCircle } from "lucide-react";
+import { Plus, Trash2, CheckCircle } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { toast } from "sonner";
@@ -15,8 +15,6 @@ export default function CreateTestPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [passScorePercent, setPassScorePercent] = useState<string>("70");
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState<string>("");
-  const [maxAttempts, setMaxAttempts] = useState<string>("");
   const [questions, setQuestions] = useState<Question[]>([
     { id: 1, text: "", options: ["", ""], correct: 0 },
   ]);
@@ -79,8 +77,6 @@ export default function CreateTestPage() {
         name: title.trim(),
         category: category.trim(),
         passScorePercent: Number(passScorePercent) || 70,
-        timeLimitMinutes: timeLimitMinutes ? Number(timeLimitMinutes) : null,
-        maxAttempts: maxAttempts ? Number(maxAttempts) : null,
       });
 
       for (let i = 0; i < questions.length; i++) {
@@ -98,8 +94,6 @@ export default function CreateTestPage() {
       setTitle("");
       setCategory("");
       setPassScorePercent("70");
-      setTimeLimitMinutes("");
-      setMaxAttempts("");
       setQuestions([{ id: 1, text: "", options: ["", ""], correct: 0 }]);
     } catch (err) {
       console.error(err);
@@ -156,37 +150,6 @@ export default function CreateTestPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Clock size={16} color="#F59E0B" />
-            <div className="flex-1">
-              <label style={{ color: "#374151", fontSize: 12, fontWeight: 500 }}>Лимит времени (минут, необязательно)</label>
-              <input
-                type="number"
-                value={timeLimitMinutes}
-                onChange={(e) => setTimeLimitMinutes(e.target.value)}
-                min={1}
-                placeholder="Без ограничений"
-                className="w-full h-9 px-3 rounded-lg border mt-1"
-                style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <RotateCcw size={16} color="#6366F1" />
-            <div className="flex-1">
-              <label style={{ color: "#374151", fontSize: 12, fontWeight: 500 }}>Макс. количество попыток (необязательно)</label>
-              <input
-                type="number"
-                value={maxAttempts}
-                onChange={(e) => setMaxAttempts(e.target.value)}
-                min={1}
-                placeholder="Без ограничений"
-                className="w-full h-9 px-3 rounded-lg border mt-1"
-                style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }}
-              />
-            </div>
-          </div>
         </div>
 
         {questions.map((q, qIdx) => (

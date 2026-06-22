@@ -19,7 +19,7 @@ export default function CourseEnrollmentsPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollments, setEnrollments] = useState<CourseEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState("");
+  const [externalSystemId, setExternalSystemId] = useState("");
 
   const [confirm, setConfirm] = useState<
     | { type: "unassign"; userId: string }
@@ -51,10 +51,10 @@ export default function CourseEnrollmentsPage() {
   }, [load]);
 
   const handleAssign = async () => {
-    if (!userId.trim()) return;
+    if (!externalSystemId.trim()) return;
     try {
-      await KnowledgeAPI.assignCourseToUser(id, userId.trim());
-      setUserId("");
+      await KnowledgeAPI.assignCourseToUser(id, externalSystemId.trim());
+      setExternalSystemId("");
       toast.success("Сотрудник назначен на курс");
       await load();
     } catch (error) {
@@ -113,9 +113,9 @@ export default function CourseEnrollmentsPage() {
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="rounded-2xl bg-white shadow-sm p-4 flex gap-2">
           <input
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            placeholder="UUID сотрудника"
+            value={externalSystemId}
+            onChange={(e) => setExternalSystemId(e.target.value)}
+            placeholder="ID сотрудника из внешней системы"
             className="flex-1 h-10 px-3 rounded-lg border text-sm"
           />
           <button
@@ -134,7 +134,7 @@ export default function CourseEnrollmentsPage() {
           enrollments.map((item) => (
             <div key={item.userId} className="rounded-2xl bg-white shadow-sm p-4">
               <p className="font-medium text-slate-800">{item.name}</p>
-              <p className="text-xs text-slate-400">{item.userId}</p>
+              <p className="text-xs text-slate-400">{item.externalSystemId}</p>
               <p className="text-sm text-slate-600 mt-1">
                 Прогресс: {Math.round(item.progress)}% · {item.isCompleted ? "завершён" : "в процессе"}
               </p>

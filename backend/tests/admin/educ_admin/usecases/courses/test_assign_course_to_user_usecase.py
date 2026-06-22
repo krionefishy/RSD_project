@@ -35,6 +35,7 @@ class TestAssignCourseToUserUseCase:
 
         assert result is not None
         assert result.user_id == seller.id
+        assert result.external_system_id == seller.external_system_id
         assert result.progress == 0.0
         assert result.is_completed is False
         assert "Seller" in result.name
@@ -47,7 +48,12 @@ class TestAssignCourseToUserUseCase:
     ) -> None:
         course = await builder.build_course()
         seller = await builder.default_seller
+        material = await builder.build_material()
+        test = await builder.build_test()
+        await builder.build_course_material(course=course, material=material)
+        await builder.build_course_test(course=course, test=test)
         await builder.build_course_user(user=seller, course=course, user_points_by_course=50)
+        await builder.build_user_course_material(user=seller, course=course, material=material, is_completed=True)
 
         result = await AssignCourseToUserUseCase(db_session).execute(
             course.id,
@@ -57,6 +63,30 @@ class TestAssignCourseToUserUseCase:
 
         assert result is not None
         assert result.progress == 50.0
+
+    async def test_assigns_course_by_external_system_id(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        education_admin: UserModel,
+    ) -> None:
+        course = await builder.build_course(name="Enrollment Course")
+        seller = await builder.build_user(
+            external_system_id="seller_ext_001",
+            first_name="Anna",
+            last_name="Seller",
+            role=UserRole.SELLER,
+        )
+
+        result = await AssignCourseToUserUseCase(db_session).execute(
+            course.id,
+            AssignCourseEnrollmentRequest(external_system_id=seller.external_system_id),
+            admin_ctx(education_admin),
+        )
+
+        assert result is not None
+        assert result.user_id == seller.id
+        assert result.external_system_id == "seller_ext_001"
 
     async def test_returns_none_when_user_not_found(
         self,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -69,6 +69,6 @@ class UploadOwnAvatarUseCase:
             original_filename=filename,
         )
         user.avatar_url = key
-        user.updated_at = datetime.now(UTC)
+        user.updated_at = datetime.now()
         await self.session.commit()
         return key

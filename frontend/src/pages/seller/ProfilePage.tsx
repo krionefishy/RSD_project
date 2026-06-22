@@ -1,33 +1,44 @@
 // React import not needed in React 18+
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   Calendar,
-  Plane,
-  Info,
   LogOut,
   ChevronRight,
   Camera,
+  Wallet,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
 import { toast } from "sonner";
+import type { EmployeeCompensation } from "../../types/profile";
 import { isPresentationMode } from "../../config/presentationMode";
-import { showDemoActionToast } from "../../utils/demoToast";
 import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 
 const menuItems = [
   { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#2E7D32" },
-  { icon: Plane, label: "Мои отпуска и отгулы", path: "", color: "#C41E3A" },
-  { icon: Info, label: "О приложении", path: "", color: "#64748B" },
 ];
+
+function formatMoney(value?: string): string {
+  const amount = Number(value ?? 0);
+  return `${amount.toLocaleString("ru-RU")} ₽`;
+}
 
 export default function ProfilePage() {
   const { user, logout, setUser } = useApp();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [compensation, setCompensation] = useState<EmployeeCompensation | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void UserAPI.getOwnCompensation(controller.signal)
+      .then(setCompensation)
+      .catch(() => setCompensation(null));
+    return () => controller.abort();
+  }, []);
 
   if (!user) return null;
 
@@ -108,6 +119,41 @@ export default function ProfilePage() {
           ))}
         </div>
 
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
+        >
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#DCFCE7" }}>
+              <Wallet size={18} color="#15803D" />
+            </div>
+            <div>
+              <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600 }}>Мотивация</p>
+              <p style={{ color: "#64748B", fontSize: 12 }}>Оклад и ставки</p>
+            </div>
+          </div>
+          {compensation ? (
+            [
+              { label: "Оклад", value: formatMoney(compensation.baseSalary) },
+              { label: "Часовая ставка", value: formatMoney(compensation.hourlyRate) },
+              { label: "Ночная ставка", value: formatMoney(compensation.effectiveNightHourlyRate) },
+            ].map((item, index) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom: index < 2 ? "1px solid #F1F5F9" : "none" }}
+              >
+                <span style={{ color: "#64748B", fontSize: 13 }}>{item.label}</span>
+                <span style={{ color: "#1E293B", fontSize: 13, fontWeight: 600 }}>{item.value}</span>
+              </div>
+            ))
+          ) : (
+            <div className="px-4 py-3">
+              <span style={{ color: "#94A3B8", fontSize: 13 }}>Данные по мотивации пока недоступны</span>
+            </div>
+          )}
+        </div>
+
         {/* Menu */}
         <div
           className="rounded-2xl overflow-hidden"
@@ -119,8 +165,7 @@ export default function ProfilePage() {
             <button
               key={i}
               onClick={() => {
-                if (item.path) navigate(item.path);
-                else showDemoActionToast();
+                navigate(item.path);
               }}
               className="w-full flex items-center gap-3 px-4 py-4"
               style={{ borderBottom: i < arr.length - 1 ? "1px solid #F1F5F9" : "none" }}

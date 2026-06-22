@@ -1,19 +1,48 @@
 // React import not needed in React 18+
+import { useEffect, useState } from "react";
 import { BookOpen, LogOut, TestTube2, Users } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
+import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 
 export default function AdminEduDashboardPage() {
   const { user, logout } = useApp();
   const navigate = useNavigate();
-  if (!user) return null;
+  const [counters, setCounters] = useState([
+    { label: "Курсов в системе", value: "—", icon: BookOpen, color: "#C41E3A", bg: "#FCE4EC", path: "/admin-edu/manage" },
+    { label: "Активных тестов", value: "—", icon: TestTube2, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-edu/manage?tab=tests" },
+    { label: "Назначено курсов", value: "—", icon: Users, color: "#059669", bg: "#ECFDF5", path: "/admin-edu/assignments" },
+  ]);
 
-  const counters = [
-    { label: "Курсов в системе", value: 6, icon: BookOpen, color: "#C41E3A", bg: "#FCE4EC", path: "/admin-edu/manage" },
-    { label: "Активных тестов", value: 5, icon: TestTube2, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-edu/manage?tab=tests" },
-    { label: "Назначено курсов", value: 148, icon: Users, color: "#059669", bg: "#ECFDF5", path: "/admin-edu/assignments" },
-  ];
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [courses, tests] = await Promise.all([
+          KnowledgeAPI.listAdminCourses(),
+          KnowledgeAPI.listTests(),
+        ]);
+        const enrollmentCounts = await Promise.all(
+          courses.map(async (course) => (await KnowledgeAPI.listCourseEnrollments(course.id)).length)
+        );
+        if (cancelled) return;
+        setCounters([
+          { label: "Курсов в системе", value: String(courses.length), icon: BookOpen, color: "#C41E3A", bg: "#FCE4EC", path: "/admin-edu/manage" },
+          { label: "Активных тестов", value: String(tests.length), icon: TestTube2, color: "#2E7D32", bg: "#E8F5E9", path: "/admin-edu/manage?tab=tests" },
+          { label: "Назначено курсов", value: String(enrollmentCounts.reduce((sum, count) => sum + count, 0)), icon: Users, color: "#059669", bg: "#ECFDF5", path: "/admin-edu/assignments" },
+        ]);
+      } catch {
+        if (cancelled) return;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  if (!user) return null;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>

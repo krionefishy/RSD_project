@@ -20,8 +20,6 @@ export function TestsTab() {
     category: "",
     description: "",
     passScorePercent: 70,
-    timeLimitMinutes: "" as string,
-    maxAttempts: "" as string,
   });
 
   const [taskForm, setTaskForm] = useState({
@@ -57,12 +55,10 @@ export function TestsTab() {
         category: testForm.category.trim(),
         description: testForm.description.trim() || undefined,
         passScorePercent: testForm.passScorePercent,
-        timeLimitMinutes: testForm.timeLimitMinutes ? Number(testForm.timeLimitMinutes) : null,
-        maxAttempts: testForm.maxAttempts ? Number(testForm.maxAttempts) : null,
       });
       toast.success("Тест создан");
       setShowCreate(false);
-      setTestForm({ name: "", category: "", description: "", passScorePercent: 70, timeLimitMinutes: "", maxAttempts: "" });
+      setTestForm({ name: "", category: "", description: "", passScorePercent: 70 });
       await load();
       setExpandedId(test.id);
       setTasks((prev) => ({ ...prev, [test.id]: [] }));
@@ -149,8 +145,6 @@ export function TestsTab() {
               <p className="font-semibold text-slate-800 text-sm">{test.name}</p>
               <p className="text-xs text-slate-400">
                 {test.category} · {test.tasksCount} задач · проход {test.passScorePercent}%
-                {test.timeLimitMinutes ? ` · ${test.timeLimitMinutes} мин` : ""}
-                {test.maxAttempts ? ` · макс ${test.maxAttempts} попыток` : ""}
               </p>
             </button>
             <button type="button" onClick={() => setDeleteId(test.id)}>
@@ -246,22 +240,6 @@ export function TestsTab() {
               }
               placeholder="Проходной % (например 70)"
               className="h-10 px-3 rounded-lg border text-sm"
-            />
-            <input
-              type="number"
-              value={testForm.timeLimitMinutes}
-              onChange={(e) => setTestForm((prev) => ({ ...prev, timeLimitMinutes: e.target.value }))}
-              placeholder="Лимит времени (мин, необязательно)"
-              className="h-10 px-3 rounded-lg border text-sm"
-              min={1}
-            />
-            <input
-              type="number"
-              value={testForm.maxAttempts}
-              onChange={(e) => setTestForm((prev) => ({ ...prev, maxAttempts: e.target.value }))}
-              placeholder="Макс. попыток (необязательно)"
-              className="h-10 px-3 rounded-lg border text-sm"
-              min={1}
             />
             <div className="flex gap-2">
               <button onClick={() => setShowCreate(false)} className="flex-1 h-10 rounded-lg bg-slate-100 text-sm">

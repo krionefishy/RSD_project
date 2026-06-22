@@ -174,6 +174,7 @@ class TestTaskAdminDTO(BaseModel):
 
 class CourseEnrollmentDTO(BaseModel):
     user_id: UUID
+    external_system_id: str
     name: str
     progress: float
     is_completed: bool

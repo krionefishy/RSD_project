@@ -56,9 +56,19 @@ export default function CreateTestPage() {
       <AppHeader title="Создание теста" showBack white />
 
       <div className="px-4 py-4 flex flex-col gap-4">
-        <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <label style={{ color: "#374151", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }}>Название теста</label>
+        <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <label style={{ color: "#374151", fontSize: 13, fontWeight: 600, display: "block" }}>Название теста</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Введите название теста" className="w-full h-11 px-4 rounded-xl border" style={{ border: "1.5px solid #E2E8F0", fontSize: 14, color: "#1E293B", outline: "none" }} />
+          <label style={{ color: "#374151", fontSize: 13, fontWeight: 600, display: "block" }}>Категория</label>
+          <input type="text" placeholder="Например: Базовый, Итоговый" className="w-full h-11 px-4 rounded-xl border" style={{ border: "1.5px solid #E2E8F0", fontSize: 14, color: "#1E293B", outline: "none" }} />
+        </div>
+
+        <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <h3 style={{ color: "#1E293B", fontSize: 14, fontWeight: 600 }}>Параметры теста</h3>
+          <div>
+            <label style={{ color: "#374151", fontSize: 12, fontWeight: 500 }}>Проходной балл (%)</label>
+            <input type="number" defaultValue={70} min={1} max={100} className="w-full h-9 px-3 rounded-lg border mt-1" style={{ border: "1.5px solid #E2E8F0", fontSize: 13, color: "#1E293B", outline: "none" }} />
+          </div>
         </div>
 
         {questions.map((q, qIdx) => (
