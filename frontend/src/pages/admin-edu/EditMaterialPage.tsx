@@ -3,6 +3,7 @@ import { ChevronLeft, ExternalLink, Trash2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
+import { MarkdownEditor } from "../../components/markdown/MarkdownEditor";
 import type { Material } from "../../types/knowledge";
 import { getErrorMessage } from "../../utils/errors";
 import { isPdfOnlyMaterial } from "../../utils/knowledgeMaterials";
@@ -182,11 +183,9 @@ export default function EditMaterialPage() {
               Для PDF-материала текстовый контент отключён. Материал отображается из единственного PDF-вложения.
             </div>
           ) : (
-            <textarea
+            <MarkdownEditor
               value={form.text}
-              onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
-              rows={12}
-              className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
+              onChange={(text) => setForm((prev) => ({ ...prev, text }))}
               placeholder="Содержание (Markdown)"
             />
           )}
@@ -248,13 +247,6 @@ export default function EditMaterialPage() {
             </p>
           )}
         </div>
-
-        {!pdfMaterial && form.text && (
-          <div className="rounded-2xl bg-white shadow-sm p-4">
-            <p className="text-xs font-medium text-slate-500 mb-2">Предпросмотр</p>
-            <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans">{form.text}</pre>
-          </div>
-        )}
 
         {pdfMaterial && pdfUrl && (
           <div className="rounded-2xl bg-white shadow-sm p-4">

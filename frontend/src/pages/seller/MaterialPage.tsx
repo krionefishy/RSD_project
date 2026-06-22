@@ -1,72 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { CheckCircle, ExternalLink, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "../../components/AppHeader";
+import { MarkdownRenderer } from "../../components/markdown/MarkdownRenderer";
 import { PageLoader } from "../../components/PageLoader";
 import { APIError } from "../../api/APIClient";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { Material } from "../../types/knowledge";
 import { isPdfOnlyMaterial } from "../../utils/knowledgeMaterials";
-
-function renderMarkdownLine(line: string, index: number) {
-  if (line.startsWith("## ")) {
-    return (
-      <h2
-        key={index}
-        style={{
-          color: "#1E293B",
-          fontSize: 18,
-          fontWeight: 700,
-          marginBottom: 10,
-          marginTop: index > 0 ? 16 : 0,
-        }}
-      >
-        {line.replace("## ", "")}
-      </h2>
-    );
-  }
-  if (line.startsWith("### ")) {
-    return (
-      <h3
-        key={index}
-        style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 8, marginTop: 14 }}
-      >
-        {line.replace("### ", "")}
-      </h3>
-    );
-  }
-  if (line.startsWith("- **")) {
-    const parts = line.replace("- **", "").split("** — ");
-    return (
-      <div key={index} className="flex gap-2 mb-2 ml-2">
-        <span style={{ color: "#2E7D32", fontSize: 14 }}>•</span>
-        <p style={{ color: "#374151", fontSize: 14 }}>
-          <span style={{ fontWeight: 600 }}>{parts[0]}</span>
-          {parts[1] ? ` — ${parts[1]}` : ""}
-        </p>
-      </div>
-    );
-  }
-  if (line.match(/^\d+\./)) {
-    return (
-      <div key={index} className="flex gap-2 mb-2 ml-2">
-        <span style={{ color: "#2E7D32", fontSize: 14, fontWeight: 600, minWidth: 20 }}>
-          {line.split(".")[0]}.
-        </span>
-        <p style={{ color: "#374151", fontSize: 14 }}>{line.replace(/^\d+\.\s/, "")}</p>
-      </div>
-    );
-  }
-  if (line.trim() === "") {
-    return <div key={index} style={{ height: 8 }} />;
-  }
-  return (
-    <p key={index} style={{ color: "#374151", fontSize: 14, lineHeight: 1.6, marginBottom: 8 }}>
-      {line}
-    </p>
-  );
-}
 
 export default function MaterialPage() {
   const { sectionId, materialId } = useParams<{ sectionId: string; materialId: string }>();
@@ -131,8 +73,6 @@ export default function MaterialPage() {
       cancelled = true;
     };
   }, [courseId, material]);
-
-  const lines = useMemo(() => (material?.text ?? "").split("\n"), [material]);
 
   const markDone = async () => {
     if (!material || submitting) return;
@@ -221,8 +161,16 @@ export default function MaterialPage() {
             ) : (
               <p style={{ color: "#64748B", fontSize: 14 }}>PDF загружается...</p>
             )
-          ) : lines.length > 0 && lines.some((l) => l.trim()) ? (
-            <div>{lines.map((line, i) => renderMarkdownLine(line, i))}</div>
+          ) : material.text.trim() ? (
+            <MarkdownRenderer
+              content={material.text}
+              className="space-y-4"
+              emptyFallback={
+                <p style={{ color: "#64748B", fontSize: 14 }}>
+                  Контент для этого материала появится позже.
+                </p>
+              }
+            />
           ) : (
             <p style={{ color: "#64748B", fontSize: 14 }}>
               Контент для этого материала появится позже.

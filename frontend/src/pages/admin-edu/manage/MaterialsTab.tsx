@@ -3,6 +3,7 @@ import { FileText, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
+import { MarkdownEditor } from "../../../components/markdown/MarkdownEditor";
 import type { Material } from "../../../types/knowledge";
 import { getErrorMessage } from "../../../utils/errors";
 import { isPdfOnlyMaterial } from "../../../utils/knowledgeMaterials";
@@ -249,12 +250,11 @@ export function MaterialsTab() {
               className="px-3 py-2 rounded-lg border text-sm resize-none"
             />
             {form.mode === "text" ? (
-              <textarea
+              <MarkdownEditor
                 value={form.text}
-                onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
+                onChange={(text) => setForm((prev) => ({ ...prev, text }))}
+                rows={8}
                 placeholder="Содержание (Markdown)"
-                rows={6}
-                className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
               />
             ) : (
               <div className="rounded-lg border border-dashed border-slate-300 p-3">
