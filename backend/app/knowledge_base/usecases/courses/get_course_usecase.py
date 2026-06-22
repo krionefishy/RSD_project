@@ -10,6 +10,7 @@ from app.knowledge_base.db_models import (
     CourseModel,
     CourseTestModel,
     CourseUserModel,
+    TestModel,
     UserCourseMaterialModel,
     UserCourseTestModel,
 )
@@ -43,7 +44,7 @@ class GetCourseByIdUseCase:
                     ).selectinload(CourseMaterialModel.material),
                     selectinload(CourseUserModel.course).selectinload(
                         CourseModel.course_tests
-                    ).selectinload(CourseTestModel.test),
+                    ).selectinload(CourseTestModel.test).selectinload(TestModel.task_assignments),
                 )
             )
             enrollment = enrollment_result.scalar_one_or_none()
@@ -87,7 +88,7 @@ class GetCourseByIdUseCase:
                     ),
                     selectinload(CourseModel.course_tests).selectinload(
                         CourseTestModel.test
-                    ),
+                    ).selectinload(TestModel.task_assignments),
                 )
             )
             course = course_result.scalar_one_or_none()
