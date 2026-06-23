@@ -195,35 +195,41 @@ export function CoursesTab() {
 
         return (
           <div key={course.id} className="rounded-2xl bg-white shadow-sm overflow-hidden">
-            <div className="flex min-w-0 items-center gap-2 px-4 py-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_124px] gap-3 px-4 py-4">
               <button
                 type="button"
                 onClick={() => void toggle(course.id)}
-                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                className="flex min-w-0 items-start gap-3 text-left"
               >
-                <BookOpen size={20} color="#2E7D32" />
-                <div className="min-w-0">
-                  <p className="break-words text-sm font-semibold text-slate-800 sm:text-base">{course.name}</p>
+                <BookOpen size={20} color="#2E7D32" className="mt-0.5 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 break-words text-sm font-semibold text-slate-800 sm:text-base">
+                    {course.name}
+                  </p>
                   <p className="text-xs text-slate-400">
                     {course.materialsCount} материалов · {course.testsCount} тестов
                   </p>
                 </div>
-                {isOpen ? <ChevronDown size={18} color="#94A3B8" /> : <ChevronRight size={18} color="#94A3B8" />}
+                <span className="ml-auto flex-shrink-0 pt-0.5">
+                  {isOpen ? <ChevronDown size={18} color="#94A3B8" /> : <ChevronRight size={18} color="#94A3B8" />}
+                </span>
               </button>
-              <button
-                type="button"
-                onClick={() => navigate(`${manageBasePath}/${course.id}`)}
-                className="flex-shrink-0 px-2 text-xs font-medium text-[#2E7D32]"
-              >
-                Назначения
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteId(course.id)}
-                className="flex-shrink-0 rounded-lg bg-red-50 p-2"
-              >
-                <Trash2 size={16} color="#DC2626" />
-              </button>
+              <div className="flex h-full w-[124px] flex-shrink-0 items-start justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate(`${manageBasePath}/${course.id}`)}
+                  className="min-w-[86px] rounded-lg px-2 py-2 text-center text-xs font-medium text-[#2E7D32]"
+                >
+                  Назначения
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteId(course.id)}
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-red-50"
+                >
+                  <Trash2 size={16} color="#DC2626" />
+                </button>
+              </div>
             </div>
 
             {isOpen && detail && (
