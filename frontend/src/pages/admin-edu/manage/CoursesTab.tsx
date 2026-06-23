@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { BookOpen, ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
 import type { Course, CourseListItem, Material, Test } from "../../../types/knowledge";
@@ -10,6 +10,9 @@ import { ConfirmDialog } from "./ConfirmDialog";
 
 export function CoursesTab() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isPoPreview = location.pathname.startsWith("/admin-po/preview");
+  const manageBasePath = isPoPreview ? "/admin-po/preview/edu/manage" : "/admin-edu/manage";
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
@@ -103,7 +106,7 @@ export function CoursesTab() {
   const assignMaterial = async (courseId: number) => {
     const selectedMaterialId = assignMaterialId[courseId] ?? "";
     if (!selectedMaterialId) {
-      navigate("/admin-edu/manage?tab=materials");
+      navigate(`${manageBasePath}?tab=materials`);
       return;
     }
     const materialId = Number(selectedMaterialId);
@@ -138,7 +141,7 @@ export function CoursesTab() {
   const assignTest = async (courseId: number) => {
     const selectedTestId = assignTestId[courseId] ?? "";
     if (!selectedTestId) {
-      navigate("/admin-edu/manage?tab=tests");
+      navigate(`${manageBasePath}?tab=tests`);
       return;
     }
     const testId = Number(selectedTestId);
@@ -192,11 +195,15 @@ export function CoursesTab() {
 
         return (
           <div key={course.id} className="rounded-2xl bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-4">
-              <button type="button" onClick={() => void toggle(course.id)} className="flex items-center gap-3 flex-1 text-left">
+            <div className="flex min-w-0 items-center gap-2 px-4 py-4">
+              <button
+                type="button"
+                onClick={() => void toggle(course.id)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
                 <BookOpen size={20} color="#2E7D32" />
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-800 truncate">{course.name}</p>
+                  <p className="break-words text-sm font-semibold text-slate-800 sm:text-base">{course.name}</p>
                   <p className="text-xs text-slate-400">
                     {course.materialsCount} материалов · {course.testsCount} тестов
                   </p>
@@ -205,12 +212,16 @@ export function CoursesTab() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate(`/admin-edu/manage/${course.id}`)}
-                className="text-xs text-[#2E7D32] font-medium px-2"
+                onClick={() => navigate(`${manageBasePath}/${course.id}`)}
+                className="flex-shrink-0 px-2 text-xs font-medium text-[#2E7D32]"
               >
                 Назначения
               </button>
-              <button type="button" onClick={() => setDeleteId(course.id)} className="p-2 rounded-lg bg-red-50">
+              <button
+                type="button"
+                onClick={() => setDeleteId(course.id)}
+                className="flex-shrink-0 rounded-lg bg-red-50 p-2"
+              >
                 <Trash2 size={16} color="#DC2626" />
               </button>
             </div>
