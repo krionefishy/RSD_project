@@ -147,6 +147,11 @@ export function TestsTab() {
   };
 
   const handleCreateTask = async (testId: number) => {
+    const test = tests.find((item) => item.id === testId);
+    if (test?.isFinal) {
+      toast.error("В итоговый тест нельзя добавлять новые задачи вручную");
+      return;
+    }
     const variants = taskForm.answerVariants.map((v) => v.trim()).filter(Boolean);
     if (!taskForm.name.trim() || variants.length < 2) {
       toast.error("Укажите вопрос и минимум два варианта ответа");
@@ -248,57 +253,65 @@ export function TestsTab() {
                 </div>
               ))}
 
-              <input
-                value={taskForm.name}
-                onChange={(e) => setTaskForm((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Текст вопроса"
-                className="h-9 px-3 rounded-lg border text-sm"
-              />
-              <input
-                type="number"
-                min={1}
-                value={taskForm.points}
-                onChange={(e) =>
-                  setTaskForm((prev) => ({ ...prev, points: Math.max(1, Number(e.target.value) || 1) }))
-                }
-                placeholder="Баллы за вопрос"
-                className="h-9 px-3 rounded-lg border text-sm"
-              />
-              {taskForm.answerVariants.map((variant, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    checked={taskForm.correctVariant === index}
-                    onChange={() => setTaskForm((prev) => ({ ...prev, correctVariant: index }))}
-                  />
-                  <input
-                    value={variant}
-                    onChange={(e) => {
-                      const next = [...taskForm.answerVariants];
-                      next[index] = e.target.value;
-                      setTaskForm((prev) => ({ ...prev, answerVariants: next }));
-                    }}
-                    placeholder={`Вариант ${index + 1}`}
-                    className="flex-1 h-8 px-2 rounded-lg border text-sm"
-                  />
+              {test.isFinal ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-500">
+                  Для итогового теста можно использовать только задачи, уже добавленные в другие тесты курса.
                 </div>
-              ))}
-              <button
-                type="button"
-                className="text-xs text-[#2E7D32]"
-                onClick={() =>
-                  setTaskForm((prev) => ({ ...prev, answerVariants: [...prev.answerVariants, ""] }))
-                }
-              >
-                + вариант
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleCreateTask(test.id)}
-                className="h-9 rounded-lg bg-[#2E7D32] text-white text-xs font-semibold"
-              >
-                Добавить задачу
-              </button>
+              ) : (
+                <>
+                  <input
+                    value={taskForm.name}
+                    onChange={(e) => setTaskForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Текст вопроса"
+                    className="h-9 px-3 rounded-lg border text-sm"
+                  />
+                  <input
+                    type="number"
+                    min={1}
+                    value={taskForm.points}
+                    onChange={(e) =>
+                      setTaskForm((prev) => ({ ...prev, points: Math.max(1, Number(e.target.value) || 1) }))
+                    }
+                    placeholder="Баллы за вопрос"
+                    className="h-9 px-3 rounded-lg border text-sm"
+                  />
+                  {taskForm.answerVariants.map((variant, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        checked={taskForm.correctVariant === index}
+                        onChange={() => setTaskForm((prev) => ({ ...prev, correctVariant: index }))}
+                      />
+                      <input
+                        value={variant}
+                        onChange={(e) => {
+                          const next = [...taskForm.answerVariants];
+                          next[index] = e.target.value;
+                          setTaskForm((prev) => ({ ...prev, answerVariants: next }));
+                        }}
+                        placeholder={`Вариант ${index + 1}`}
+                        className="flex-1 h-8 px-2 rounded-lg border text-sm"
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="text-xs text-[#2E7D32]"
+                    onClick={() =>
+                      setTaskForm((prev) => ({ ...prev, answerVariants: [...prev.answerVariants, ""] }))
+                    }
+                  >
+                    + вариант
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateTask(test.id)}
+                    className="h-9 rounded-lg bg-[#2E7D32] text-white text-xs font-semibold"
+                  >
+                    Добавить задачу
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -306,7 +319,7 @@ export function TestsTab() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-2xl rounded-2xl bg-white p-4 flex max-h-[92vh] flex-col gap-3 overflow-y-auto">
+          <div className="flex max-h-[92vh] w-full max-w-xl flex-col gap-3 overflow-y-auto rounded-2xl bg-white p-4 sm:p-5">
             <h3 className="font-semibold text-slate-800">Новый тест</h3>
             <input
               value={testForm.name}

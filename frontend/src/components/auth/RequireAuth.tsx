@@ -26,8 +26,10 @@ export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
       return;
     }
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
     setStatus("loading");
-    UserAPI.fetchMe()
+    UserAPI.fetchMe(controller.signal)
       .then((me) => {
         if (!cancelled) setUser(me);
       })
@@ -38,6 +40,8 @@ export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
       });
     return () => {
       cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
     };
   }, [user, status, setStatus, setUser]);
 
