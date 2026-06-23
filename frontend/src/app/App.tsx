@@ -15,6 +15,7 @@ function AuthBootstrap() {
   const setStatus = useSetAtom(authStatusAtom);
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-build", "2026-06-23-prod-1");
     apiClient.setRefreshHandler(async () => AuthAPI.refresh());
     apiClient.setUnauthorizedHandler(() => {
       authStorage.clear();
