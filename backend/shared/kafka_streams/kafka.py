@@ -25,7 +25,7 @@ async def start_kafka(
     app: "FastAPI",
     bootstrap_servers: str,
     consumer_group: str,
-    max_request_size: int = 10 * 1024 * 1024,
+    max_request_size: int = 24 * 1024 * 1024,
     s3_client=None,
     consumers: list | None = None,
     kafka_producer: KafkaProducerWrapper | None = None,

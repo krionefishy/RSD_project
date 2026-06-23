@@ -180,7 +180,9 @@ export default function KnowledgeSectionPage() {
             style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
           >
             {course.tests.map((test, i) => {
-              const isBlocked = isCourseCompleted && !test.isPassed;
+              const isFinalBlocked =
+                test.isFinal && course.materials.length > 0 && course.materials.some((material) => !material.isCompleted);
+              const isBlocked = (isCourseCompleted && !test.isPassed) || isFinalBlocked;
               return (
                 <button
                   key={test.id}
@@ -219,7 +221,9 @@ export default function KnowledgeSectionPage() {
                     {test.isPassed
                       ? `Пройдено${test.score != null ? ` · ${test.score}%` : ""}`
                       : isBlocked
-                      ? "Недоступен"
+                      ? isFinalBlocked
+                        ? "Сначала материалы"
+                        : "Недоступен"
                       : "Назначен"}
                   </span>
                 </button>

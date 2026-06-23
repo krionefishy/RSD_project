@@ -59,6 +59,7 @@ export interface Material {
   description: string | null;
   text: string;
   attachments: MaterialAttachment[];
+  isCompleted: boolean;
   courseId: number;
   createdAt: string;
 }
@@ -73,6 +74,16 @@ export interface TestTask {
 
 export interface TestTaskAdmin extends TestTask {
   correctVariant: number;
+}
+
+export interface CourseTestTaskBankItem {
+  taskId: number;
+  testId: number;
+  testName: string;
+  taskName: string;
+  taskDescription: string | null;
+  points: number;
+  answerVariantsCount: number;
 }
 
 export interface CourseEnrollment {

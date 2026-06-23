@@ -61,7 +61,7 @@ class RedisConfig:
 class KafkaConfig:
     bootstrap_servers: str
     consumer_group: str = "rsd-backend-group"
-    max_request_size: int = 10 * 1024 * 1024
+    max_request_size: int = 24 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -265,7 +265,7 @@ def load_settings(
     kafka = KafkaConfig(
         bootstrap_servers=kafka_data.get("bootstrap_servers", "localhost:9092"),
         consumer_group=kafka_data.get("consumer_group", "rsd-backend-group"),
-        max_request_size=int(kafka_data.get("max_request_size", 10 * 1024 * 1024)),
+        max_request_size=int(kafka_data.get("max_request_size", 24 * 1024 * 1024)),
     )
 
     s3_data = _section(data, backend, "s3")

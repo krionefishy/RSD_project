@@ -30,6 +30,28 @@ class TestCreateTestUseCase:
         assert result.pass_score_percent == 80
         assert result.tasks_count == 0
 
+    async def test_creates_final_test_with_course_binding(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+        education_admin: UserModel,
+    ) -> None:
+        course = await builder.build_course(name="Course A")
+
+        result = await CreateTestUseCase(db_session).execute(
+            CreateTestRequest(
+                name="Course Final",
+                category="final",
+                is_final=True,
+                course_id=course.id,
+                pass_score_percent=75,
+            ),
+            admin_ctx(education_admin),
+        )
+
+        assert result is not None
+        assert result.course_id == course.id
+
     async def test_returns_none_when_seller(
         self,
         db_session: AsyncSession,

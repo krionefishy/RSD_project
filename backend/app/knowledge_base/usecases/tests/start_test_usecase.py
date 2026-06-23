@@ -6,10 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.knowledge_base.db_models import (
+    CourseMaterialModel,
     CourseTestModel,
     CourseUserModel,
     TestModel,
     TestTaskAssignmentModel,
+    UserCourseMaterialModel,
     UserCourseTestModel,
 )
 from app.knowledge_base.domain import StartTestRequest, UserContext
@@ -66,6 +68,25 @@ class StartTestUseCase:
         test = test_result.unique().scalar_one_or_none()
         if test is None or not test.task_assignments:
             return None
+
+        if test.is_final:
+            total_materials = (
+                await self.session.execute(
+                    select(CourseMaterialModel.id).where(CourseMaterialModel.course_id == request.course_id)
+                )
+            ).scalars().all()
+            if total_materials:
+                completed_material_ids = (
+                    await self.session.execute(
+                        select(UserCourseMaterialModel.material_id).where(
+                            UserCourseMaterialModel.user_id == ctx.user_id,
+                            UserCourseMaterialModel.course_id == request.course_id,
+                            UserCourseMaterialModel.is_completed.is_(True),
+                        )
+                    )
+                ).scalars().all()
+                if len(set(completed_material_ids)) < len(total_materials):
+                    return None
 
         user_test_result = await self.session.execute(
             select(UserCourseTestModel).where(

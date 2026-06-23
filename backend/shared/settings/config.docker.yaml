@@ -33,7 +33,7 @@ backend:
   kafka:
     bootstrap_servers: kafka:9092
     consumer_group: rsd-backend-docker-group
-    max_request_size: 10485760
+    max_request_size: 25165824
   s3:
     endpoint_url: https://s3.cloud.ru
     tenant_id: ""

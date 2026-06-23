@@ -6,7 +6,11 @@ import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { MarkdownEditor } from "../../components/markdown/MarkdownEditor";
 import type { Material } from "../../types/knowledge";
 import { getErrorMessage } from "../../utils/errors";
-import { isPdfOnlyMaterial } from "../../utils/knowledgeMaterials";
+import {
+  isPdfOnlyMaterial,
+  MATERIAL_ATTACHMENT_ACCEPT,
+  PDF_ONLY_ATTACHMENT_ACCEPT,
+} from "../../utils/knowledgeMaterials";
 import { ConfirmDialog } from "./manage/ConfirmDialog";
 
 export default function EditMaterialPage() {
@@ -236,7 +240,7 @@ export default function EditMaterialPage() {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept={pdfMaterial ? ".pdf,application/pdf" : ".pdf,image/jpeg,image/png,image/webp"}
+            accept={pdfMaterial ? PDF_ONLY_ATTACHMENT_ACCEPT : MATERIAL_ATTACHMENT_ACCEPT}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) void handleUpload(file);

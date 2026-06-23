@@ -36,9 +36,16 @@ class CreateTestRequest(BaseModel):
     category: str = Field(min_length=1, max_length=100)
     description: str | None = None
     is_final: bool = False
+    course_id: int | None = Field(default=None, gt=0)
     pass_score_percent: int = Field(ge=0, le=100, default=70)
     time_limit_minutes: int | None = Field(default=None, gt=0, description="Лимит времени в минутах")
     max_attempts: int | None = Field(default=None, gt=0, description="Максимальное количество попыток")
+
+    @model_validator(mode="after")
+    def validate_final_course(self):
+        if self.is_final and self.course_id is None:
+            raise ValueError("course_id is required for final tests")
+        return self
 
 
 class UpdateTestRequest(BaseModel):
@@ -46,6 +53,7 @@ class UpdateTestRequest(BaseModel):
     category: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = None
     is_final: bool | None = None
+    course_id: int | None = Field(default=None, gt=0)
     pass_score_percent: int | None = Field(default=None, ge=0, le=100)
     time_limit_minutes: int | None = Field(default=None, gt=0, description="Лимит времени в минутах")
     max_attempts: int | None = Field(default=None, gt=0, description="Максимальное количество попыток")

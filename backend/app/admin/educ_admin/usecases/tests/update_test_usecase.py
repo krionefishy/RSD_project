@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.admin.educ_admin.domain import UpdateTestRequest
 from app.knowledge_base.access import KB_ADMIN_ROLES
-from app.knowledge_base.db_models import TestModel, TestTaskAssignmentModel
+from app.knowledge_base.db_models import CourseModel, CourseTestModel, TestModel, TestTaskAssignmentModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import TestDTO
 
@@ -45,12 +45,29 @@ class UpdateTestUseCase:
             test.description = request.description
         if request.is_final is not None:
             test.is_final = request.is_final
+            for course_test in test.course_tests or []:
+                course_test.is_final = request.is_final
         if request.pass_score_percent is not None:
             test.pass_score_percent = request.pass_score_percent
         if request.time_limit_minutes is not None:
             test.time_limit_minutes = request.time_limit_minutes
         if request.max_attempts is not None:
             test.max_attempts = request.max_attempts
+        if request.course_id is not None:
+            course = (
+                await self.session.execute(select(CourseModel).where(CourseModel.id == request.course_id))
+            ).scalar_one_or_none()
+            if course is None:
+                return None
+            existing_link = next((item for item in test.course_tests or [] if item.course_id == request.course_id), None)
+            if existing_link is None:
+                self.session.add(
+                    CourseTestModel(
+                        course_id=request.course_id,
+                        test_id=test.id,
+                        is_final=test.is_final,
+                    )
+                )
 
         course_id = test.course_tests[0].course_id if test.course_tests else 0
         tasks_count = test.tasks_count

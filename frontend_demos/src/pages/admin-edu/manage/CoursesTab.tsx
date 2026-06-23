@@ -101,7 +101,12 @@ export function CoursesTab() {
   };
 
   const assignMaterial = async (courseId: number) => {
-    const materialId = Number(assignMaterialId[courseId]);
+    const selectedMaterialId = assignMaterialId[courseId] ?? "";
+    if (!selectedMaterialId) {
+      navigate("/admin-edu/manage?tab=materials");
+      return;
+    }
+    const materialId = Number(selectedMaterialId);
     if (!materialId) {
       toast.error("Сначала выберите материал");
       return;
@@ -131,7 +136,12 @@ export function CoursesTab() {
   };
 
   const assignTest = async (courseId: number) => {
-    const testId = Number(assignTestId[courseId]);
+    const selectedTestId = assignTestId[courseId] ?? "";
+    if (!selectedTestId) {
+      navigate("/admin-edu/manage?tab=tests");
+      return;
+    }
+    const testId = Number(selectedTestId);
     if (!testId) {
       toast.error("Сначала выберите тест");
       return;
@@ -237,7 +247,6 @@ export function CoursesTab() {
                     <button
                       type="button"
                       onClick={() => void assignMaterial(course.id)}
-                      disabled={!assignMaterialId[course.id]}
                       className="h-9 px-3 rounded-lg bg-[#2E7D32] text-white text-xs font-semibold"
                     >
                       OK
@@ -269,7 +278,6 @@ export function CoursesTab() {
                     <button
                       type="button"
                       onClick={() => void assignTest(course.id)}
-                      disabled={!assignTestId[course.id]}
                       className="h-9 px-3 rounded-lg bg-[#2E7D32] text-white text-xs font-semibold"
                     >
                       OK

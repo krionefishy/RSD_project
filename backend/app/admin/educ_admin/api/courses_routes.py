@@ -17,6 +17,9 @@ from app.admin.educ_admin.usecases.courses.assign_test_to_course_usecase import 
 from app.admin.educ_admin.usecases.courses.create_course_usecase import CreateCourseUseCase
 from app.admin.educ_admin.usecases.courses.delete_course_usecase import DeleteCourseUseCase
 from app.admin.educ_admin.usecases.courses.list_course_enrollments_usecase import ListCourseEnrollmentsUseCase
+from app.admin.educ_admin.usecases.courses.list_course_test_task_bank_usecase import (
+    ListCourseTestTaskBankUseCase,
+)
 from app.admin.educ_admin.usecases.courses.remove_course_from_user_usecase import RemoveCourseFromUserUseCase
 from app.admin.educ_admin.usecases.courses.remove_material_from_course_usecase import RemoveMaterialFromCourseUseCase
 from app.admin.educ_admin.usecases.courses.remove_test_from_course_usecase import RemoveTestFromCourseUseCase
@@ -30,6 +33,7 @@ from app.knowledge_base.dto import (
     CourseEnrollmentsListDTO,
     CourseListItemDTO,
     CourseMaterialItemDTO,
+    CourseTestTaskBankDTO,
     CoursesListDTO,
     CourseTestItemDTO,
 )
@@ -94,6 +98,22 @@ async def list_course_enrollments(
     auth: Annotated[AuthContext, Depends(require_education_admin)],
     usecase: FromDishka[ListCourseEnrollmentsUseCase],
 ) -> CourseEnrollmentsListDTO:
+    result = await usecase.execute(course_id, _ctx(auth))
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    return result
+
+
+@router.get(
+    "/{course_id}/test-task-bank",
+    response_model=CourseTestTaskBankDTO,
+    summary="Банк тестовых задач курса",
+)
+async def list_course_test_task_bank(
+    course_id: int,
+    auth: Annotated[AuthContext, Depends(require_education_admin)],
+    usecase: FromDishka[ListCourseTestTaskBankUseCase],
+) -> CourseTestTaskBankDTO:
     result = await usecase.execute(course_id, _ctx(auth))
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")

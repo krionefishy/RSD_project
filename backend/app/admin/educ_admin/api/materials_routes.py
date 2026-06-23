@@ -26,8 +26,23 @@ from app.users.db_models import UserRole
 
 router = APIRouter(route_class=DishkaRoute)
 
-MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024
-ALLOWED_ATTACHMENT_TYPES = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+# File payload is published to Kafka as base64 inside JSON.
+# Keep the raw upload limit well below the Kafka producer/broker request size.
+MAX_ATTACHMENT_SIZE = 16 * 1024 * 1024
+ALLOWED_ATTACHMENT_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.ms-excel",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "text/plain",
+    "text/csv",
+}
 
 
 def _ctx(auth: AuthContext) -> UserContext:

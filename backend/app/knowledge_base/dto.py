@@ -45,6 +45,7 @@ class MaterialDTO(BaseModel):
     description: Optional[str]
     text: str
     attachments: List[MaterialAttachmentDTO]
+    is_completed: bool = False
     course_id: int
     created_at: datetime
 
@@ -182,3 +183,17 @@ class CourseEnrollmentDTO(BaseModel):
 
 class CourseEnrollmentsListDTO(BaseModel):
     items: List[CourseEnrollmentDTO]
+
+
+class CourseTestTaskBankItemDTO(BaseModel):
+    task_id: int
+    test_id: int
+    test_name: str
+    task_name: str
+    task_description: Optional[str]
+    points: int
+    answer_variants_count: int
+
+
+class CourseTestTaskBankDTO(BaseModel):
+    items: List[CourseTestTaskBankItemDTO]

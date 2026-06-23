@@ -1,5 +1,6 @@
 import type {
   CompleteCourseResult,
+  CourseTestTaskBankItem,
   CompleteMaterialResult,
   Course,
   CourseListItem,
@@ -103,7 +104,9 @@ const MOCK_COURSES: Record<number, Course> = {
   },
 };
 
-const MOCK_MATERIALS: Record<number, Material> = {
+type MockMaterial = Omit<Material, "isCompleted">;
+
+const MOCK_MATERIALS: Record<number, MockMaterial> = {
   101: {
     id: 101,
     name: "Добро пожаловать в команду!",
@@ -307,7 +310,10 @@ const MOCK_COURSE_ENROLLMENTS: Record<number, Array<{ userId: string; name: stri
 };
 
 function mockMaterialsList(): Material[] {
-  return Object.values(MOCK_MATERIALS);
+  return Object.values(MOCK_MATERIALS).map((material) => ({
+    ...material,
+    isCompleted: false,
+  }));
 }
 
 let mockAdminMaterialId = 200;
@@ -380,6 +386,7 @@ interface MaterialDTO {
   description: string | null;
   text: string;
   attachments: MaterialAttachmentDTO[];
+  is_completed: boolean;
   course_id: number;
   created_at: string;
 }
@@ -509,6 +516,7 @@ function mapMaterial(dto: MaterialDTO): Material {
     description: dto.description,
     text: dto.text,
     attachments: dto.attachments.map(mapAttachment),
+    isCompleted: dto.is_completed,
     courseId: dto.course_id,
     createdAt: dto.created_at,
   };
@@ -565,7 +573,10 @@ class KnowledgeAPIImpl {
     if (isMockKB()) {
       const material = MOCK_MATERIALS[materialId];
       if (!material) throw new Error("Material not found");
-      return material;
+      return {
+        ...material,
+        isCompleted: mockCompletedMaterials.has(materialId),
+      };
     }
     const response = await apiClient.get<MaterialDTO>(`/kb/materials/${materialId}`, {
       query: { course_id: courseId },
@@ -912,10 +923,12 @@ class KnowledgeAPIImpl {
         description: data.description ?? null,
         text: data.text,
         attachments: [],
+        isCompleted: false,
         courseId: 0,
         createdAt: new Date().toISOString(),
       };
-      MOCK_MATERIALS[material.id] = material;
+      const { isCompleted: _isCompleted, ...mockMaterial } = material;
+      MOCK_MATERIALS[material.id] = mockMaterial;
       return material;
     }
     const response = await apiClient.post<MaterialDTO>("/admin/education/materials", {
@@ -935,7 +948,10 @@ class KnowledgeAPIImpl {
       if (data.category) material.category = data.category;
       if (data.description !== undefined) material.description = data.description ?? null;
       if (data.text) material.text = data.text;
-      return material;
+      return {
+        ...material,
+        isCompleted: false,
+      };
     }
     const response = await apiClient.put<MaterialDTO>(`/admin/education/materials/${materialId}`, {
       name: data.name,
@@ -1051,7 +1067,7 @@ class KnowledgeAPIImpl {
     }));
   }
 
-  async createTest(data: { name: string; category: string; description?: string; isFinal?: boolean; passScorePercent?: number; timeLimitMinutes?: number | null; maxAttempts?: number | null }): Promise<Test> {
+  async createTest(data: { name: string; category: string; description?: string; isFinal?: boolean; courseId?: number; passScorePercent?: number; timeLimitMinutes?: number | null; maxAttempts?: number | null }): Promise<Test> {
     if (isMockKB()) {
       mockAdminTestId += 1;
       const test: Test = {
@@ -1065,7 +1081,7 @@ class KnowledgeAPIImpl {
         maxAttempts: data.maxAttempts ?? null,
         tasksCount: 0,
         totalPoints: 0,
-        courseId: 0,
+        courseId: data.courseId ?? 0,
         createdAt: new Date().toISOString(),
       };
       MOCK_ADMIN_TESTS.push(test);
@@ -1089,6 +1105,7 @@ class KnowledgeAPIImpl {
       category: data.category,
       description: data.description,
       is_final: data.isFinal,
+      course_id: data.courseId,
       pass_score_percent: data.passScorePercent,
       time_limit_minutes: data.timeLimitMinutes,
       max_attempts: data.maxAttempts,
@@ -1109,7 +1126,7 @@ class KnowledgeAPIImpl {
     };
   }
 
-  async updateTest(testId: number, data: { name?: string; category?: string; description?: string; isFinal?: boolean; passScorePercent?: number; timeLimitMinutes?: number | null; maxAttempts?: number | null }): Promise<Test> {
+  async updateTest(testId: number, data: { name?: string; category?: string; description?: string; isFinal?: boolean; courseId?: number; passScorePercent?: number; timeLimitMinutes?: number | null; maxAttempts?: number | null }): Promise<Test> {
     if (isMockKB()) {
       const test = MOCK_ADMIN_TESTS.find((t) => t.id === testId);
       if (!test) throw new Error("Test not found");
@@ -1117,6 +1134,7 @@ class KnowledgeAPIImpl {
       if (data.category) test.category = data.category;
       if (data.description !== undefined) test.description = data.description ?? null;
       if (data.isFinal !== undefined) test.isFinal = data.isFinal;
+      if (data.courseId !== undefined) test.courseId = data.courseId;
       if (data.passScorePercent !== undefined) test.passScorePercent = data.passScorePercent;
       if (data.timeLimitMinutes !== undefined) test.timeLimitMinutes = data.timeLimitMinutes ?? null;
       if (data.maxAttempts !== undefined) test.maxAttempts = data.maxAttempts ?? null;
@@ -1140,6 +1158,7 @@ class KnowledgeAPIImpl {
       category: data.category,
       description: data.description,
       is_final: data.isFinal,
+      course_id: data.courseId,
       pass_score_percent: data.passScorePercent,
       time_limit_minutes: data.timeLimitMinutes,
       max_attempts: data.maxAttempts,
@@ -1299,6 +1318,52 @@ class KnowledgeAPIImpl {
     }
     const response = await apiClient.get<CoursesListDTO>("/admin/education/courses", { signal });
     return response.items.map(mapCourseItem);
+  }
+
+  async listCourseTestTaskBank(courseId: number): Promise<CourseTestTaskBankItem[]> {
+    if (isMockKB()) {
+      const course = getMockCourse(courseId);
+      if (!course) return [];
+      const uniqueTaskIds = new Set<number>();
+      const items: CourseTestTaskBankItem[] = [];
+      for (const test of course.tests) {
+        const tasks = MOCK_TEST_TASKS[test.testId] ?? [];
+        for (const task of tasks) {
+          if (uniqueTaskIds.has(task.id)) continue;
+          uniqueTaskIds.add(task.id);
+          items.push({
+            taskId: task.id,
+            testId: test.testId,
+            testName: test.name,
+            taskName: task.name,
+            taskDescription: task.description,
+            points: task.points,
+            answerVariantsCount: task.answerVariants.length,
+          });
+        }
+      }
+      return items;
+    }
+    const response = await apiClient.get<{
+      items: Array<{
+        task_id: number;
+        test_id: number;
+        test_name: string;
+        task_name: string;
+        task_description: string | null;
+        points: number;
+        answer_variants_count: number;
+      }>;
+    }>(`/admin/education/courses/${courseId}/test-task-bank`);
+    return response.items.map((item) => ({
+      taskId: item.task_id,
+      testId: item.test_id,
+      testName: item.test_name,
+      taskName: item.task_name,
+      taskDescription: item.task_description,
+      points: item.points,
+      answerVariantsCount: item.answer_variants_count,
+    }));
   }
 }
 

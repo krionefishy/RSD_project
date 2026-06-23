@@ -9,6 +9,7 @@ from app.knowledge_base.db_models import (
     CourseMaterialModel,
     CourseUserModel,
     MaterialModel,
+    UserCourseMaterialModel,
 )
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import MaterialAttachmentDTO, MaterialDTO
@@ -52,6 +53,19 @@ class GetMaterialByIdUseCase:
         if material is None:
             return None
 
+        is_completed = False
+        if ctx.role == UserRole.SELLER:
+            completion = (
+                await self.session.execute(
+                    select(UserCourseMaterialModel.is_completed).where(
+                        UserCourseMaterialModel.user_id == ctx.user_id,
+                        UserCourseMaterialModel.course_id == course_id,
+                        UserCourseMaterialModel.material_id == material_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            is_completed = bool(completion)
+
         attachments = [
             MaterialAttachmentDTO(
                 id=att.id,
@@ -68,6 +82,7 @@ class GetMaterialByIdUseCase:
             description=material.description,
             text=material.text,
             attachments=attachments,
+            is_completed=is_completed,
             course_id=course_id,
             created_at=material.created_at,
         )

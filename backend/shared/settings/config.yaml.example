@@ -42,7 +42,7 @@ backend:
   kafka:
     bootstrap_servers: localhost:9092
     consumer_group: rsd-backend-group
-    max_request_size: 10485760
+    max_request_size: 25165824
   s3:
     endpoint_url: http://localhost:9000
     tenant_id: ""

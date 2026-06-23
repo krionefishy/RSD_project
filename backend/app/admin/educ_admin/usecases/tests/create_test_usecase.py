@@ -1,10 +1,11 @@
 from typing import Optional
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.educ_admin.domain import CreateTestRequest
 from app.knowledge_base.access import KB_ADMIN_ROLES
-from app.knowledge_base.db_models import TestModel
+from app.knowledge_base.db_models import CourseModel, CourseTestModel, TestModel
 from app.knowledge_base.domain import UserContext
 from app.knowledge_base.dto import TestDTO
 
@@ -21,6 +22,15 @@ class CreateTestUseCase:
         if ctx.role.value not in KB_ADMIN_ROLES:
             return None
 
+        course_id = 0
+        if request.course_id is not None:
+            course = (
+                await self.session.execute(select(CourseModel).where(CourseModel.id == request.course_id))
+            ).scalar_one_or_none()
+            if course is None:
+                return None
+            course_id = course.id
+
         test = TestModel(
             name=request.name.strip(),
             category=request.category.strip(),
@@ -31,6 +41,17 @@ class CreateTestUseCase:
             max_attempts=request.max_attempts,
         )
         self.session.add(test)
+        await self.session.flush()
+
+        if request.course_id is not None:
+            self.session.add(
+                CourseTestModel(
+                    course_id=request.course_id,
+                    test_id=test.id,
+                    is_final=request.is_final,
+                )
+            )
+
         await self.session.commit()
         await self.session.refresh(test)
 
@@ -45,6 +66,6 @@ class CreateTestUseCase:
             max_attempts=test.max_attempts,
             tasks_count=0,
             total_points=0,
-            course_id=0,
+            course_id=course_id,
             created_at=test.created_at,
         )

@@ -20,7 +20,6 @@ export default function MaterialPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [done, setDone] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [attachmentUrls, setAttachmentUrls] = useState<Record<number, string>>({});
 
@@ -85,7 +84,7 @@ export default function MaterialPage() {
     setSubmitting(true);
     try {
       await KnowledgeAPI.completeMaterial(courseId, material.id);
-      setDone(true);
+      setMaterial((prev) => (prev ? { ...prev, isCompleted: true } : prev));
       toast.success("Материал отмечен как пройденный");
       setTimeout(() => navigate(`/seller/knowledge/${courseId}`, { replace: true }), 800);
     } catch (err) {
@@ -263,7 +262,7 @@ export default function MaterialPage() {
         )}
 
         <div className="px-4 pb-5">
-          {done ? (
+          {material.isCompleted ? (
             <div className="h-12 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#F0FDF4" }}>
               <CheckCircle size={20} color="#22C55E" />
               <span style={{ color: "#16A34A", fontWeight: 600, fontSize: 15 }}>Материал пройден</span>

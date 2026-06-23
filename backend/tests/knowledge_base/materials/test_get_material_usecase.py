@@ -44,6 +44,33 @@ class TestGetMaterialByIdUseCase:
 
         assert result is not None
         assert result.id == materials[0].id
+        assert result.is_completed is False
+
+    async def test_returns_completion_status_for_completed_seller_material(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+    ) -> None:
+        seller = await builder.build_user(
+            external_system_id="seller_material_done",
+            first_name="John",
+            role=UserRole.SELLER,
+        )
+        course, materials, _ = await builder.build_course_with_materials(material_count=1)
+        await builder.build_course_user(user=seller, course=course)
+        await builder.build_user_course_material(
+            user=seller,
+            course=course,
+            material=materials[0],
+            is_completed=True,
+        )
+        ctx = UserContext(user_id=seller.id, role=UserRole.SELLER)
+        usecase = GetMaterialByIdUseCase(db_session)
+
+        result = await usecase.execute(materials[0].id, course.id, ctx)
+
+        assert result is not None
+        assert result.is_completed is True
 
     async def test_returns_none_for_unassigned_seller(
         self,

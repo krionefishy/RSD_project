@@ -11,6 +11,9 @@ from app.admin.educ_admin.usecases.courses.delete_course_usecase import DeleteCo
 from app.admin.educ_admin.usecases.courses.list_course_enrollments_usecase import (
     ListCourseEnrollmentsUseCase,
 )
+from app.admin.educ_admin.usecases.courses.list_course_test_task_bank_usecase import (
+    ListCourseTestTaskBankUseCase,
+)
 from app.admin.educ_admin.usecases.courses.remove_course_from_user_usecase import (
     RemoveCourseFromUserUseCase,
 )
@@ -56,6 +59,7 @@ class EducAdminUsecaseProvider(Provider):
     update_course = provide(UpdateCourseUseCase)
     delete_course = provide(DeleteCourseUseCase)
     list_course_enrollments = provide(ListCourseEnrollmentsUseCase)
+    list_course_test_task_bank = provide(ListCourseTestTaskBankUseCase)
     assign_course_to_user = provide(AssignCourseToUserUseCase)
     remove_course_from_user = provide(RemoveCourseFromUserUseCase)
     reset_course_progress = provide(ResetCourseProgressUseCase)
