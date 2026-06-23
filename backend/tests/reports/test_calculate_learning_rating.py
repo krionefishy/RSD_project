@@ -97,7 +97,82 @@ class TestCalculateLearningRating:
                 RatingSnapshotItemModel.snapshot_id == snapshot.id
             )
         )
-        assert result.scalars().all() == []
+        items = result.scalars().all()
+        assert len(items) == 1
+        assert items[0].user_id == user.id
+        assert int(items[0].metric_value) == 0
+
+    async def test_includes_sellers_without_completed_tests_in_rating(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+    ) -> None:
+        user_with_points = await builder.build_user(external_system_id="rating_points", role=UserRole.SELLER)
+        user_without_points = await builder.build_user(external_system_id="rating_zero", role=UserRole.SELLER)
+        course = await builder.build_course()
+        test = await builder.build_test()
+        await builder.build_user_course_test(
+            user=user_with_points,
+            course=course,
+            test=test,
+            score=25,
+            max_score=25,
+            is_passed=True,
+            completed_at=datetime(2024, 6, 10, 10, 0, 0),
+        )
+
+        snapshot = await CalculateLearningRatingUseCase(db_session).execute(
+            period_from=date(2024, 6, 1),
+            period_to=date(2024, 6, 30),
+        )
+
+        result = await db_session.execute(
+            select(RatingSnapshotItemModel)
+            .where(RatingSnapshotItemModel.snapshot_id == snapshot.id)
+            .order_by(RatingSnapshotItemModel.rank)
+        )
+        items = result.scalars().all()
+        assert len(items) == 2
+        assert items[0].user_id == user_with_points.id
+        assert int(items[0].metric_value) == 25
+        assert items[1].user_id == user_without_points.id
+        assert int(items[1].metric_value) == 0
+
+    async def test_replaces_snapshot_for_same_period_and_scope(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+    ) -> None:
+        user = await builder.build_user(external_system_id="rating_replace", role=UserRole.SELLER)
+        course = await builder.build_course()
+        test = await builder.build_test()
+        await builder.build_user_course_test(
+            user=user,
+            course=course,
+            test=test,
+            score=30,
+            max_score=30,
+            is_passed=True,
+            completed_at=datetime(2024, 7, 5, 10, 0, 0),
+        )
+
+        first = await CalculateLearningRatingUseCase(db_session).execute(
+            period_from=date(2024, 7, 1),
+            period_to=date(2024, 7, 31),
+        )
+        second = await CalculateLearningRatingUseCase(db_session).execute(
+            period_from=date(2024, 7, 1),
+            period_to=date(2024, 7, 31),
+        )
+
+        snapshots = await db_session.execute(
+            select(RatingSnapshotItemModel.snapshot_id).where(
+                RatingSnapshotItemModel.user_id == user.id
+            )
+        )
+        snapshot_ids = {row[0] for row in snapshots.all()}
+        assert second.id in snapshot_ids
+        assert first.id not in snapshot_ids
 
     async def test_aggregates_multiple_completed_tests_within_period(
         self,
