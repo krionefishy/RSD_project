@@ -20,7 +20,6 @@ export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
 
   useEffect(() => {
     if (user) return;
-    if (status === "loading") return;
     if (!authStorage.hasTokens()) {
       if (status !== "unauthenticated") setStatus("unauthenticated");
       return;
@@ -43,7 +42,7 @@ export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [user, status, setStatus, setUser]);
+  }, [user, setStatus, setUser]);
 
   if (status === "loading" || (status === "idle" && authStorage.hasTokens())) {
     return <PageLoader fullScreen message="Загрузка профиля..." />;
