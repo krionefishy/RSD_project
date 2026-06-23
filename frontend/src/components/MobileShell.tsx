@@ -13,7 +13,7 @@ export function MobileShell({ children }: MobileShellProps) {
     >
       <div
         className="relative w-full max-w-[430px] min-h-screen shadow-2xl overflow-hidden"
-        style={{ background: "#F8FAFC" }}
+        style={{ background: "#DDF3FF" }}
       >
         <DemoBanner />
         {children}
