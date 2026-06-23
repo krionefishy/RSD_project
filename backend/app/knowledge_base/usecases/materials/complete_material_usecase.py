@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
@@ -41,7 +41,7 @@ class CompleteMaterialUseCase:
         if access_result.scalar_one_or_none() is None:
             return None
 
-        completed_at = datetime.now(UTC)
+        completed_at = datetime.now()
         existing_completion_result = await self.session.execute(
             select(UserCourseMaterialModel).where(
                 UserCourseMaterialModel.user_id == ctx.user_id,
@@ -63,7 +63,7 @@ class CompleteMaterialUseCase:
         else:
             completion.is_completed = True
             completion.completed_at = completion.completed_at or completed_at
-            completion.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            completion.updated_at = datetime.now()
         await self.session.commit()
 
         return CompleteMaterialResultDTO(
