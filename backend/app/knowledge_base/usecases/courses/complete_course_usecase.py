@@ -13,6 +13,7 @@ from app.knowledge_base.db_models import (
 )
 from app.knowledge_base.domain import CompleteCourseRequest, UserContext
 from app.knowledge_base.dto import CompleteCourseResultDTO
+from app.knowledge_base.usecases.progress import recalculate_course_user_points
 from app.users.db_models import UserRole
 
 
@@ -44,6 +45,14 @@ class CompleteCourseUseCase:
         course = course_result.scalar_one_or_none()
         if course is None:
             return None
+
+        refreshed_course_user = await recalculate_course_user_points(
+            self.session,
+            course_id=request.course_id,
+            user_id=ctx.user_id,
+        )
+        if refreshed_course_user is not None:
+            course_user = refreshed_course_user
 
         completed_materials_result = await self.session.execute(
             select(func.count(UserCourseMaterialModel.id)).where(

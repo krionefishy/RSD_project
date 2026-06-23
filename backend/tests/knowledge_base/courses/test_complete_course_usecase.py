@@ -54,6 +54,52 @@ class TestCompleteCourseUseCase:
         assert result.completed is True
         assert result.message == "Курс успешно завершён!"
 
+    async def test_recalculates_points_from_completed_tests_before_completion_check(
+        self,
+        db_session: AsyncSession,
+        builder: Builder,
+    ) -> None:
+        seller = await builder.build_user(
+            external_system_id="complete_recalc_points",
+            first_name="John",
+            role=UserRole.SELLER,
+        )
+        course, materials, _ = await builder.build_course_with_materials(
+            course_kwargs={"mrp": 5},
+            material_count=2,
+        )
+        test = await builder.build_test(name="Course Test")
+        await builder.build_course_test(course=course, test=test)
+        await builder.build_course_user(
+            user=seller,
+            course=course,
+            user_points_by_course=0,
+        )
+        for material in materials:
+            await builder.build_user_course_material(
+                user=seller,
+                course=course,
+                material=material,
+                is_completed=True,
+            )
+        await builder.build_user_course_test(
+            user=seller,
+            course=course,
+            test=test,
+            score=10,
+            max_score=10,
+            is_passed=True,
+        )
+        request = CompleteCourseRequest(course_id=course.id)
+        ctx = UserContext(user_id=seller.id, role=UserRole.SELLER)
+        usecase = CompleteCourseUseCase(db_session)
+
+        result = await usecase.execute(request, ctx)
+
+        assert result is not None
+        assert result.completed is True
+        assert result.user_points == 10
+
     async def test_returns_not_completed_when_requirements_not_met(
         self,
         db_session: AsyncSession,
