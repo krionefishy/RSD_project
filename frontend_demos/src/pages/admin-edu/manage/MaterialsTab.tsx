@@ -133,12 +133,12 @@ export function MaterialsTab() {
 
       {materials.map((material) => (
         <div key={material.id} className="rounded-2xl bg-white shadow-sm p-4">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 max-sm:flex-col">
             <FileText size={20} color="#64748B" className="mt-0.5" />
             <div className="flex-1 min-w-0">
               <button
                 type="button"
-                className="text-left font-semibold text-slate-800 text-sm"
+                className="text-left font-semibold text-slate-800 text-sm break-words"
                 onClick={() => navigate(`/admin-edu/manage/edit-material/${material.id}`)}
               >
                 {material.name}
@@ -147,11 +147,11 @@ export function MaterialsTab() {
               {material.attachments.length > 0 && (
                 <div className="mt-2 flex flex-col gap-1">
                   {material.attachments.map((att) => (
-                    <div key={att.id} className="flex items-center justify-between text-xs text-slate-600">
-                      <span>
+                    <div key={att.id} className="flex items-start justify-between gap-2 text-xs text-slate-600">
+                      <span className="break-all">
                         {att.name}.{att.format}
                       </span>
-                      <button type="button" onClick={() => void handleDeleteAttachment(material, att.id)}>
+                      <button type="button" className="flex-shrink-0" onClick={() => void handleDeleteAttachment(material, att.id)}>
                         <Trash2 size={12} color="#DC2626" />
                       </button>
                     </div>
@@ -159,10 +159,10 @@ export function MaterialsTab() {
                 </div>
               )}
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 max-sm:w-full max-sm:flex-row">
               <button
                 type="button"
-                className="text-xs text-[#2E7D32]"
+                className="text-xs text-[#2E7D32] max-sm:flex-1 max-sm:rounded-lg max-sm:bg-emerald-50 max-sm:px-3 max-sm:py-2"
                 onClick={() => {
                   setUploadMaterialId(material.id);
                   fileInputRef.current?.click();
@@ -170,7 +170,11 @@ export function MaterialsTab() {
               >
                 Файл
               </button>
-              <button type="button" onClick={() => setDeleteTarget(material)}>
+              <button
+                type="button"
+                className="max-sm:flex max-sm:flex-1 max-sm:items-center max-sm:justify-center max-sm:rounded-lg max-sm:bg-red-50 max-sm:px-3 max-sm:py-2"
+                onClick={() => setDeleteTarget(material)}
+              >
                 <Trash2 size={16} color="#DC2626" />
               </button>
             </div>
@@ -179,40 +183,54 @@ export function MaterialsTab() {
       ))}
 
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-4 flex flex-col gap-2 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
+          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col gap-3 overflow-y-auto rounded-2xl bg-white p-4 sm:p-5">
             <h3 className="font-semibold text-slate-800">Новый материал</h3>
-            <input
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Название"
-              className="h-10 px-3 rounded-lg border text-sm"
-            />
-            <input
-              value={form.category}
-              onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-              placeholder="Категория"
-              className="h-10 px-3 rounded-lg border text-sm"
-            />
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-              placeholder="Краткое описание"
-              rows={2}
-              className="px-3 py-2 rounded-lg border text-sm resize-none"
-            />
-            <textarea
-              value={form.text}
-              onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
-              placeholder="Содержание (Markdown)"
-              rows={6}
-              className="px-3 py-2 rounded-lg border text-sm font-mono resize-none"
-            />
-            <div className="flex gap-2">
-              <button onClick={() => setShowCreate(false)} className="flex-1 h-10 rounded-lg bg-slate-100 text-sm">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-slate-500">Название материала</span>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Например: Открытие смены"
+                  className="h-11 rounded-lg border px-3 text-sm"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-medium text-slate-500">Категория</span>
+                <input
+                  value={form.category}
+                  onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                  placeholder="Например: Касса"
+                  className="h-11 rounded-lg border px-3 text-sm"
+                />
+              </label>
+            </div>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-slate-500">Краткое описание</span>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="1-2 предложения о содержании материала"
+                rows={3}
+                className="rounded-lg border px-3 py-2 text-sm resize-none"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-slate-500">Содержание материала</span>
+              <textarea
+                value={form.text}
+                onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
+                placeholder="Содержание (Markdown)"
+                rows={8}
+                className="rounded-lg border px-3 py-2 text-sm font-mono resize-none"
+              />
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button onClick={() => setShowCreate(false)} className="h-11 flex-1 rounded-lg bg-slate-100 text-sm">
                 Отмена
               </button>
-              <button onClick={() => void handleCreate()} className="flex-1 h-10 rounded-lg bg-[#C41E3A] text-white text-sm">
+              <button onClick={() => void handleCreate()} className="h-11 flex-1 rounded-lg bg-[#C41E3A] text-white text-sm">
                 Создать
               </button>
             </div>

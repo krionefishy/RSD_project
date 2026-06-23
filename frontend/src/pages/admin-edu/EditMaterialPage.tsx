@@ -158,59 +158,75 @@ export default function EditMaterialPage() {
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-3">
-        <div className="rounded-2xl bg-white shadow-sm p-4 flex flex-col gap-2">
-          <input
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="h-10 px-3 rounded-lg border text-sm"
-            placeholder="Название"
-          />
-          <input
-            value={form.category}
-            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-            className="h-10 px-3 rounded-lg border text-sm"
-            placeholder="Категория"
-          />
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-            rows={2}
-            className="px-3 py-2 rounded-lg border text-sm resize-none"
-            placeholder="Описание"
-          />
+        <div className="rounded-2xl bg-white shadow-sm p-4 flex flex-col gap-3 sm:p-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-slate-500">Название материала</span>
+              <input
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="h-11 rounded-lg border px-3 text-sm"
+                placeholder="Название"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-slate-500">Категория</span>
+              <input
+                value={form.category}
+                onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+                className="h-11 rounded-lg border px-3 text-sm"
+                placeholder="Категория"
+              />
+            </label>
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-slate-500">Краткое описание</span>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="rounded-lg border px-3 py-2 text-sm resize-none"
+              placeholder="Описание"
+            />
+          </label>
           {pdfMaterial ? (
             <div className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">
               Для PDF-материала текстовый контент отключён. Материал отображается из единственного PDF-вложения.
             </div>
           ) : (
-            <MarkdownEditor
-              value={form.text}
-              onChange={(text) => setForm((prev) => ({ ...prev, text }))}
-              placeholder="Содержание (Markdown)"
-            />
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-slate-500">Содержание материала</span>
+              <MarkdownEditor
+                value={form.text}
+                onChange={(text) => setForm((prev) => ({ ...prev, text }))}
+                placeholder="Содержание (Markdown)"
+              />
+            </label>
           )}
-          <button
-            onClick={() => void handleSave()}
-            disabled={saving}
-            className="h-10 rounded-lg bg-[#2E7D32] text-white text-sm font-semibold"
-          >
-            {saving ? "Сохранение..." : "Сохранить"}
-          </button>
-          <button
-            onClick={() => setShowDelete(true)}
-            className="h-10 rounded-lg bg-red-50 text-red-700 text-sm font-medium flex items-center justify-center gap-2"
-          >
-            <Trash2 size={16} />
-            Удалить материал
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={() => void handleSave()}
+              disabled={saving}
+              className="h-11 flex-1 rounded-lg bg-[#2E7D32] text-white text-sm font-semibold"
+            >
+              {saving ? "Сохранение..." : "Сохранить"}
+            </button>
+            <button
+              onClick={() => setShowDelete(true)}
+              className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-red-50 text-red-700 text-sm font-medium"
+            >
+              <Trash2 size={16} />
+              Удалить материал
+            </button>
+          </div>
         </div>
 
-        <div className="rounded-2xl bg-white shadow-sm p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="rounded-2xl bg-white shadow-sm p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start">
             <p className="font-semibold text-slate-800 text-sm">Вложения</p>
             <button
               type="button"
-              className="text-xs text-[#2E7D32] font-medium"
+              className="text-xs text-[#2E7D32] font-medium max-sm:w-full max-sm:rounded-lg max-sm:bg-emerald-50 max-sm:px-3 max-sm:py-2 max-sm:text-center"
               onClick={() => fileInputRef.current?.click()}
             >
               Загрузить
@@ -231,11 +247,11 @@ export default function EditMaterialPage() {
             <p className="text-xs text-slate-400">Нет вложений</p>
           ) : (
             material.attachments.map((att) => (
-              <div key={att.id} className="flex items-center justify-between py-2 border-t border-slate-50">
-                <span className="text-sm text-slate-700">
+              <div key={att.id} className="flex items-start justify-between gap-2 border-t border-slate-50 py-2">
+                <span className="break-all text-sm text-slate-700">
                   {att.name}.{att.format}
                 </span>
-                <button type="button" onClick={() => void handleDeleteAttachment(att.id)}>
+                <button type="button" className="flex-shrink-0" onClick={() => void handleDeleteAttachment(att.id)}>
                   <Trash2 size={14} color="#DC2626" />
                 </button>
               </div>
@@ -249,8 +265,8 @@ export default function EditMaterialPage() {
         </div>
 
         {pdfMaterial && pdfUrl && (
-          <div className="rounded-2xl bg-white shadow-sm p-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="rounded-2xl bg-white shadow-sm p-4 sm:p-5">
+            <div className="mb-3 flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start">
               <p className="text-xs font-medium text-slate-500">Предпросмотр PDF</p>
               <a
                 href={pdfUrl}
@@ -266,7 +282,7 @@ export default function EditMaterialPage() {
               src={pdfUrl}
               title={material.name}
               className="w-full rounded-lg"
-              style={{ height: "70vh", border: "1px solid #E2E8F0" }}
+              style={{ height: "min(70vh, 680px)", border: "1px solid #E2E8F0" }}
             />
           </div>
         )}

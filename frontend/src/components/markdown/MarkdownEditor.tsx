@@ -121,12 +121,12 @@ export function MarkdownEditor({
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
         placeholder={placeholder}
-        className="min-h-[220px] w-full resize-y rounded-b-xl px-3 py-3 font-mono text-sm text-slate-800 outline-none"
+        className="min-h-[220px] w-full resize-y rounded-b-xl px-3 py-3 font-mono text-sm leading-6 text-slate-800 outline-none sm:px-4"
       />
 
-      <div className="border-t border-slate-200 bg-slate-50 p-3">
+      <div className="border-t border-slate-200 bg-slate-50 p-3 sm:p-4">
         <p className="mb-2 text-xs font-medium text-slate-500">Предпросмотр</p>
-        <div className="rounded-lg bg-white p-3">
+        <div className="rounded-lg bg-white p-3 sm:p-4">
           <MarkdownRenderer
             content={value}
             emptyFallback={<p className="text-sm text-slate-400">Введите текст, чтобы увидеть предпросмотр.</p>}
@@ -150,7 +150,7 @@ function ToolbarButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+      className="inline-flex min-h-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 max-sm:flex-1"
     >
       {icon}
       {label}
