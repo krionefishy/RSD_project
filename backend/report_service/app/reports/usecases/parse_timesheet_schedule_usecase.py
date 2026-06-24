@@ -131,7 +131,7 @@ class ParseTimesheetScheduleUseCase:
             period=parsed.period,
             shifts=parsed.shifts,
             entries_count=len(parsed.entries),
-            entries=parsed.entries,
+            entries=[entry.model_dump() for entry in parsed.entries],
             uploaded_at=uploaded_at,
             completed_at=completed_at,
         )
