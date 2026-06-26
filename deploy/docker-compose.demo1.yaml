@@ -58,6 +58,8 @@ services:
       - "log_checkpoints=on"
       - "-c"
       - "log_lock_waits=on"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: appsecret
@@ -129,6 +131,8 @@ services:
       - "log_checkpoints=on"
       - "-c"
       - "log_lock_waits=on"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
     environment:
       POSTGRES_USER: ${REPORT_DB_SUPERUSER:-report_admin}
       POSTGRES_PASSWORD: ${REPORT_DB_SUPERUSER_PASSWORD:-reportadminsecret}

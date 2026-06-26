@@ -11,6 +11,8 @@ host  replication  ${POSTGRES_REPLICATION_USER:-replicator}  0.0.0.0/0  md5
 HBA
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<SQL
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
 DO \$\$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${POSTGRES_REPLICATION_USER:-replicator}') THEN

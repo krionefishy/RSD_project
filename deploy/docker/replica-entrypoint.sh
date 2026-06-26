@@ -29,6 +29,7 @@ fi
 
 exec docker-entrypoint.sh postgres \
     -c hot_standby=on \
+    -c shared_preload_libraries=pg_stat_statements \
     -c shared_buffers="${POSTGRES_SHARED_BUFFERS:-256MB}" \
     -c work_mem="${POSTGRES_WORK_MEM:-8MB}" \
     -c maintenance_work_mem="${POSTGRES_MAINTENANCE_WORK_MEM:-128MB}" \

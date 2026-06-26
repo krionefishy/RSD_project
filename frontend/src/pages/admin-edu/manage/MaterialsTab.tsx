@@ -220,20 +220,20 @@ export function MaterialsTab() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4">
-          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col gap-3 overflow-y-auto rounded-2xl bg-white p-4 sm:p-5">
+          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col gap-3 overflow-y-auto rounded-2xl bg-white p-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:p-5">
             <h3 className="font-semibold text-slate-800">Новый материал</h3>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setForm((prev) => ({ ...prev, mode: "text", pdfFile: null }))}
-                className={`h-10 rounded-lg text-sm ${form.mode === "text" ? "bg-[#C41E3A] text-white" : "bg-slate-100 text-slate-700"}`}
+                className={`h-11 rounded-lg text-sm font-medium max-sm:h-12 ${form.mode === "text" ? "bg-[#C41E3A] text-white" : "bg-slate-100 text-slate-700"}`}
               >
                 Текстовый
               </button>
               <button
                 type="button"
                 onClick={() => setForm((prev) => ({ ...prev, mode: "pdf", text: "" }))}
-                className={`h-10 rounded-lg text-sm ${form.mode === "pdf" ? "bg-[#C41E3A] text-white" : "bg-slate-100 text-slate-700"}`}
+                className={`h-11 rounded-lg text-sm font-medium max-sm:h-12 ${form.mode === "pdf" ? "bg-[#C41E3A] text-white" : "bg-slate-100 text-slate-700"}`}
               >
                 PDF
               </button>
@@ -300,11 +300,17 @@ export function MaterialsTab() {
                 )}
               </div>
             )}
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button onClick={() => setShowCreate(false)} className="h-11 flex-1 rounded-lg bg-slate-100 text-sm">
+            <div className="sticky bottom-0 -mx-4 mt-2 flex flex-col gap-2 border-t border-slate-200 bg-white px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)] sm:static sm:mx-0 sm:border-t-0 sm:px-0 sm:pt-0 sm:pb-0 sm:flex-row">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="h-12 flex-1 rounded-lg bg-slate-100 text-sm font-semibold max-sm:h-14 max-sm:text-base"
+              >
                 Отмена
               </button>
-              <button onClick={() => void handleCreate()} className="h-11 flex-1 rounded-lg bg-[#C41E3A] text-white text-sm">
+              <button
+                onClick={() => void handleCreate()}
+                className="h-12 flex-1 rounded-lg bg-[#C41E3A] text-sm font-semibold text-white max-sm:h-14 max-sm:text-base"
+              >
                 Создать
               </button>
             </div>

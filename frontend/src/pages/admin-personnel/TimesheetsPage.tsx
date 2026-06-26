@@ -20,7 +20,9 @@ export default function TimesheetsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { locations: structureLocations, loading: structureLoading } = useStructureOptions();
   const today = new Date();
-  const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [uploadMonthDate, setUploadMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [locationMonthDate, setLocationMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [employeeMonthDate, setEmployeeMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
 
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -48,7 +50,9 @@ export default function TimesheetsPage() {
   const [lastUpload, setLastUpload] = useState<TimesheetUploadResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const period = monthPeriodQuery(monthDate);
+  const uploadPeriod = monthPeriodQuery(uploadMonthDate);
+  const locationPeriod = monthPeriodQuery(locationMonthDate);
+  const employeePeriod = monthPeriodQuery(employeeMonthDate);
 
   useEffect(() => {
     if (!selectedLocationId && structureLocations[0]) {
@@ -95,7 +99,7 @@ export default function TimesheetsPage() {
       setLocationLoading(true);
       setLocationError(null);
       try {
-        const data = await PersonnelAPI.getLocationTimesheet(Number(selectedLocationId), period, signal);
+        const data = await PersonnelAPI.getLocationTimesheet(Number(selectedLocationId), locationPeriod, signal);
         setLocationEntries(data.items);
         setLocationTotalHours(data.totalHours);
       } catch (error) {
@@ -107,7 +111,7 @@ export default function TimesheetsPage() {
         if (!signal?.aborted) setLocationLoading(false);
       }
     },
-    [selectedLocationId, period.periodFrom, period.periodTo],
+    [selectedLocationId, locationPeriod.periodFrom, locationPeriod.periodTo],
   );
 
   const loadEmployeeTimesheet = useCallback(
@@ -116,7 +120,7 @@ export default function TimesheetsPage() {
       setEmployeeLoading(true);
       setEmployeeError(null);
       try {
-        const data = await PersonnelAPI.getEmployeeTimesheet(selectedUserId, period, signal);
+        const data = await PersonnelAPI.getEmployeeTimesheet(selectedUserId, employeePeriod, signal);
         setEmployeeEntries(data.items);
         setEmployeeTotalHours(data.totalHours);
       } catch (error) {
@@ -128,7 +132,7 @@ export default function TimesheetsPage() {
         if (!signal?.aborted) setEmployeeLoading(false);
       }
     },
-    [selectedUserId, period.periodFrom, period.periodTo],
+    [selectedUserId, employeePeriod.periodFrom, employeePeriod.periodTo],
   );
 
   useEffect(() => {
@@ -149,7 +153,7 @@ export default function TimesheetsPage() {
     try {
       const result = await AdminStaffAPI.uploadTimesheetFile(
         file,
-        period,
+        uploadPeriod,
         selectedLocationId ? Number(selectedLocationId) : undefined,
       );
       setLastUpload(result);
@@ -253,7 +257,7 @@ export default function TimesheetsPage() {
 
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <TimesheetMonthFilter monthDate={monthDate} onChange={setMonthDate} />
+          <TimesheetMonthFilter monthDate={uploadMonthDate} onChange={setUploadMonthDate} />
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
@@ -322,6 +326,9 @@ export default function TimesheetsPage() {
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по точке</p>
           <div className="mb-3">
+            <TimesheetMonthFilter monthDate={locationMonthDate} onChange={setLocationMonthDate} />
+          </div>
+          <div className="mb-3">
             <AppSelect
               value={selectedLocationId}
               onValueChange={setSelectedLocationId}
@@ -338,8 +345,8 @@ export default function TimesheetsPage() {
             totalHours={locationTotalHours}
             loading={locationLoading}
             error={locationError}
-            monthDate={monthDate}
-            onMonthChange={setMonthDate}
+            monthDate={locationMonthDate}
+            onMonthChange={setLocationMonthDate}
             showMonthFilter={false}
             showSummary={false}
             showEmployees
@@ -365,6 +372,9 @@ export default function TimesheetsPage() {
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по сотруднику</p>
           <div className="mb-3">
+            <TimesheetMonthFilter monthDate={employeeMonthDate} onChange={setEmployeeMonthDate} />
+          </div>
+          <div className="mb-3">
             <AppSelect
               value={selectedUserId}
               onValueChange={setSelectedUserId}
@@ -381,8 +391,8 @@ export default function TimesheetsPage() {
             totalHours={employeeTotalHours}
             loading={employeeLoading}
             error={employeeError}
-            monthDate={monthDate}
-            onMonthChange={setMonthDate}
+            monthDate={employeeMonthDate}
+            onMonthChange={setEmployeeMonthDate}
             showMonthFilter={false}
             showSummary={false}
             allowAssign={Boolean(selectedUserId)}
@@ -415,7 +425,7 @@ export default function TimesheetsPage() {
                   Создано записей: {lastUpload.entriesCount}
                 </p>
                 <p style={{ color: "#94A3B8", fontSize: 11 }}>
-                  {period.periodFrom} — {period.periodTo} · строк {lastUpload.rowsCount}
+                  {uploadPeriod.periodFrom} — {uploadPeriod.periodTo} · строк {lastUpload.rowsCount}
                 </p>
               </div>
             </div>
