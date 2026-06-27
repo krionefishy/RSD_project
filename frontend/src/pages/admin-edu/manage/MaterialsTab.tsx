@@ -303,13 +303,13 @@ export function MaterialsTab() {
             <div className="sticky bottom-0 -mx-4 mt-2 flex flex-col gap-2 border-t border-slate-200 bg-white px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)] sm:static sm:mx-0 sm:border-t-0 sm:px-0 sm:pt-0 sm:pb-0 sm:flex-row">
               <button
                 onClick={() => setShowCreate(false)}
-                className="h-12 flex-1 rounded-lg bg-slate-100 text-sm font-semibold max-sm:h-14 max-sm:text-base"
+                className="h-12 shrink-0 rounded-lg bg-slate-100 px-4 text-sm font-semibold max-sm:h-14 max-sm:text-base sm:min-w-32 sm:flex-1"
               >
                 Отмена
               </button>
               <button
                 onClick={() => void handleCreate()}
-                className="h-12 flex-1 rounded-lg bg-[#C41E3A] text-sm font-semibold text-white max-sm:h-14 max-sm:text-base"
+                className="h-12 shrink-0 rounded-lg bg-[#C41E3A] px-4 text-sm font-semibold text-white max-sm:h-14 max-sm:text-base sm:min-w-32 sm:flex-1"
               >
                 Создать
               </button>

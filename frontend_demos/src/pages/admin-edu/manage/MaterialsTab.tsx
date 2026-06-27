@@ -227,10 +227,10 @@ export function MaterialsTab() {
               />
             </label>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button onClick={() => setShowCreate(false)} className="h-11 flex-1 rounded-lg bg-slate-100 text-sm">
+              <button onClick={() => setShowCreate(false)} className="h-11 shrink-0 rounded-lg bg-slate-100 px-4 text-sm sm:min-w-32 sm:flex-1">
                 Отмена
               </button>
-              <button onClick={() => void handleCreate()} className="h-11 flex-1 rounded-lg bg-[#C41E3A] text-white text-sm">
+              <button onClick={() => void handleCreate()} className="h-11 shrink-0 rounded-lg bg-[#C41E3A] px-4 text-sm text-white sm:min-w-32 sm:flex-1">
                 Создать
               </button>
             </div>

@@ -1,6 +1,8 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { LayoutDashboard, FolderOpen, Users, FileText } from "lucide-react";
 
+const BOTTOM_MENU_HEIGHT = 64;
+
 const TABS = [
   { path: "/admin-edu", label: "Главная", Icon: LayoutDashboard, exact: true },
   { path: "/admin-edu/manage", label: "Контент", Icon: FolderOpen },
@@ -14,8 +16,8 @@ export default function AdminEduTemplate() {
   const isActive = (tab: typeof TABS[0]) => tab.exact ? location.pathname === tab.path : location.pathname.startsWith(tab.path);
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "#F8FAFC" }}>
-      <div className="flex-1 overflow-auto" style={{ paddingBottom: 64 }}><Outlet /></div>
-      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto" style={{ background: "#fff", borderTop: "1px solid #E2E8F0", height: 64, display: "flex", zIndex: 100 }}>
+      <div className="flex-1 overflow-auto" style={{ paddingBottom: BOTTOM_MENU_HEIGHT }}><Outlet /></div>
+      <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto" style={{ background: "#fff", borderTop: "1px solid #E2E8F0", height: BOTTOM_MENU_HEIGHT, display: "flex", zIndex: 100 }}>
         {TABS.map((tab) => {
           const active = isActive(tab);
           return (

@@ -2,6 +2,8 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { LayoutDashboard, FolderOpen, FileText, User } from "lucide-react";
 
+const BOTTOM_MENU_HEIGHT = 64;
+
 const TABS = [
   { path: "/admin-sales", label: "Главная", Icon: LayoutDashboard, exact: true },
   { path: "/admin-sales/manage", label: "Управление", Icon: FolderOpen },
@@ -20,7 +22,7 @@ export default function AdminSalesTemplate() {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "#F8FAFC" }}>
-      <div className="flex-1 overflow-auto" style={{ paddingBottom: 64 }}>
+      <div className="flex-1 overflow-auto" style={{ paddingBottom: BOTTOM_MENU_HEIGHT }}>
         <Outlet />
       </div>
 
@@ -29,7 +31,7 @@ export default function AdminSalesTemplate() {
         style={{
           background: "#fff",
           borderTop: "1px solid #E2E8F0",
-          height: 64,
+          height: BOTTOM_MENU_HEIGHT,
           display: "flex",
           zIndex: 100,
         }}

@@ -2,6 +2,8 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { Home, BookOpen, ChartBarBig, Trophy, User } from "lucide-react";
 
+const BOTTOM_MENU_HEIGHT = 64;
+
 const TABS = [
   { path: "/seller", label: "Главная", Icon: Home, exact: true },
   { path: "/seller/knowledge", label: "Обучение", Icon: BookOpen },
@@ -21,7 +23,7 @@ export default function SellerTemplate() {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "#F8FAFC" }}>
-      <div className="flex-1 overflow-auto" style={{ paddingBottom: 64 }}>
+      <div className="flex-1 overflow-auto" style={{ paddingBottom: BOTTOM_MENU_HEIGHT }}>
         <Outlet />
       </div>
 
@@ -30,7 +32,7 @@ export default function SellerTemplate() {
         style={{
           background: "#fff",
           borderTop: "1px solid #E2E8F0",
-          height: 64,
+          height: BOTTOM_MENU_HEIGHT,
           display: "flex",
           zIndex: 100,
         }}
