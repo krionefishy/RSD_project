@@ -15,7 +15,7 @@ export default function ManagerProfilePage() {
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div className="px-4 pt-4 pb-6 flex flex-col items-center" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <ScreenBackButton to="/manager" light className="self-start mb-4" />
-        <Avatar name={user.name} size={72} />
+        <Avatar name={user.name} size={72} src={user.avatar} />
         <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginTop: 12 }}>{user.name}</h2>
         <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>{user.position}</p>
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>{user.blockName ?? user.block}</p>

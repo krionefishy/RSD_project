@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.locations.db_models import BlockMemberModel, UserLocationModel
+from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel
 from app.users.dto import BlockBriefDTO, LocationBriefDTO, UserProfileDTO
+from storage.s3.client import S3Client
 
 PROFILE_LOAD_OPTIONS = (
     selectinload(UserModel.location_assignments).selectinload(UserLocationModel.location),
@@ -21,7 +23,7 @@ async def load_user_for_profile(session: AsyncSession, user_id: UUID) -> UserMod
     return result.scalar_one_or_none()
 
 
-def map_user_profile(user: UserModel) -> UserProfileDTO:
+def map_user_profile(user: UserModel, s3_client: S3Client | None = None) -> UserProfileDTO:
     location = user.location
     membership = user.block_memberships[0] if user.block_memberships else None
     block = membership.block if membership and membership.block else None
@@ -35,7 +37,7 @@ def map_user_profile(user: UserModel) -> UserProfileDTO:
         phone=user.phone,
         birth_date=user.birth_date,
         position=user.position,
-        avatar_url=user.avatar_url,
+        avatar_url=resolve_avatar_url(s3_client, user.avatar_url),
         is_active=user.is_active,
         location=(
             LocationBriefDTO(id=location.id, name=location.name) if location is not None else None

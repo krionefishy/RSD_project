@@ -6,13 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.locations.db_models import BlockMemberModel, ManagerBlockModel, UserLocationModel
+from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel, UserRole
 from app.users.dto import BlockBriefDTO, LocationBriefDTO, UserDTO, UsersListDTO
+from storage.s3.client import S3Client
 
 
 class ListUsersUseCase:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, s3_client: S3Client | None):
         self.session = session
+        self.s3_client = s3_client
 
     async def execute(
         self,
@@ -90,7 +93,7 @@ class ListUsersUseCase:
                     phone=user.phone,
                     name=user.full_name,
                     position=user.position,
-                    avatar_url=user.avatar_url,
+                    avatar_url=resolve_avatar_url(self.s3_client, user.avatar_url),
                     is_active=user.is_active,
                     birth_date=user.birth_date,
                     location=(

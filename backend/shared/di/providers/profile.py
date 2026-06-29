@@ -39,6 +39,7 @@ from app.users.usecases.profiles.update_own_phone_usecase import UpdateOwnPhoneU
 from app.users.usecases.profiles.upload_own_avatar_usecase import UploadOwnAvatarUseCase
 from shared.integrations.report_service import ReportServiceClient
 from shared.kafka_streams.producer import KafkaProducerWrapper
+from storage.s3.client import S3Client
 
 
 class ProfileUsecaseProvider(Provider):
@@ -67,8 +68,9 @@ class ProfileUsecaseProvider(Provider):
         self,
         session: AsyncSession,
         kafka_producer: KafkaProducerWrapper,
+        s3_client: S3Client,
     ) -> UploadOwnAvatarUseCase:
-        return UploadOwnAvatarUseCase(session, kafka_producer)
+        return UploadOwnAvatarUseCase(session, kafka_producer, s3_client)
 
     @provide
     def upload_timesheet_file(

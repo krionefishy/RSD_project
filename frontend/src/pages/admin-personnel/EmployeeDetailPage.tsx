@@ -193,12 +193,19 @@ export default function EmployeeDetailPage() {
       toast.error(validationError);
       return;
     }
+    const previousAvatarUrl = profile?.avatarUrl;
+    const previewUrl = URL.createObjectURL(file);
+    setProfile((prev) => (prev ? { ...prev, avatarUrl: previewUrl } : prev));
     try {
-      const result = await AdminStaffAPI.uploadEmployeeAvatar(userId, file);
-      setProfile((prev) => (prev ? { ...prev, avatarUrl: result.avatarUrl } : prev));
+      await AdminStaffAPI.uploadEmployeeAvatar(userId, file);
+      const updatedProfile = await UserAPI.getUserProfile(userId);
+      setProfile(updatedProfile);
       toast.success("Аватар обновлён");
     } catch (error) {
+      setProfile((prev) => (prev ? { ...prev, avatarUrl: previousAvatarUrl } : prev));
       toast.error(mapAvatarErrorMessage(error));
+    } finally {
+      URL.revokeObjectURL(previewUrl);
     }
   };
 

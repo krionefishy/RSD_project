@@ -51,13 +51,19 @@ export default function ProfilePage() {
       return;
     }
     setAvatarUploading(true);
+    const previousAvatar = user.avatar;
+    const previewUrl = URL.createObjectURL(file);
+    setUser({ ...user, avatar: previewUrl });
     try {
-      const result = await UserAPI.uploadOwnAvatar(file);
-      setUser({ ...user, avatar: result.avatarUrl });
+      await UserAPI.uploadOwnAvatar(file);
+      const me = await UserAPI.fetchMe();
+      setUser(me);
       toast.success(isPresentationMode() ? "Демо: аватар обновлён локально" : "Аватар обновлён");
     } catch (error) {
+      setUser({ ...user, avatar: previousAvatar });
       toast.error(mapAvatarErrorMessage(error));
     } finally {
+      URL.revokeObjectURL(previewUrl);
       setAvatarUploading(false);
     }
   };

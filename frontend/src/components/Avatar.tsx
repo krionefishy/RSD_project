@@ -1,4 +1,5 @@
 // React import not needed in React 18+
+import { useEffect, useState } from "react";
 
 interface AvatarProps {
   name: string;
@@ -29,15 +30,21 @@ function getInitials(name: string): string {
 }
 
 export function Avatar({ name, size = 40, className = "", bgColor, src }: AvatarProps) {
+  const [imageError, setImageError] = useState(false);
   const bg = bgColor || getColor(name);
   const initials = getInitials(name);
   const fontSize = Math.round(size * 0.36);
 
-  if (src) {
+  useEffect(() => {
+    setImageError(false);
+  }, [src]);
+
+  if (src && !imageError) {
     return (
       <img
         src={src}
         alt={name}
+        onError={() => setImageError(true)}
         className={`rounded-full flex-shrink-0 object-cover ${className}`}
         style={{ width: size, height: size }}
       />

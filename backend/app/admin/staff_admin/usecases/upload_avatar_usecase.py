@@ -9,14 +9,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import AuthContext
 from app.personnel.domain import ALLOWED_AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES
+from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel
 from app.users.profile_scope import ensure_staff_admin_can_manage_user
+from storage.s3.client import S3Client
 
 
 class UploadAvatarUseCase:
-    def __init__(self, session: AsyncSession, kafka_producer: KafkaProducerWrapper):
+    def __init__(
+        self,
+        session: AsyncSession,
+        kafka_producer: KafkaProducerWrapper,
+        s3_client: S3Client | None,
+    ):
         self.session = session
         self.kafka_producer = kafka_producer
+        self.s3_client = s3_client
 
     async def execute(
         self,
@@ -72,4 +80,4 @@ class UploadAvatarUseCase:
             original_filename=filename,
         )
 
-        return key
+        return resolve_avatar_url(self.s3_client, key) or key

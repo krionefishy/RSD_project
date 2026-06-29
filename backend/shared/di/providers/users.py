@@ -18,6 +18,7 @@ from app.admin.staff_admin.usecases.upload_avatar_usecase import UploadAvatarUse
 from app.users.usecases.get_user_usecase import GetUserUseCase
 from app.users.usecases.list_users_usecase import ListUsersUseCase
 from shared.kafka_streams.producer import KafkaProducerWrapper
+from storage.s3.client import S3Client
 
 
 class UsersUsecaseProvider(Provider):
@@ -44,5 +45,6 @@ class UsersUsecaseProvider(Provider):
         self,
         session: AsyncSession,
         kafka_producer: KafkaProducerWrapper,
+        s3_client: S3Client,
     ) -> UploadAvatarUseCase:
-        return UploadAvatarUseCase(session, kafka_producer)
+        return UploadAvatarUseCase(session, kafka_producer, s3_client)

@@ -10,20 +10,28 @@ from shared.kafka_streams.topics import StorageTopics
 from sqlalchemy import select
 
 from app.personnel.domain import ALLOWED_AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES
+from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel
 from app.users.profile_errors import ProfileForbiddenError, ProfileNotFoundError
 
 if TYPE_CHECKING:
     from shared.kafka_streams.producer import KafkaProducerWrapper
     from sqlalchemy.ext.asyncio import AsyncSession
+    from storage.s3.client import S3Client
 
     from app.auth.deps import AuthContext
 
 
 class UploadOwnAvatarUseCase:
-    def __init__(self, session: AsyncSession, kafka_producer: KafkaProducerWrapper):
+    def __init__(
+        self,
+        session: AsyncSession,
+        kafka_producer: KafkaProducerWrapper,
+        s3_client: S3Client | None,
+    ):
         self.session = session
         self.kafka_producer = kafka_producer
+        self.s3_client = s3_client
 
     async def execute(
         self,
@@ -71,4 +79,4 @@ class UploadOwnAvatarUseCase:
         user.avatar_url = key
         user.updated_at = datetime.now()
         await self.session.commit()
-        return key
+        return resolve_avatar_url(self.s3_client, key) or key

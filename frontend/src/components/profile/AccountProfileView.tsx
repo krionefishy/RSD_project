@@ -22,7 +22,7 @@ export function AccountProfileView({ backTo, roleLabel }: AccountProfileViewProp
       <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <ScreenBackButton to={backTo} light className="mb-4" />
         <div className="flex flex-col items-center">
-          <Avatar name={user.name} size={72} />
+          <Avatar name={user.name} size={72} src={user.avatar} />
           <p style={{ color: "#fff", fontSize: 18, fontWeight: 600, marginTop: 12 }}>{user.name}</p>
           <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 13, marginTop: 4 }}>{displayRole}</p>
         </div>
