@@ -1,8 +1,9 @@
-from datetime import UTC, datetime, time
+from datetime import time
 from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,8 +14,10 @@ from app.personnel.domain import CreateTimeEntryRequest
 from app.personnel.dto import EmployeeTimeEntryDTO
 from app.personnel.timesheet_mapper import map_time_entry
 from app.users.db_models import UserModel
-from app.users.profile_errors import ProfileNotFoundError
+from app.users.profile_errors import ProfileConflictError, ProfileNotFoundError
 from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
+
+WORK_SHIFT_CODES = (ScheduleShiftCode.S1.value, ScheduleShiftCode.S2.value)
 
 
 class CreateTimeEntryUseCase:
@@ -59,37 +62,28 @@ class CreateTimeEntryUseCase:
         starts_at, ends_at = self._shift_bounds(location, request.shift_code)
         hours = self._worked_hours(starts_at, ends_at)
 
-        existing_result = await self.session.execute(
-            select(EmployeeTimeEntryModel).where(
-                EmployeeTimeEntryModel.user_id == user.id,
-                EmployeeTimeEntryModel.work_date == request.work_date,
-            )
-        )
-        existing = existing_result.scalar_one_or_none()
+        existing = await self._find_work_shift_entry(user.id, request.work_date, request.shift_code)
 
         if existing is not None:
-            existing.activity_code = activity_code.code
-            existing.hours = hours
-            existing.shift_type = ShiftType.DAY.value
-            existing.shift_code = request.shift_code
-            existing.starts_at = starts_at
-            existing.ends_at = ends_at
-            existing.updated_at = datetime.now(UTC)
-            entry = existing
-        else:
-            entry = EmployeeTimeEntryModel(
-                user_id=user.id,
-                work_date=request.work_date,
-                activity_code=activity_code.code,
-                hours=hours,
-                shift_type=ShiftType.DAY.value,
-                shift_code=request.shift_code,
-                starts_at=starts_at,
-                ends_at=ends_at,
-            )
-            self.session.add(entry)
+            raise ProfileConflictError("Shift already assigned for this date")
 
-        await self.session.commit()
+        entry = EmployeeTimeEntryModel(
+            user_id=user.id,
+            work_date=request.work_date,
+            activity_code=activity_code.code,
+            hours=hours,
+            shift_type=ShiftType.DAY.value,
+            shift_code=request.shift_code,
+            starts_at=starts_at,
+            ends_at=ends_at,
+        )
+        self.session.add(entry)
+
+        try:
+            await self.session.commit()
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise ProfileConflictError("Shift already assigned for this date") from exc
 
         result = await self.session.execute(
             select(EmployeeTimeEntryModel)
@@ -104,46 +98,19 @@ class CreateTimeEntryUseCase:
         loaded = result.scalar_one()
         return map_time_entry(loaded)
 
-    async def _resolve_location(
+    async def _find_work_shift_entry(
         self,
-        user: UserModel,
-        location_id: int | None,
-    ) -> LocationModel | None:
-        if location_id is not None:
-            for assignment in user.location_assignments:
-                if assignment.location_id == location_id:
-                    return assignment.location
-            result = await self.session.execute(
-                select(LocationModel).where(LocationModel.id == location_id)
+        user_id,
+        work_date,
+        shift_code: str,
+    ) -> EmployeeTimeEntryModel | None:
+        result = await self.session.execute(
+            select(EmployeeTimeEntryModel).where(
+                EmployeeTimeEntryModel.user_id == user_id,
+                EmployeeTimeEntryModel.work_date == work_date,
+                EmployeeTimeEntryModel.shift_code == shift_code,
             )
-            location = result.scalar_one_or_none()
-            if location is None:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="Location not found",
-                )
-            return location
-        return self._user_location(user)
-
-    def _user_location(self, user: UserModel) -> LocationModel | None:
-        if not user.location_assignments:
-            return None
-        return user.location_assignments[0].location
-
-    def _shift_bounds(self, location: LocationModel, shift_code: str) -> tuple[time, time]:
-        if shift_code == ScheduleShiftCode.S1.value:
-            return location.s1_start_at, location.s1_end_at
-        if shift_code == ScheduleShiftCode.S2.value:
-            return location.s2_start_at, location.s2_end_at
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="shift_code must be С1 or С2",
         )
+        return result.scalar_one_or_none()
 
-    def _worked_hours(self, starts_at: time, ends_at: time) -> Decimal:
-        start_minutes = starts_at.hour * 60 + starts_at.minute
-        end_minutes = ends_at.hour * 60 + ends_at.minute
-        if end_minutes <= start_minutes:
-            end_minutes += 24 * 60
-        minutes = end_minutes - start_minutes
-        return (Decimal(minutes) / Decimal(60)).quantize(Decimal("0.01"))
+    async def _resolve_location(

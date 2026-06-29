@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
+import { Hint } from "../../components/ui/hint";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
 
 type ConfirmAction = "block" | "unblock" | "delete" | "resetPassword" | null;
@@ -178,14 +179,16 @@ export default function ManageUsersPage() {
           <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>
             Управление пользователями
           </h1>
-          <button
-            onClick={() => navigate("/admin-personnel/manage/create")}
-            className="p-2 rounded-xl"
-            style={{ background: "rgba(255,255,255,0.2)" }}
-            aria-label="Создать сотрудника"
-          >
-            <UserPlus size={20} color="#fff" />
-          </button>
+          <Hint content="Создать сотрудника">
+            <button
+              onClick={() => navigate("/admin-personnel/manage/create")}
+              className="p-2 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.2)" }}
+              aria-label="Создать сотрудника"
+            >
+              <UserPlus size={20} color="#fff" />
+            </button>
+          </Hint>
         </div>
         <div className="mt-4 relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -255,15 +258,17 @@ export default function ManageUsersPage() {
             options={locationOptions.map((location) => ({ value: location.id, label: location.name }))}
             className="min-w-0 h-9"
           />
-          <button
-            type="button"
-            onClick={resetStructureFilters}
-            className="h-9 w-9 rounded-lg border flex items-center justify-center"
-            style={{ borderColor: "#E2E8F0", background: "#fff" }}
-            aria-label="Сбросить фильтры"
-          >
-            <RotateCcw size={15} color="#64748B" />
-          </button>
+          <Hint content="Сбросить фильтры">
+            <button
+              type="button"
+              onClick={resetStructureFilters}
+              className="h-9 w-9 rounded-lg border flex items-center justify-center"
+              style={{ borderColor: "#E2E8F0", background: "#fff" }}
+              aria-label="Сбросить фильтры"
+            >
+              <RotateCcw size={15} color="#64748B" />
+            </button>
+          </Hint>
         </div>
       </div>
 
@@ -325,49 +330,59 @@ export default function ManageUsersPage() {
                   <ChevronRight size={15} color="#CBD5E1" />
                 </button>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => navigate(`/admin-personnel/manage/${user.id}`)}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#F1F5F9" }}
-                    aria-label="Редактировать"
-                  >
-                    <UserCog size={16} color="#64748B" />
-                  </button>
-                  <button
-                    onClick={() => openConfirm(user, "resetPassword")}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#F1F5F9" }}
-                    aria-label="Сбросить пароль"
-                  >
-                    <Lock size={16} color="#64748B" />
-                  </button>
-                  {user.isActive !== false ? (
+                  <Hint content="Открыть профиль сотрудника">
                     <button
-                      onClick={() => openConfirm(user, "block")}
+                      onClick={() => navigate(`/admin-personnel/manage/${user.id}`)}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#F1F5F9" }}
+                      aria-label="Редактировать"
+                    >
+                      <UserCog size={16} color="#64748B" />
+                    </button>
+                  </Hint>
+                  <Hint content="Сбросить пароль сотрудника">
+                    <button
+                      onClick={() => openConfirm(user, "resetPassword")}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#F1F5F9" }}
+                      aria-label="Сбросить пароль"
+                    >
+                      <Lock size={16} color="#64748B" />
+                    </button>
+                  </Hint>
+                  {user.isActive !== false ? (
+                    <Hint content="Заблокировать сотрудника">
+                      <button
+                        onClick={() => openConfirm(user, "block")}
+                        className="p-2 rounded-lg"
+                        style={{ background: "#FEF2F2" }}
+                        aria-label="Заблокировать"
+                      >
+                        <Ban size={16} color="#DC2626" />
+                      </button>
+                    </Hint>
+                  ) : (
+                    <Hint content="Разблокировать сотрудника">
+                      <button
+                        onClick={() => openConfirm(user, "unblock")}
+                        className="p-2 rounded-lg"
+                        style={{ background: "#F0FDF4" }}
+                        aria-label="Разблокировать"
+                      >
+                        <UserCheck size={16} color="#2E7D32" />
+                      </button>
+                    </Hint>
+                  )}
+                  <Hint content="Удалить сотрудника">
+                    <button
+                      onClick={() => openConfirm(user, "delete")}
                       className="p-2 rounded-lg"
                       style={{ background: "#FEF2F2" }}
-                      aria-label="Заблокировать"
+                      aria-label="Удалить"
                     >
-                      <Ban size={16} color="#DC2626" />
+                      <Trash2 size={16} color="#DC2626" />
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => openConfirm(user, "unblock")}
-                      className="p-2 rounded-lg"
-                      style={{ background: "#F0FDF4" }}
-                      aria-label="Разблокировать"
-                    >
-                      <UserCheck size={16} color="#2E7D32" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => openConfirm(user, "delete")}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#FEF2F2" }}
-                    aria-label="Удалить"
-                  >
-                    <Trash2 size={16} color="#DC2626" />
-                  </button>
+                  </Hint>
                 </div>
               </div>
             ))

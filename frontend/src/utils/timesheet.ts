@@ -91,6 +91,7 @@ export function mapTimesheetErrorMessage(message: string): string {
     "Absence and day off activities require none shift": "Отсутствие и выходной требуют смену «Без смены»",
     "Invalid shift type": "Недопустимый тип смены",
     "Duplicate time entry for date and shift": "Запись на эту дату и смену уже существует",
+    "Shift already assigned for this date": "У сотрудника уже назначена эта смена на выбранную дату",
     "Activity code not found": "Код активности не найден",
     "Time entry not found": "Запись табеля не найдена",
     "Only .xls and .xlsx files are supported": "Поддерживаются только файлы .xls и .xlsx",

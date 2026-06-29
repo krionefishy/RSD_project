@@ -13,7 +13,7 @@ import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonth
 import type { TimesheetEntry, TimesheetUploadResult } from "../../types/profile";
 import { AppUser } from "../../types/user";
 import { useStructureOptions } from "../../hooks/useStructureOptions";
-import { getErrorMessage, isAbortError } from "../../utils/errors";
+import { getErrorMessage, isAbortError, isAPIError } from "../../utils/errors";
 import { isWorkShift, mapTimesheetErrorMessage, monthPeriodQuery } from "../../utils/timesheet";
 import { toast } from "sonner";
 
@@ -205,6 +205,11 @@ export default function TimesheetsPage() {
   };
 
   const handleAssignShift = async ({ userId, shiftCode }: { userId: string; shiftCode: "С1" | "С2" }) => {
+    if (existingShiftsForAssign.some((shift) => shift.shiftCode === shiftCode)) {
+      toast.warning("У сотрудника уже назначена эта смена на выбранную дату");
+      return;
+    }
+
     setAssigningShift(true);
     try {
       await AdminStaffAPI.createTimeEntry({
@@ -213,11 +218,18 @@ export default function TimesheetsPage() {
         shiftCode,
         locationId: selectedLocationId ? Number(selectedLocationId) : undefined,
       });
-      toast.success(existingShiftForAssign ? "Смена обновлена" : "Смена назначена");
-      setAssignShiftOpen(false);
+      toast.success("Смена назначена");
+      if (existingShiftsForAssign.length + 1 >= 2) {
+        setAssignShiftOpen(false);
+      }
       await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
     } catch (error) {
-      toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось назначить смену")));
+      const message = mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось назначить смену"));
+      if (isAPIError(error) && error.status === 409) {
+        toast.warning(message);
+      } else {
+        toast.error(message);
+      }
     } finally {
       setAssigningShift(false);
     }
@@ -234,22 +246,23 @@ export default function TimesheetsPage() {
     setAssignShiftOpen(true);
   };
 
-  const existingShiftForAssign = useMemo(() => {
+  const existingShiftsForAssign = useMemo(() => {
     const targetUserId = assignMode === "employee" ? selectedUserId : assignTargetUserId;
-    if (!targetUserId || !assignWorkDate) return null;
+    if (!targetUserId || !assignWorkDate) return [];
     const entries = assignMode === "location" ? locationEntries : employeeEntries;
-    const entry = entries.find((item) => {
-      if (item.workDate !== assignWorkDate || !isWorkShift(item)) return false;
-      if (assignMode === "employee") return true;
-      return item.userId === targetUserId;
-    });
-    if (!entry?.shiftCode || (entry.shiftCode !== "С1" && entry.shiftCode !== "С2")) return null;
-    return {
-      id: entry.id,
-      shiftCode: entry.shiftCode,
-      startsAt: entry.startsAt,
-      endsAt: entry.endsAt,
-    };
+    return entries
+      .filter((item) => {
+        if (item.workDate !== assignWorkDate || !isWorkShift(item)) return false;
+        if (assignMode === "employee") return true;
+        return item.userId === targetUserId;
+      })
+      .filter((item) => item.shiftCode === "С1" || item.shiftCode === "С2")
+      .map((item) => ({
+        id: item.id,
+        shiftCode: item.shiftCode as "С1" | "С2",
+        startsAt: item.startsAt,
+        endsAt: item.endsAt,
+      }));
   }, [
     assignMode,
     assignTargetUserId,
@@ -259,36 +272,14 @@ export default function TimesheetsPage() {
     selectedUserId,
   ]);
 
-  const requestDeleteFromAssignDialog = () => {
-    if (!existingShiftForAssign) return;
-
+  const requestDeleteFromAssignDialog = (entryId: number) => {
     const entry =
-      locationEntries.find((item) => item.id === existingShiftForAssign.id) ??
-      employeeEntries.find((item) => item.id === existingShiftForAssign.id);
+      locationEntries.find((item) => item.id === entryId) ??
+      employeeEntries.find((item) => item.id === entryId);
 
     if (entry) {
       setDeleteConfirmEntry(entry);
-      return;
     }
-
-    const targetUserId = assignMode === "employee" ? selectedUserId : assignTargetUserId;
-    const employeeName =
-      employees.find((employee) => employee.id === targetUserId)?.name ??
-      locationEmployees.find((employee) => employee.id === targetUserId)?.name;
-
-    setDeleteConfirmEntry({
-      id: existingShiftForAssign.id,
-      workDate: assignWorkDate,
-      activityCode: "",
-      activityName: "",
-      hours: "0",
-      shiftType: existingShiftForAssign.shiftCode === "С1" ? "day" : "night",
-      shiftCode: existingShiftForAssign.shiftCode,
-      startsAt: existingShiftForAssign.startsAt,
-      endsAt: existingShiftForAssign.endsAt,
-      userId: targetUserId,
-      userName: employeeName,
-    });
   };
 
   return (
@@ -479,7 +470,7 @@ export default function TimesheetsPage() {
         workDate={assignWorkDate}
         userId={assignMode === "employee" ? selectedUserId : undefined}
         employees={assignMode === "location" ? locationEmployees : undefined}
-        existingShift={existingShiftForAssign}
+        existingShifts={existingShiftsForAssign}
         submitting={assigningShift}
         deleting={deletingEntryId !== null}
         onSubmit={handleAssignShift}

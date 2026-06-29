@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Time,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -120,7 +121,21 @@ class EmployeeTimeEntryModel(Base):
     __tablename__ = "employee_time_entries"
 
     __table_args__ = (
-        UniqueConstraint("user_id", "work_date", "shift_type", name="uq_employee_time_entries_user_date_shift"),
+        Index(
+            "uq_employee_time_entries_user_date_shift_code",
+            "user_id",
+            "work_date",
+            "shift_code",
+            unique=True,
+            postgresql_where=text("shift_code IN ('С1', 'С2')"),
+        ),
+        Index(
+            "uq_employee_time_entries_user_date_non_work",
+            "user_id",
+            "work_date",
+            unique=True,
+            postgresql_where=text("shift_type = 'none'"),
+        ),
         Index("ix_employee_time_entries_work_date", "work_date"),
         Index("ix_employee_time_entries_user_work_date", "user_id", "work_date"),
         CheckConstraint("hours >= 0", name="ck_employee_time_entries_hours_non_negative"),

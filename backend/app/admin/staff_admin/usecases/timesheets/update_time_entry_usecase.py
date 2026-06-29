@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth.deps import AuthContext
 from app.locations.db_models import UserLocationModel
-from app.personnel.db_models import ActivityCodeModel, ActivityEntryType, EmployeeTimeEntryModel, ShiftType
+from app.personnel.db_models import ActivityCodeModel, ActivityEntryType, EmployeeTimeEntryModel, ScheduleShiftCode, ShiftType
 from app.personnel.domain import UpdateTimeEntryRequest
 from app.personnel.dto import EmployeeTimeEntryDTO
 from app.personnel.timesheet_mapper import map_time_entry
@@ -57,13 +57,18 @@ class UpdateTimeEntryUseCase:
 
         self._validate_activity_shift(activity_code, new_shift)
 
+        dup_conditions = [
+            EmployeeTimeEntryModel.user_id == entry.user_id,
+            EmployeeTimeEntryModel.work_date == entry.work_date,
+            EmployeeTimeEntryModel.id != entry.id,
+        ]
+        if entry.shift_code in {ScheduleShiftCode.S1.value, ScheduleShiftCode.S2.value}:
+            dup_conditions.append(EmployeeTimeEntryModel.shift_code == entry.shift_code)
+        else:
+            dup_conditions.append(EmployeeTimeEntryModel.shift_type == new_shift)
+
         dup_result = await self.session.execute(
-            select(EmployeeTimeEntryModel.id).where(
-                EmployeeTimeEntryModel.user_id == entry.user_id,
-                EmployeeTimeEntryModel.work_date == entry.work_date,
-                EmployeeTimeEntryModel.shift_type == new_shift,
-                EmployeeTimeEntryModel.id != entry.id,
-            )
+            select(EmployeeTimeEntryModel.id).where(*dup_conditions)
         )
         if dup_result.scalar_one_or_none() is not None:
             raise ProfileConflictError("Duplicate time entry for date and shift")

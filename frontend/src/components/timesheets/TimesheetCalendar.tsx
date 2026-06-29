@@ -190,8 +190,9 @@ export function TimesheetCalendar({
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const date = i + 1;
                 const dayEntries = byDate.get(date) ?? [];
-                const shiftDay = dayEntries.find(isWorkShift);
-                const visual = shiftDay ? entryVisualType(shiftDay) : dayEntries[0] ? entryVisualType(dayEntries[0]) : "off";
+                const workShifts = dayEntries.filter(isWorkShift);
+                const shiftDay = workShifts[0] ?? dayEntries[0];
+                const visual = shiftDay ? entryVisualType(shiftDay) : "off";
                 const cfg = typeConfig[visual];
                 const isSelected = date === selectedDate;
                 const isToday = isCurrentMonth && date === today.getDate();
@@ -222,7 +223,15 @@ export function TimesheetCalendar({
                       </span>
                     </div>
                     {hasEntries && !isSelected && (
-                      <div className="w-1 h-1 rounded-full mt-0.5" style={{ background: cfg.color }} />
+                      <div className="flex gap-0.5 mt-0.5">
+                        {(workShifts.length > 0 ? workShifts : dayEntries.slice(0, 1)).map((entry, index) => (
+                          <div
+                            key={`${entry.id}-${index}`}
+                            className="w-1 h-1 rounded-full"
+                            style={{ background: typeConfig[entryVisualType(entry)].color }}
+                          />
+                        ))}
+                      </div>
                     )}
                   </button>
                 );
