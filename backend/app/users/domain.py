@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from app.locations.db_models import BlockMemberStatus
 from app.users.db_models import UserRole
+from shared.phone import normalize_ru_phone
 
 class UserCreate(BaseModel):
     external_system_id: str = Field(..., min_length=1, max_length=255, description="ID пользователя во внешней системе")
@@ -56,6 +57,17 @@ class UserAdminUpdate(BaseModel):
 
 class UpdateOwnPhoneRequest(BaseModel):
     phone: str | None = Field(None, max_length=50, description="Телефон")
+
+    @model_validator(mode="after")
+    def validate_phone(self) -> "UpdateOwnPhoneRequest":
+        if self.phone is None:
+            return self
+        stripped = self.phone.strip()
+        if not stripped:
+            self.phone = None
+            return self
+        self.phone = normalize_ru_phone(stripped)
+        return self
 
 
 class UserBlockRequest(BaseModel):

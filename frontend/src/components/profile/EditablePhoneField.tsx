@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { UserAPI } from "../../api/UserAPI";
 import { toast } from "sonner";
 import { getErrorMessage } from "../../utils/errors";
+import { validateRuPhone } from "../../utils/phone";
 
 interface EditablePhoneFieldProps {
   variant?: "row" | "card";
@@ -30,9 +31,16 @@ export function EditablePhoneField({ variant = "row" }: EditablePhoneFieldProps)
   };
 
   const savePhone = async () => {
+    const trimmed = value.trim();
+    const validationError = trimmed ? validateRuPhone(trimmed) : null;
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setSaving(true);
     try {
-      const updated = await UserAPI.updateOwnPhone(value.trim() || null);
+      const updated = await UserAPI.updateOwnPhone(trimmed || null);
       setUser({ ...user, phone: updated.phone ?? "" });
       setEditing(false);
       toast.success("Телефон обновлён");

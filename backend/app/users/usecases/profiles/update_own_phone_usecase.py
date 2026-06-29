@@ -20,8 +20,7 @@ class UpdateOwnPhoneUseCase:
         if user is None:
             return None
 
-        normalized = phone.strip() if phone else None
-        user.phone = normalized or None
+        user.phone = phone
         user.updated_at = datetime.now()
         await self.session.commit()
         await self.session.refresh(user)
