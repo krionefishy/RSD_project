@@ -17,9 +17,6 @@ from app.users.db_models import UserModel
 from app.users.profile_errors import ProfileConflictError, ProfileNotFoundError
 from app.users.profile_scope import ensure_staff_admin_can_manage_user, require_staff_admin
 
-WORK_SHIFT_CODES = (ScheduleShiftCode.S1.value, ScheduleShiftCode.S2.value)
-
-
 class CreateTimeEntryUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -114,3 +111,45 @@ class CreateTimeEntryUseCase:
         return result.scalar_one_or_none()
 
     async def _resolve_location(
+        self,
+        user: UserModel,
+        location_id: int | None,
+    ) -> LocationModel | None:
+        if location_id is not None:
+            for assignment in user.location_assignments:
+                if assignment.location_id == location_id:
+                    return assignment.location
+            result = await self.session.execute(
+                select(LocationModel).where(LocationModel.id == location_id)
+            )
+            location = result.scalar_one_or_none()
+            if location is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Location not found",
+                )
+            return location
+        return self._user_location(user)
+
+    def _user_location(self, user: UserModel) -> LocationModel | None:
+        if not user.location_assignments:
+            return None
+        return user.location_assignments[0].location
+
+    def _shift_bounds(self, location: LocationModel, shift_code: str) -> tuple[time, time]:
+        if shift_code == ScheduleShiftCode.S1.value:
+            return location.s1_start_at, location.s1_end_at
+        if shift_code == ScheduleShiftCode.S2.value:
+            return location.s2_start_at, location.s2_end_at
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="shift_code must be С1 or С2",
+        )
+
+    def _worked_hours(self, starts_at: time, ends_at: time) -> Decimal:
+        start_minutes = starts_at.hour * 60 + starts_at.minute
+        end_minutes = ends_at.hour * 60 + ends_at.minute
+        if end_minutes <= start_minutes:
+            end_minutes += 24 * 60
+        minutes = end_minutes - start_minutes
+        return (Decimal(minutes) / Decimal(60)).quantize(Decimal("0.01"))
