@@ -65,7 +65,7 @@ class TestUploadOwnAvatarUseCase:
         ctx = builder.auth_context_for(seller)
 
         with pytest.raises(ProfileForbiddenError):
-            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), None).execute(
+            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), _make_s3_client()).execute(
                 ctx,
                 filename="avatar.jpg",
                 content_type="image/jpeg",
@@ -81,7 +81,7 @@ class TestUploadOwnAvatarUseCase:
         ctx = builder.auth_context_for(seller)
 
         with pytest.raises(HTTPException) as exc_info:
-            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), None).execute(
+            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), _make_s3_client()).execute(
                 ctx,
                 filename="avatar.gif",
                 content_type="image/gif",
@@ -99,7 +99,7 @@ class TestUploadOwnAvatarUseCase:
         ctx = builder.auth_context_for(seller)
 
         with pytest.raises(HTTPException) as exc_info:
-            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), None).execute(
+            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), _make_s3_client()).execute(
                 ctx,
                 filename="avatar.jpg",
                 content_type="image/jpeg",
@@ -117,7 +117,7 @@ class TestUploadOwnAvatarUseCase:
         ctx = builder.auth_context_for(seller)
 
         with pytest.raises(HTTPException) as exc_info:
-            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), None).execute(
+            await UploadOwnAvatarUseCase(db_session, FakeKafkaBroker(), _make_s3_client()).execute(
                 ctx,
                 filename="avatar.png",
                 content_type="image/png",

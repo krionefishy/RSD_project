@@ -27,7 +27,7 @@ class UploadOwnAvatarUseCase:
         self,
         session: AsyncSession,
         kafka_producer: KafkaProducerWrapper,
-        s3_client: S3Client | None,
+        s3_client: S3Client,
     ):
         self.session = session
         self.kafka_producer = kafka_producer

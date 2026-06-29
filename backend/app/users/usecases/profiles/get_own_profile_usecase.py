@@ -10,7 +10,7 @@ from storage.s3.client import S3Client
 
 
 class GetOwnProfileUseCase:
-    def __init__(self, session: AsyncSession, s3_client: S3Client | None):
+    def __init__(self, session: AsyncSession, s3_client: S3Client):
         self.session = session
         self.s3_client = s3_client
 
