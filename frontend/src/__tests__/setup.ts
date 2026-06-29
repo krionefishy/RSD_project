@@ -22,3 +22,12 @@ const localStorageMock = (() => {
 })();
 
 vi.stubGlobal("localStorage", localStorageMock);
+
+vi.stubGlobal(
+  "ResizeObserver",
+  class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+);

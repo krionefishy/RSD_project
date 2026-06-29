@@ -29,7 +29,7 @@ export interface AssignShiftDialogProps {
   submitting?: boolean;
   deleting?: boolean;
   onSubmit: (data: { userId: string; shiftCode: "С1" | "С2" }) => Promise<void>;
-  onDelete?: (entryId: number) => Promise<void>;
+  onRequestDelete?: () => void;
   onSelectedUserChange?: (userId: string) => void;
 }
 
@@ -43,7 +43,7 @@ export function AssignShiftDialog({
   submitting = false,
   deleting = false,
   onSubmit,
-  onDelete,
+  onRequestDelete,
   onSelectedUserChange,
 }: AssignShiftDialogProps) {
   const [selectedUserId, setSelectedUserId] = useState(userId ?? "");
@@ -99,11 +99,11 @@ export function AssignShiftDialog({
               {timeRange && (
                 <p style={{ color: "#64748B", fontSize: 13, marginTop: 2 }}>{timeRange}</p>
               )}
-              {onDelete && (
+              {onRequestDelete && (
                 <button
                   type="button"
                   disabled={deleting || submitting}
-                  onClick={() => void onDelete(existingShift.id)}
+                  onClick={onRequestDelete}
                   className="mt-3 h-9 w-full rounded-lg"
                   style={{
                     background: "#FEF2F2",

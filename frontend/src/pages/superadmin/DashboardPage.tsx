@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
+import { Hint } from "../../components/ui/hint";
 
 type ConfirmAction = { type: "assign" | "remove"; user: AppUser } | null;
 
@@ -105,14 +106,16 @@ export default function SuperAdminDashboardPage() {
               <p style={{ color: "#fff", fontSize: 17, fontWeight: 600 }}>{user.name}</p>
             </div>
           </div>
-          <button
-            onClick={() => { logout(); navigate("/"); }}
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(255,255,255,0.16)" }}
-            aria-label="Выйти из аккаунта"
-          >
-            <LogOut size={18} color="#fff" />
-          </button>
+          <Hint content="Выйти из аккаунта">
+            <button
+              onClick={() => { logout(); navigate("/"); }}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.16)" }}
+              aria-label="Выйти из аккаунта"
+            >
+              <LogOut size={18} color="#fff" />
+            </button>
+          </Hint>
         </div>
       </div>
 
@@ -165,15 +168,16 @@ export default function SuperAdminDashboardPage() {
                     <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{ra.name}</p>
                     <p style={{ color: "#94A3B8", fontSize: 11 }}>{ra.externalSystemId}</p>
                   </div>
-                  <button
-                    onClick={() => setConfirmAction({ type: "remove", user: ra })}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#FEF2F2" }}
-                    aria-label="Снять роль Admin PO"
-                    title="Снять роль Admin PO"
-                  >
-                    <UserMinus size={15} color="#DC2626" />
-                  </button>
+                  <Hint content="Снять роль Администратора ПО">
+                    <button
+                      onClick={() => setConfirmAction({ type: "remove", user: ra })}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#FEF2F2" }}
+                      aria-label="Снять роль Admin PO"
+                    >
+                      <UserMinus size={15} color="#DC2626" />
+                    </button>
+                  </Hint>
                 </div>
               ))}
             </div>
@@ -219,15 +223,16 @@ export default function SuperAdminDashboardPage() {
                       {ROLE_LABELS_SHORT[u.role] || u.role} · {u.externalSystemId}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setConfirmAction({ type: "assign", user: u })}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#E8F5E9" }}
-                    aria-label="Назначить Admin PO"
-                    title="Назначить Admin PO"
-                  >
-                    <UserCheck size={15} color="#2E7D32" />
-                  </button>
+                  <Hint content="Назначить Администратором ПО">
+                    <button
+                      onClick={() => setConfirmAction({ type: "assign", user: u })}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#E8F5E9" }}
+                      aria-label="Назначить Admin PO"
+                    >
+                      <UserCheck size={15} color="#2E7D32" />
+                    </button>
+                  </Hint>
                 </div>
               ))}
             </div>

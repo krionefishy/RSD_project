@@ -20,7 +20,7 @@ interface TimesheetEntriesListProps {
   deletingEntryId?: number | null;
   onChangeEntry?: (entry: TimesheetEntry) => void;
   onSaveEntry?: (entry: TimesheetEntry) => void;
-  onDeleteEntry?: (entryId: number) => void;
+  onDeleteEntry?: (entry: TimesheetEntry) => void;
 }
 
 export function TimesheetEntriesList({
@@ -92,7 +92,7 @@ export function TimesheetEntriesList({
                   <button
                     type="button"
                     disabled={deletingEntryId === entry.id}
-                    onClick={() => onDeleteEntry(entry.id)}
+                    onClick={() => onDeleteEntry(entry)}
                     className="h-8 px-3 rounded-lg shrink-0"
                     style={{
                       background: "#FEF2F2",
@@ -138,7 +138,7 @@ export function TimesheetEntriesList({
                     <button
                       type="button"
                       disabled={deletingEntryId === entry.id}
-                      onClick={() => onDeleteEntry?.(entry.id)}
+                      onClick={() => onDeleteEntry?.(entry)}
                       className="h-9 px-3 rounded-lg"
                       style={{
                         background: "#FEF2F2",

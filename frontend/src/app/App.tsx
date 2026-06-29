@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router";
 import { useSetAtom } from "jotai";
 import { router } from "./routes";
 import { Toaster } from "../components/ui/sonner";
+import { TooltipProvider } from "../components/ui/tooltip";
 import { AppProvider } from "../context/AppContext";
 import { MobileShell } from "../components/MobileShell";
 import { apiClient } from "../api/APIClient";
@@ -37,11 +38,13 @@ function AuthBootstrap() {
 function App() {
   return (
     <AppProvider>
-      <AuthBootstrap />
-      <MobileShell>
-        <RouterProvider router={router} />
-      </MobileShell>
-      <Toaster />
+      <TooltipProvider delayDuration={500} skipDelayDuration={300}>
+        <AuthBootstrap />
+        <MobileShell>
+          <RouterProvider router={router} />
+        </MobileShell>
+        <Toaster />
+      </TooltipProvider>
     </AppProvider>
   );
 }

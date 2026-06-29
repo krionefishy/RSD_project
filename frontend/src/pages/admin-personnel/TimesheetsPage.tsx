@@ -7,6 +7,7 @@ import { UserAPI } from "../../api/UserAPI";
 import { AppSelect } from "../../components/AppSelect";
 import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
 import { AssignShiftDialog } from "../../components/timesheets/AssignShiftDialog";
+import { DeleteShiftConfirmDialog } from "../../components/timesheets/DeleteShiftConfirmDialog";
 import { TimesheetEntriesList } from "../../components/timesheets/TimesheetEntriesList";
 import { TimesheetMonthFilter } from "../../components/timesheets/TimesheetMonthFilter";
 import type { TimesheetEntry, TimesheetUploadResult } from "../../types/profile";
@@ -42,6 +43,7 @@ export default function TimesheetsPage() {
 
   const [uploading, setUploading] = useState(false);
   const [deletingEntryId, setDeletingEntryId] = useState<number | null>(null);
+  const [deleteConfirmEntry, setDeleteConfirmEntry] = useState<TimesheetEntry | null>(null);
   const [assignShiftOpen, setAssignShiftOpen] = useState(false);
   const [assignWorkDate, setAssignWorkDate] = useState("");
   const [assigningShift, setAssigningShift] = useState(false);
@@ -181,6 +183,8 @@ export default function TimesheetsPage() {
     try {
       await AdminStaffAPI.deleteTimeEntry(entryId);
       toast.success("Смена удалена");
+      setDeleteConfirmEntry(null);
+      setAssignShiftOpen(false);
       await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
     } catch (error) {
       toast.error(
@@ -189,6 +193,15 @@ export default function TimesheetsPage() {
     } finally {
       setDeletingEntryId(null);
     }
+  };
+
+  const requestDeleteEntry = (entry: TimesheetEntry) => {
+    setDeleteConfirmEntry(entry);
+  };
+
+  const confirmDeleteEntry = () => {
+    if (!deleteConfirmEntry) return;
+    void handleDeleteEntry(deleteConfirmEntry.id);
   };
 
   const handleAssignShift = async ({ userId, shiftCode }: { userId: string; shiftCode: "С1" | "С2" }) => {
@@ -208,11 +221,6 @@ export default function TimesheetsPage() {
     } finally {
       setAssigningShift(false);
     }
-  };
-
-  const handleDeleteFromDialog = async (entryId: number) => {
-    await handleDeleteEntry(entryId);
-    setAssignShiftOpen(false);
   };
 
   const openAssignDialog = (mode: "location" | "employee", workDate: string) => {
@@ -250,6 +258,38 @@ export default function TimesheetsPage() {
     locationEntries,
     selectedUserId,
   ]);
+
+  const requestDeleteFromAssignDialog = () => {
+    if (!existingShiftForAssign) return;
+
+    const entry =
+      locationEntries.find((item) => item.id === existingShiftForAssign.id) ??
+      employeeEntries.find((item) => item.id === existingShiftForAssign.id);
+
+    if (entry) {
+      setDeleteConfirmEntry(entry);
+      return;
+    }
+
+    const targetUserId = assignMode === "employee" ? selectedUserId : assignTargetUserId;
+    const employeeName =
+      employees.find((employee) => employee.id === targetUserId)?.name ??
+      locationEmployees.find((employee) => employee.id === targetUserId)?.name;
+
+    setDeleteConfirmEntry({
+      id: existingShiftForAssign.id,
+      workDate: assignWorkDate,
+      activityCode: "",
+      activityName: "",
+      hours: "0",
+      shiftType: existingShiftForAssign.shiftCode === "С1" ? "day" : "night",
+      shiftCode: existingShiftForAssign.shiftCode,
+      startsAt: existingShiftForAssign.startsAt,
+      endsAt: existingShiftForAssign.endsAt,
+      userId: targetUserId,
+      userName: employeeName,
+    });
+  };
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -351,7 +391,7 @@ export default function TimesheetsPage() {
             showSummary={false}
             showEmployees
             allowAssign={Boolean(selectedLocationId)}
-            onDayClick={(workDate) => openAssignDialog("location", workDate)}
+            onAssignShift={(workDate) => openAssignDialog("location", workDate)}
           />
           <div className="mt-3">
             <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Смены сотрудников</p>
@@ -364,7 +404,7 @@ export default function TimesheetsPage() {
               showEmployee
               mode="shifts"
               deletingEntryId={deletingEntryId}
-              onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
+              onDeleteEntry={requestDeleteEntry}
             />
           </div>
         </div>
@@ -396,7 +436,7 @@ export default function TimesheetsPage() {
             showMonthFilter={false}
             showSummary={false}
             allowAssign={Boolean(selectedUserId)}
-            onDayClick={(workDate) => openAssignDialog("employee", workDate)}
+            onAssignShift={(workDate) => openAssignDialog("employee", workDate)}
           />
           <div className="mt-3">
             <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Смены сотрудника</p>
@@ -408,7 +448,7 @@ export default function TimesheetsPage() {
               emptyMessage="Нет смен по выбранному сотруднику"
               mode="shifts"
               deletingEntryId={deletingEntryId}
-              onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
+              onDeleteEntry={requestDeleteEntry}
             />
           </div>
         </div>
@@ -443,8 +483,16 @@ export default function TimesheetsPage() {
         submitting={assigningShift}
         deleting={deletingEntryId !== null}
         onSubmit={handleAssignShift}
-        onDelete={handleDeleteFromDialog}
+        onRequestDelete={requestDeleteFromAssignDialog}
         onSelectedUserChange={setAssignTargetUserId}
+      />
+
+      <DeleteShiftConfirmDialog
+        open={deleteConfirmEntry !== null}
+        entry={deleteConfirmEntry}
+        loading={deletingEntryId !== null}
+        onCancel={() => setDeleteConfirmEntry(null)}
+        onConfirm={confirmDeleteEntry}
       />
     </div>
   );

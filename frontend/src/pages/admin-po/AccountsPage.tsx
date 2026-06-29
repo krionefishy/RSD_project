@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Button } from "../../components/ui/button";
+import { Hint } from "../../components/ui/hint";
 import { AppSelect } from "../../components/AppSelect";
 
 type ConfirmAction = "block" | "unblock" | "delete" | null;
@@ -182,14 +183,16 @@ export default function AccountsPage() {
           <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>
             Аккаунты
           </h1>
-          <button
-            onClick={() => navigate("/admin-personnel/manage/create")}
-            className="p-2 rounded-xl"
-            style={{ background: "rgba(255,255,255,0.2)" }}
-            aria-label="Создать пользователя"
-          >
-            <UserPlus size={20} color="#fff" />
-          </button>
+          <Hint content="Создать пользователя">
+            <button
+              onClick={() => navigate("/admin-personnel/manage/create")}
+              className="p-2 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.2)" }}
+              aria-label="Создать пользователя"
+            >
+              <UserPlus size={20} color="#fff" />
+            </button>
+          </Hint>
         </div>
         <div className="mt-4 relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -291,42 +294,49 @@ export default function AccountsPage() {
                   <p style={{ color: "#64748B", fontSize: 11 }}>{user.externalSystemId}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => openChangeRole(user)}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#EFF6FF" }}
-                    aria-label="Изменить роль"
-                    title="Изменить роль"
-                  >
-                    <Shield size={16} color="#3B82F6" />
-                  </button>
-                  {user.isActive !== false ? (
+                  <Hint content="Изменить роль пользователя">
                     <button
-                      onClick={() => openConfirm(user, "block")}
+                      onClick={() => openChangeRole(user)}
+                      className="p-2 rounded-lg"
+                      style={{ background: "#EFF6FF" }}
+                      aria-label="Изменить роль"
+                    >
+                      <Shield size={16} color="#3B82F6" />
+                    </button>
+                  </Hint>
+                  {user.isActive !== false ? (
+                    <Hint content="Заблокировать пользователя">
+                      <button
+                        onClick={() => openConfirm(user, "block")}
+                        className="p-2 rounded-lg"
+                        style={{ background: "#FEF2F2" }}
+                        aria-label="Заблокировать"
+                      >
+                        <Ban size={16} color="#DC2626" />
+                      </button>
+                    </Hint>
+                  ) : (
+                    <Hint content="Разблокировать пользователя">
+                      <button
+                        onClick={() => openConfirm(user, "unblock")}
+                        className="p-2 rounded-lg"
+                        style={{ background: "#F0FDF4" }}
+                        aria-label="Разблокировать"
+                      >
+                        <UserCheck size={16} color="#2E7D32" />
+                      </button>
+                    </Hint>
+                  )}
+                  <Hint content="Удалить пользователя">
+                    <button
+                      onClick={() => openConfirm(user, "delete")}
                       className="p-2 rounded-lg"
                       style={{ background: "#FEF2F2" }}
-                      aria-label="Заблокировать"
+                      aria-label="Удалить"
                     >
-                      <Ban size={16} color="#DC2626" />
+                      <Trash2 size={16} color="#DC2626" />
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => openConfirm(user, "unblock")}
-                      className="p-2 rounded-lg"
-                      style={{ background: "#F0FDF4" }}
-                      aria-label="Разблокировать"
-                    >
-                      <UserCheck size={16} color="#2E7D32" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => openConfirm(user, "delete")}
-                    className="p-2 rounded-lg"
-                    style={{ background: "#FEF2F2" }}
-                    aria-label="Удалить"
-                  >
-                    <Trash2 size={16} color="#DC2626" />
-                  </button>
+                  </Hint>
                 </div>
               </div>
             ))

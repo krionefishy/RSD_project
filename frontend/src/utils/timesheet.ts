@@ -49,6 +49,30 @@ export function formatMonthTitle(monthDate: Date): string {
   return `${MONTH_NAMES[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
 }
 
+export function formatWorkDateLabel(workDate: string): string {
+  const [year, month, day] = workDate.split("-").map(Number);
+  if (!year || !month || !day) return workDate;
+  const date = new Date(year, month - 1, day);
+  const formatted = date.toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+export function formatShiftDescription(entry: {
+  shiftCode?: string;
+  startsAt?: string;
+  endsAt?: string;
+}): string {
+  const code = entry.shiftCode ?? "—";
+  const label = shiftCodeLabel(entry.shiftCode);
+  const timeRange = formatShiftTimeRange(entry.startsAt, entry.endsAt);
+  return timeRange ? `${code} — ${label} (${timeRange})` : `${code} — ${label}`;
+}
+
 export function monthPeriodQuery(monthDate: Date): OwnTimesheetQuery {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();

@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TimesheetMonthFilter } from "./TimesheetMonthFilter";
 import type { TimesheetEntry } from "../../types/profile";
@@ -5,6 +6,7 @@ import {
   entryVisualType,
   formatMonthTitle,
   formatShiftTimeRange,
+  formatWorkDateLabel,
   isWorkShift,
   shiftCodeLabel,
   workDateFromMonthDay,
@@ -103,7 +105,7 @@ export interface TimesheetCalendarProps {
   showSummary?: boolean;
   showEmployees?: boolean;
   allowAssign?: boolean;
-  onDayClick?: (workDate: string) => void;
+  onAssignShift?: (workDate: string) => void;
   className?: string;
 }
 
@@ -118,7 +120,7 @@ export function TimesheetCalendar({
   showSummary = true,
   showEmployees = false,
   allowAssign = false,
-  onDayClick,
+  onAssignShift,
   className = "",
 }: TimesheetCalendarProps) {
   const today = new Date();
@@ -146,10 +148,10 @@ export function TimesheetCalendar({
 
   const handleDayClick = (date: number) => {
     setSelectedDate(date);
-    if (allowAssign && onDayClick) {
-      onDayClick(workDateFromMonthDay(monthDate, date));
-    }
   };
+
+  const selectedWorkDate =
+    selectedDate !== null ? workDateFromMonthDay(monthDate, selectedDate) : null;
 
   return (
     <div className={className}>
@@ -230,17 +232,35 @@ export function TimesheetCalendar({
         )}
       </div>
 
-      {selectedDate !== null && !loading && (
+      {selectedDate !== null && !loading && selectedWorkDate && (
         <div
           className="rounded-2xl p-4 mt-3"
           style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
         >
-          <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
-            {selectedDate} {formatMonthTitle(monthDate).split(" ")[0].toLowerCase()}
-          </p>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, flex: 1 }}>
+              {formatWorkDateLabel(selectedWorkDate)}
+            </p>
+            {allowAssign && onAssignShift && (
+              <button
+                type="button"
+                onClick={() => onAssignShift(selectedWorkDate)}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg shrink-0"
+                style={{
+                  background: "#2E7D32",
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                <Plus size={16} />
+                Назначить смену
+              </button>
+            )}
+          </div>
           {shiftEntries.length === 0 && selectedEntries.length === 0 ? (
             <p style={{ color: "#64748B", fontSize: 13 }}>
-              {allowAssign ? "Нет смен — нажмите день в календаре, чтобы назначить" : "Нет записей на этот день"}
+              {allowAssign ? "На этот день смен пока нет" : "Нет записей на этот день"}
             </p>
           ) : (
             <div className="flex flex-col gap-2">
