@@ -1,17 +1,11 @@
-from __future__ import annotations
-
 from datetime import datetime
-from typing import TYPE_CHECKING
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.deps import AuthContext
 from app.users.db_models import UserModel
 from app.users.dto import UserDTO
-
-if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
-
-    from app.auth.deps import AuthContext
 
 
 class UpdateOwnPhoneUseCase:
