@@ -291,6 +291,15 @@ class UserAPIImpl {
     return { avatarUrl: response.avatar_url };
   }
 
+  async updateOwnPhone(phone: string | null): Promise<AppUser> {
+    if (useMockAuth()) {
+      const current = getCurrentMockUser();
+      return { ...current, phone: phone ?? "" };
+    }
+    const response = await apiClient.patch<UserResponse>("/users/me/phone", { phone });
+    return mapUserResponse(response);
+  }
+
   async getOwnCompensation(signal?: AbortSignal): Promise<EmployeeCompensation | null> {
     if (useMockAuth()) {
       return {

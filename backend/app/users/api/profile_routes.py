@@ -3,16 +3,18 @@ from typing import Annotated
 from uuid import UUID
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from app.auth.deps import AuthContext, require_auth
 from app.personnel.domain import TimesheetPeriodQuery
 from app.personnel.dto import EmployeeCompensationDTO, OwnTimesheetDTO
-from app.users.dto import AvatarUploadResultDTO, UserProfileDTO
+from app.users.domain import UpdateOwnPhoneRequest
+from app.users.dto import AvatarUploadResultDTO, UserDTO, UserProfileDTO
 from app.users.usecases.profiles.get_own_compensation_usecase import GetOwnCompensationUseCase
 from app.users.usecases.profiles.get_own_profile_usecase import GetOwnProfileUseCase
 from app.users.usecases.profiles.get_own_timesheet_usecase import GetOwnTimesheetUseCase
 from app.users.usecases.profiles.get_user_profile_usecase import GetUserProfileUseCase
+from app.users.usecases.profiles.update_own_phone_usecase import UpdateOwnPhoneUseCase
 from app.users.usecases.profiles.upload_own_avatar_usecase import UploadOwnAvatarUseCase
 
 router = APIRouter(route_class=DishkaRoute)
@@ -33,6 +35,18 @@ async def get_user_profile(
     usecase: FromDishka[GetUserProfileUseCase],
 ) -> UserProfileDTO:
     return await usecase.execute(user_id, auth)
+
+
+@router.patch("/me/phone", response_model=UserDTO, summary="Обновить свой телефон")
+async def update_own_phone(
+    body: UpdateOwnPhoneRequest,
+    auth: Annotated[AuthContext, Depends(require_auth)],
+    usecase: FromDishka[UpdateOwnPhoneUseCase],
+) -> UserDTO:
+    result = await usecase.execute(auth, body.phone)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return result
 
 
 @router.post("/me/avatar", response_model=AvatarUploadResultDTO, summary="Загрузить свой аватар")

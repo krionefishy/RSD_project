@@ -1,9 +1,10 @@
-import { LogOut, Mail, Phone } from "lucide-react";
+import { LogOut, Mail } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../Avatar";
 import { ScreenBackButton } from "../ScreenBackButton";
 import { ROLE_LABELS } from "../../constants/roles";
+import { EditablePhoneField } from "./EditablePhoneField";
 interface AccountProfileViewProps {
   backTo: string;
   roleLabel?: string;
@@ -28,18 +29,10 @@ export function AccountProfileView({ backTo, roleLabel }: AccountProfileViewProp
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-3">
-        <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <h3 style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>О себе</h3>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#E8F5E9" }}>
-              <Phone size={18} color="#2E7D32" />
-            </div>
-            <div>
-              <p style={{ color: "#64748B", fontSize: 12 }}>Телефон</p>
-              <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>{user.phone || "Не указан"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
+        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <h3 className="px-4 pt-4" style={{ color: "#1E293B", fontSize: 15, fontWeight: 600 }}>О себе</h3>
+          <EditablePhoneField />
+          <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#E8F5E9" }}>
               <Mail size={18} color="#2E7D32" />
             </div>

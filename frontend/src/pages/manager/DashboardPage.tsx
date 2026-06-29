@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { BarChart3, MapPin, Users } from "lucide-react";
@@ -7,6 +8,7 @@ import { ReportsAPI, LearningRatingDTO } from "../../api/ReportsAPI";
 
 export default function ManagerDashboardPage() {
   const { user } = useApp();
+  const navigate = useNavigate();
   const [locations, setLocations] = useState<LocationListItem[]>([]);
   const [learningRating, setLearningRating] = useState<LearningRatingDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,9 +17,12 @@ export default function ManagerDashboardPage() {
     setLoading(true);
     try {
       const controller = new AbortController();
+      const ratingParams = user?.blockId
+        ? { scopeType: "block" as const, scopeId: user.blockId }
+        : undefined;
       const [locs, rating] = await Promise.all([
         StructureAPI.listLocations(undefined, controller.signal).catch(() => []),
-        ReportsAPI.getLearningRating().catch(() => null),
+        ReportsAPI.getLearningRating(ratingParams).catch(() => null),
       ]);
       setLocations(locs);
       setLearningRating(rating);
@@ -27,7 +32,7 @@ export default function ManagerDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.blockId]);
 
   useEffect(() => {
     void load();
@@ -94,7 +99,13 @@ export default function ManagerDashboardPage() {
             <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Мои точки</p>
             <div className="flex flex-col gap-2">
               {locations.map((loc) => (
-                <div key={loc.id} className="flex items-center gap-3 py-2 px-3 rounded-xl" style={{ background: "#F8FAFC" }}>
+                <button
+                  key={loc.id}
+                  type="button"
+                  onClick={() => navigate(`/manager/locations/${loc.id}`)}
+                  className="flex items-center gap-3 py-2 px-3 rounded-xl w-full text-left"
+                  style={{ background: "#F8FAFC" }}
+                >
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#E8F5E9" }}>
                     <MapPin size={14} color="#2E7D32" />
                   </div>
@@ -105,7 +116,7 @@ export default function ManagerDashboardPage() {
                   <div className="text-right flex-shrink-0">
                     <p style={{ color: "#64748B", fontSize: 11 }}>{loc.employees} чел.</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

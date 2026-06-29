@@ -35,6 +35,7 @@ from app.users.usecases.profiles.get_own_compensation_usecase import GetOwnCompe
 from app.users.usecases.profiles.get_own_profile_usecase import GetOwnProfileUseCase
 from app.users.usecases.profiles.get_own_timesheet_usecase import GetOwnTimesheetUseCase
 from app.users.usecases.profiles.get_user_profile_usecase import GetUserProfileUseCase
+from app.users.usecases.profiles.update_own_phone_usecase import UpdateOwnPhoneUseCase
 from app.users.usecases.profiles.upload_own_avatar_usecase import UploadOwnAvatarUseCase
 from shared.integrations.report_service import ReportServiceClient
 from shared.kafka_streams.producer import KafkaProducerWrapper
@@ -47,6 +48,7 @@ class ProfileUsecaseProvider(Provider):
     get_user_profile = provide(GetUserProfileUseCase)
     get_own_compensation = provide(GetOwnCompensationUseCase)
     get_own_timesheet = provide(GetOwnTimesheetUseCase)
+    update_own_phone = provide(UpdateOwnPhoneUseCase)
 
     create_employee_profile = provide(CreateEmployeeProfileUseCase)
     update_employee_profile = provide(UpdateEmployeeProfileUseCase)

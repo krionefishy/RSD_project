@@ -36,7 +36,9 @@ export default function EmployeesPage() {
     const controller = new AbortController();
     async function loadEmployees() {
       try {
-        const blockId = user?.block ?? (useMockAuth() ? "1" : undefined);
+        const blockId = user?.blockId != null
+          ? String(user.blockId)
+          : (useMockAuth() ? "1" : undefined);
         if (!blockId) {
           setLoading(false);
           return;
@@ -78,7 +80,7 @@ export default function EmployeesPage() {
     }
     loadEmployees();
     return () => controller.abort();
-  }, [user?.block]);
+  }, [user?.blockId]);
 
   const storeNames = [
     "all",

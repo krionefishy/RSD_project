@@ -94,6 +94,15 @@ export interface CourseEnrollment {
   isCompleted: boolean;
 }
 
+export interface UserCourseProgress {
+  courseId: number;
+  courseName: string;
+  userPointsByCourse: number;
+  isCourseCompleted: boolean;
+  isCourseCompletedSuccessfully: boolean;
+  completionPercentage: number;
+}
+
 export interface Test {
   id: number;
   name: string;

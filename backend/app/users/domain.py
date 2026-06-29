@@ -54,6 +54,10 @@ class UserAdminUpdate(BaseModel):
         return self
 
 
+class UpdateOwnPhoneRequest(BaseModel):
+    phone: str | None = Field(None, max_length=50, description="Телефон")
+
+
 class UserBlockRequest(BaseModel):
     block_id: int
 

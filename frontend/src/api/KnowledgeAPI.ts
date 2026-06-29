@@ -15,6 +15,7 @@ import type {
   TestResult,
   TestTask,
   TestTaskAdmin,
+  UserCourseProgress,
 } from "../types/knowledge";
 import { useMockKB } from "../config/presentationMode";
 import { apiClient } from "./APIClient";
@@ -338,6 +339,20 @@ interface CoursesListDTO {
   items: CourseListItemDTO[];
 }
 
+interface UserCourseItemDTO {
+  course_id: number;
+  course_name: string;
+  user_points_by_course: number;
+  is_course_completed: boolean;
+  is_course_completed_successfully: boolean;
+  completion_percentage: number;
+}
+
+interface UserCoursesListDTO {
+  items: UserCourseItemDTO[];
+  user_id: string;
+}
+
 interface CourseMaterialItemDTO {
   id: number;
   material_id: number;
@@ -557,6 +572,33 @@ class KnowledgeAPIImpl {
     }
     const response = await apiClient.get<CoursesListDTO>("/kb/courses/", { signal });
     return response.items.map(mapCourseItem);
+  }
+
+  async listUserCourses(userId?: string, signal?: AbortSignal): Promise<UserCourseProgress[]> {
+    if (isMockKB()) {
+      return MOCK_COURSES_LIST.map((course) => {
+        const detail = MOCK_COURSES[course.id];
+        return {
+          courseId: course.id,
+          courseName: course.name,
+          userPointsByCourse: detail?.userPointsByCourse ?? 0,
+          isCourseCompleted: detail?.isCourseCompleted ?? false,
+          isCourseCompletedSuccessfully: detail?.isCourseCompleted ?? false,
+          completionPercentage: detail?.isCourseCompleted ? 100 : 40,
+        };
+      });
+    }
+    const query: Record<string, string> = {};
+    if (userId) query.user_id = userId;
+    const response = await apiClient.get<UserCoursesListDTO>("/kb/user-courses/", { query, signal });
+    return response.items.map((item) => ({
+      courseId: item.course_id,
+      courseName: item.course_name,
+      userPointsByCourse: item.user_points_by_course,
+      isCourseCompleted: item.is_course_completed,
+      isCourseCompletedSuccessfully: item.is_course_completed_successfully,
+      completionPercentage: item.completion_percentage,
+    }));
   }
 
   async getCourse(courseId: number, signal?: AbortSignal): Promise<Course> {

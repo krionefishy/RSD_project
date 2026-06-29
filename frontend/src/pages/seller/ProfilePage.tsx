@@ -14,6 +14,7 @@ import { UserAPI } from "../../api/UserAPI";
 import { toast } from "sonner";
 import type { EmployeeCompensation } from "../../types/profile";
 import { isPresentationMode } from "../../config/presentationMode";
+import { EditablePhoneField } from "../../components/profile/EditablePhoneField";
 import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 
 const menuItems = [
@@ -105,18 +106,18 @@ export default function ProfilePage() {
         >
           {[
             { label: "ID сотрудника", value: user.externalSystemId },
-            { label: "Телефон", value: user.phone },
             { label: "Блок", value: user.blockName ?? user.block },
           ].map((item, i) => (
             <div
               key={i}
               className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}
+              style={{ borderBottom: "1px solid #F1F5F9" }}
             >
               <span style={{ color: "#64748B", fontSize: 13 }}>{item.label}</span>
               <span style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{item.value}</span>
             </div>
           ))}
+          <EditablePhoneField />
         </div>
 
         <div

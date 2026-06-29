@@ -6,14 +6,19 @@ interface AppHeaderProps {
   title: string;
   showBack?: boolean;
   backTo?: string;
+  onBack?: () => void;
   rightAction?: ReactNode;
   white?: boolean;
 }
 
-export function AppHeader({ title, showBack = false, backTo, rightAction, white = false }: AppHeaderProps) {
+export function AppHeader({ title, showBack = false, backTo, onBack, rightAction, white = false }: AppHeaderProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
     if (backTo) {
       navigate(backTo);
     } else {

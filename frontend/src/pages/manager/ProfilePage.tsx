@@ -1,9 +1,10 @@
 // React import not needed in React 18+
 import { useNavigate } from "react-router";
-import { LogOut, Phone } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { ScreenBackButton } from "../../components/ScreenBackButton";
+import { EditablePhoneField } from "../../components/profile/EditablePhoneField";
 
 export default function ManagerProfilePage() {
   const { user, logout } = useApp();
@@ -22,21 +23,13 @@ export default function ManagerProfilePage() {
 
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="rounded-2xl overflow-hidden" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          {[{ label: "ID сотрудника", value: user.externalSystemId }, { label: "Телефон", value: user.phone }, { label: "Блок", value: user.blockName ?? user.block }].map((item, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: i < 2 ? "1px solid #F1F5F9" : "none" }}>
+          {[{ label: "ID сотрудника", value: user.externalSystemId }, { label: "Блок", value: user.blockName ?? user.block }].map((item, i) => (
+            <div key={i} className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #F1F5F9" }}>
               <span style={{ color: "#64748B", fontSize: 13 }}>{item.label}</span>
               <span style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }}>{item.value}</span>
             </div>
           ))}
-        </div>
-        <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#E8F5E9" }}>
-            <Phone size={18} color="#2E7D32" />
-          </div>
-          <div>
-            <p style={{ color: "#64748B", fontSize: 12 }}>Телефон</p>
-            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>{user.phone || "Не указан"}</p>
-          </div>
+          <EditablePhoneField />
         </div>
         <button onClick={() => { logout(); navigate("/"); }} className="w-full h-12 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#FEF2F2", color: "#DC2626", fontSize: 14, fontWeight: 600 }}>
           <LogOut size={18} />

@@ -7,7 +7,8 @@ import { UserAPI } from "../../api/UserAPI";
 import { PersonnelAPI } from "../../api/PersonnelAPI";
 import { AppUser } from "../../types/user";
 import { SellingsAPI, SellingStats } from "../../api/SellingsAPI";
-import { KnowledgeAPI, type Course } from "../../api/KnowledgeAPI";
+import { KnowledgeAPI } from "../../api/KnowledgeAPI";
+import type { UserCourseProgress } from "../../types/knowledge";
 import { TimesheetCalendar } from "../../components/timesheets/TimesheetCalendar";
 import type { TimesheetEntry } from "../../types/profile";
 import { monthPeriodQuery } from "../../utils/timesheet";
@@ -21,7 +22,7 @@ export default function EmployeeDetailPage() {
   const [tab, setTab] = useState<"sales" | "learning" | "schedule">("sales");
   const [employee, setEmployee] = useState<AppUser | null>(null);
   const [stats, setStats] = useState<SellingStats | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<UserCourseProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const today = new Date();
   const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -35,18 +36,14 @@ export default function EmployeeDetailPage() {
     async function loadData() {
       if (!employeeId) return;
       try {
-        const [userData, statsData] = await Promise.all([
+        const [userData, statsData, coursesData] = await Promise.all([
           UserAPI.getUser(employeeId, controller.signal),
           SellingsAPI.getStats(employeeId, controller.signal),
+          KnowledgeAPI.listUserCourses(employeeId, controller.signal),
         ]);
         setEmployee(userData);
         setStats(statsData);
-
-        const coursesData = await KnowledgeAPI.listCourses(controller.signal);
-        const courseDetails = await Promise.all(
-          coursesData.map(c => KnowledgeAPI.getCourse(c.id, controller.signal).catch(() => null))
-        );
-        setCourses(courseDetails.filter(Boolean) as Course[]);
+        setCourses(coursesData);
       } catch (error) {
         if (isAbortError(error)) return;
         toast.error(getErrorMessage(error, "Не удалось загрузить данные сотрудника"));
@@ -84,7 +81,7 @@ export default function EmployeeDetailPage() {
 
   const salesPercent = stats?.percent ?? 0;
   const learningPercent = courses.length > 0
-    ? Math.round(courses.reduce((sum, c) => sum + (c.userPointsByCourse || 0), 0) / courses.length)
+    ? Math.round(courses.reduce((sum, c) => sum + c.completionPercentage, 0) / courses.length)
     : 0;
   const salesColor = salesPercent >= 100 ? "#22C55E" : salesPercent >= 70 ? "#2E7D32" : "#F59E0B";
   const learningColor = learningPercent >= 90 ? "#22C55E" : learningPercent >= 70 ? "#2E7D32" : "#F59E0B";
@@ -101,11 +98,10 @@ export default function EmployeeDetailPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      {/* Header */}
       <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 mb-4" style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}>
           <ChevronLeft size={18} color="rgba(255,255,255,0.8)" />
-          Сотрудники
+          Назад
         </button>
         <div className="flex items-center gap-3">
           <Avatar name={employee?.name || "?"} size={56} />
@@ -117,7 +113,6 @@ export default function EmployeeDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex px-4 py-3 gap-2 overflow-x-auto" style={{ background: "#fff", borderBottom: "1px solid #E2E8F0", scrollbarWidth: "none" }}>
         {(["sales", "learning", "schedule"] as const).map((t) => (
           <button
@@ -157,7 +152,7 @@ export default function EmployeeDetailPage() {
                 <BarChart data={salesChartData}>
                   <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
                   <YAxis hide />
-                  <Tooltip formatter={(v: any) => [`${Number(v).toLocaleString("ru")} ₽`, "Продажи"]} />
+                  <Tooltip formatter={(v: number | string) => [`${Number(v).toLocaleString("ru")} ₽`, "Продажи"]} />
                   <Bar dataKey="fact" fill={salesColor} radius={[4, 4, 0, 0]} maxBarSize={20} />
                 </BarChart>
               </ResponsiveContainer>
@@ -176,10 +171,10 @@ export default function EmployeeDetailPage() {
               <div>
                 <p style={{ color: "#64748B", fontSize: 12 }}>Прогресс обучения</p>
                 <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600 }}>
-                  {loading ? "—" : `${courses.filter(c => c.isCourseCompleted).length} из ${courses.length} курсов`}
+                  {loading ? "—" : `${courses.filter((c) => c.isCourseCompleted).length} из ${courses.length} курсов`}
                 </p>
                 <p style={{ color: "#64748B", fontSize: 12 }}>
-                  {loading ? "—" : `${courses.filter(c => !c.isCourseCompleted).length} курса в процессе`}
+                  {loading ? "—" : `${courses.filter((c) => !c.isCourseCompleted).length} курса в процессе`}
                 </p>
               </div>
             </div>
@@ -193,13 +188,11 @@ export default function EmployeeDetailPage() {
               </div>
             ) : (
               courses.map((course) => {
-                const completedMaterials = course.materials.filter(m => m.isCompleted).length;
-                const totalMaterials = course.materials.length;
-                const pct = totalMaterials > 0 ? Math.round((completedMaterials / totalMaterials) * 100) : 0;
+                const pct = Math.round(course.completionPercentage);
                 return (
-                  <div key={course.id} className="rounded-xl px-4 py-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                  <div key={course.courseId} className="rounded-xl px-4 py-3" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                     <div className="flex justify-between mb-1">
-                      <span style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{course.name}</span>
+                      <span style={{ color: "#374151", fontSize: 13, fontWeight: 500 }}>{course.courseName}</span>
                       <span style={{ color: pct >= 70 ? "#22C55E" : "#F59E0B", fontSize: 13, fontWeight: 600 }}>{pct}%</span>
                     </div>
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E2E8F0" }}>
