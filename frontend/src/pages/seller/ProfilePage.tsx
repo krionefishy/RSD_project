@@ -18,7 +18,7 @@ import { EditablePhoneField } from "../../components/profile/EditablePhoneField"
 import { AVATAR_ACCEPT, mapAvatarErrorMessage, validateAvatarFile } from "../../utils/avatar";
 
 const menuItems = [
-  { icon: Calendar, label: "Моё расписание", path: "/seller/schedule", color: "#2E7D32" },
+  { icon: Calendar, label: "Мой график", path: "/seller/schedule", color: "#2E7D32" },
 ];
 
 function formatMoney(value?: string): string {

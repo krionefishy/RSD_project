@@ -43,7 +43,7 @@ async def upsert_employee_compensation(
 @router.post(
     "/timesheets/upload",
     response_model=TimesheetUploadResultDTO,
-    summary="Загрузить табель-график из файла",
+    summary="Загрузить график из файла",
 )
 async def upload_timesheet_file(
     file: UploadFile,
@@ -67,7 +67,7 @@ async def upload_timesheet_file(
 @router.patch(
     "/timesheets/entries/{time_entry_id}",
     response_model=EmployeeTimeEntryDTO,
-    summary="Изменить запись табеля",
+    summary="Изменить запись графика",
 )
 async def update_time_entry(
     time_entry_id: int,
@@ -81,7 +81,7 @@ async def update_time_entry(
 @router.post(
     "/timesheets/entries",
     response_model=EmployeeTimeEntryDTO,
-    summary="Создать запись табеля вручную",
+    summary="Создать запись графика вручную",
 )
 async def create_time_entry(
     request: CreateTimeEntryRequest,
@@ -94,7 +94,7 @@ async def create_time_entry(
 @router.delete(
     "/timesheets/entries/{time_entry_id}",
     response_model=DeleteResultDTO,
-    summary="Удалить запись табеля",
+    summary="Удалить запись графика",
 )
 async def delete_time_entry(
     time_entry_id: int,

@@ -77,7 +77,7 @@ async def get_own_compensation(
     return await usecase.execute(auth)
 
 
-@router.get("/me/timesheet", response_model=OwnTimesheetDTO, summary="Свой табель-график")
+@router.get("/me/timesheet", response_model=OwnTimesheetDTO, summary="Свой график")
 async def get_own_timesheet(
     auth: Annotated[AuthContext, Depends(require_auth)],
     usecase: FromDishka[GetOwnTimesheetUseCase],

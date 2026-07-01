@@ -67,7 +67,7 @@ export default function EmployeeDetailPage() {
       })
       .catch((error) => {
         if (isAbortError(error)) return;
-        setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель"));
+        setTimesheetError(getErrorMessage(error, "Не удалось загрузить график"));
         setTimesheetEntries([]);
         setTimesheetTotalHours("0");
       })
@@ -207,7 +207,7 @@ export default function EmployeeDetailPage() {
 
         {tab === "schedule" && (
           <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Табель сотрудника</p>
+            <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 12 }}>График сотрудника</p>
             <TimesheetCalendar
               entries={timesheetEntries}
               totalHours={timesheetTotalHours}

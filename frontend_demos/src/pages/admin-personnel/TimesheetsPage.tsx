@@ -100,7 +100,7 @@ export default function TimesheetsPage() {
         setLocationTotalHours(data.totalHours);
       } catch (error) {
         if (isAbortError(error)) return;
-        setLocationError(getErrorMessage(error, "Не удалось загрузить табель точки"));
+        setLocationError(getErrorMessage(error, "Не удалось загрузить график точки"));
         setLocationEntries([]);
         setLocationTotalHours("0");
       } finally {
@@ -121,7 +121,7 @@ export default function TimesheetsPage() {
         setEmployeeTotalHours(data.totalHours);
       } catch (error) {
         if (isAbortError(error)) return;
-        setEmployeeError(getErrorMessage(error, "Не удалось загрузить табель сотрудника"));
+        setEmployeeError(getErrorMessage(error, "Не удалось загрузить график сотрудника"));
         setEmployeeEntries([]);
         setEmployeeTotalHours("0");
       } finally {
@@ -156,7 +156,7 @@ export default function TimesheetsPage() {
       if (result.errors.length > 0) {
         toast.error(`Файл загружен с ${result.errors.length} ошибками`);
       } else {
-        toast.success("Файл табеля загружен");
+        toast.success("Файл графика загружен");
       }
       await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
     } catch (error) {
@@ -249,7 +249,7 @@ export default function TimesheetsPage() {
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
-      <AppHeader title="Табели учёта" showBack backTo="/admin-personnel" white />
+      <AppHeader title="Графики" showBack backTo="/admin-personnel" white />
 
       <div className="px-4 py-4 flex flex-col gap-3">
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
@@ -257,7 +257,7 @@ export default function TimesheetsPage() {
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Загрузка табеля</p>
+          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Загрузка графика</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -320,7 +320,7 @@ export default function TimesheetsPage() {
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по точке</p>
+          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>График по точке</p>
           <div className="mb-3">
             <AppSelect
               value={selectedLocationId}
@@ -364,7 +364,7 @@ export default function TimesheetsPage() {
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Табель по сотруднику</p>
+          <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>График по сотруднику</p>
           <div className="mb-3">
             <AppSelect
               value={selectedUserId}

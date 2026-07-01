@@ -8,7 +8,7 @@ const TABS = [
   { path: "/admin-personnel", label: "Главная", Icon: LayoutDashboard, exact: true },
   { path: "/admin-personnel/manage", label: "Сотрудники", Icon: Users },
   { path: "/admin-personnel/blocks", label: "Блоки", Icon: Building2 },
-  { path: "/admin-personnel/timesheets", label: "Табели", Icon: FileSpreadsheet },
+  { path: "/admin-personnel/timesheets", label: "Графики", Icon: FileSpreadsheet },
   { path: "/admin-personnel/profile", label: "Профиль", Icon: User },
 ];
 

@@ -49,6 +49,13 @@ export function formatMonthTitle(monthDate: Date): string {
   return `${MONTH_NAMES[monthDate.getMonth()]} ${monthDate.getFullYear()}`;
 }
 
+export function formatDateISO(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function monthPeriodQuery(monthDate: Date): OwnTimesheetQuery {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();
@@ -60,6 +67,21 @@ export function monthPeriodQuery(monthDate: Date): OwnTimesheetQuery {
   };
 }
 
+export function upcomingTwoWeeksPeriodQuery(from = new Date()): OwnTimesheetQuery {
+  const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 13);
+  return {
+    periodFrom: formatDateISO(start),
+    periodTo: formatDateISO(end),
+  };
+}
+
+export function sumEntryHours(entries: Array<{ hours: string }>): string {
+  const total = entries.reduce((sum, entry) => sum + Number.parseFloat(entry.hours || "0"), 0);
+  return Number.isInteger(total) ? String(total) : total.toFixed(1);
+}
+
 export function mapTimesheetErrorMessage(message: string): string {
   const mapping: Record<string, string> = {
     "Night activity requires night shift": "Код «Н» допустим только с ночной сменой",
@@ -68,7 +90,7 @@ export function mapTimesheetErrorMessage(message: string): string {
     "Invalid shift type": "Недопустимый тип смены",
     "Duplicate time entry for date and shift": "Запись на эту дату и смену уже существует",
     "Activity code not found": "Код активности не найден",
-    "Time entry not found": "Запись табеля не найдена",
+    "Time entry not found": "Запись графика не найдена",
     "Only .xls and .xlsx files are supported": "Поддерживаются только файлы .xls и .xlsx",
     "Empty file": "Файл пустой",
     "period_from must be <= period_to": "Начало периода должно быть не позже конца",
@@ -88,15 +110,31 @@ export function suggestShiftTypeForActivity(activityCode: string): ShiftType {
   return "none";
 }
 
+export type ScheduleDayVisualType = "work" | "off" | "sick" | "vacation";
+
+export const SCHEDULE_DAY_VISUAL: Record<
+  ScheduleDayVisualType,
+  { color: string; bg: string; border: string; label: string }
+> = {
+  work: { color: "#14532D", bg: "#BBF7D0", border: "#16A34A", label: "Рабочий день" },
+  off: { color: "#334155", bg: "#CBD5E1", border: "#64748B", label: "Выходной день" },
+  sick: { color: "#713F12", bg: "#FDE047", border: "#CA8A04", label: "Больничный" },
+  vacation: { color: "#0C4A6E", bg: "#BAE6FD", border: "#0284C7", label: "Отпуск" },
+};
+
+export const SCHEDULE_DAY_LEGEND: ScheduleDayVisualType[] = ["work", "off", "sick"];
+
 export function entryVisualType(entry: {
   hours: string;
   shiftType: string;
   activityCode: string;
   shiftCode?: string;
-}): "work" | "off" | "absence" {
+}): ScheduleDayVisualType {
   if (isWorkShift(entry)) return "work";
+  if (entry.activityCode === "Б") return "sick";
+  if (entry.activityCode === "О") return "vacation";
+  if (entry.activityCode === "В") return "off";
   const hours = Number.parseFloat(entry.hours);
-  if (entry.activityCode === "Б" || entry.activityCode === "О") return "absence";
   if (entry.shiftType === "none" || hours <= 0) return "off";
   return "work";
 }

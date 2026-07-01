@@ -43,7 +43,7 @@ async def list_managed_users(
 @router.get(
     "/locations/{location_id}/timesheet",
     response_model=LocationTimesheetDTO,
-    summary="Табель-график точки",
+    summary="График точки",
 )
 async def get_location_timesheet(
     location_id: int,
@@ -59,7 +59,7 @@ async def get_location_timesheet(
 @router.get(
     "/users/{user_id}/timesheet",
     response_model=EmployeeTimesheetDTO,
-    summary="Табель-график сотрудника",
+    summary="График сотрудника",
 )
 async def get_employee_timesheet(
     user_id: UUID,

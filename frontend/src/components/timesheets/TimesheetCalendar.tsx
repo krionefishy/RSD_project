@@ -8,17 +8,36 @@ import {
   formatShiftTimeRange,
   formatWorkDateLabel,
   isWorkShift,
+  SCHEDULE_DAY_LEGEND,
+  SCHEDULE_DAY_VISUAL,
   shiftCodeLabel,
   workDateFromMonthDay,
 } from "../../utils/timesheet";
 
-const typeConfig = {
-  work: { color: "#2E7D32", bg: "#E8F5E9", label: "Смена" },
-  off: { color: "#94A3B8", bg: "#F1F5F9", label: "Выходной" },
-  absence: { color: "#F59E0B", bg: "#FFFBEB", label: "Отсутствие" },
-};
-
 const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+function ScheduleLegend() {
+  return (
+    <div className="flex flex-wrap gap-2 mt-3 pt-3" style={{ borderTop: "1px solid #E2E8F0" }}>
+      {SCHEDULE_DAY_LEGEND.map((type) => {
+        const cfg = SCHEDULE_DAY_VISUAL[type];
+        return (
+          <div
+            key={type}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full"
+            style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}` }}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ background: cfg.border }}
+            />
+            <span style={{ color: cfg.color, fontSize: 11, fontWeight: 600 }}>{cfg.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function entriesByDate(entries: TimesheetEntry[]): Map<number, TimesheetEntry[]> {
   const map = new Map<number, TimesheetEntry[]>();
@@ -39,14 +58,14 @@ function ShiftEntryCard({
   showEmployees: boolean;
 }) {
   const visual = entryVisualType(entry);
-  const cfg = typeConfig[visual];
+  const cfg = SCHEDULE_DAY_VISUAL[visual];
   const timeRange = formatShiftTimeRange(entry.startsAt, entry.endsAt);
 
   if (isWorkShift(entry)) {
     return (
       <div
         className="flex items-center gap-3 rounded-xl p-3"
-        style={{ background: cfg.bg }}
+        style={{ background: cfg.bg, borderLeft: `4px solid ${cfg.border}` }}
       >
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -74,7 +93,7 @@ function ShiftEntryCard({
   return (
     <div
       className="flex items-center gap-3 rounded-xl p-3"
-      style={{ background: cfg.bg }}
+      style={{ background: cfg.bg, borderLeft: `4px solid ${cfg.border}` }}
     >
       <div className="flex-1 min-w-0">
         {showEmployees && entry.userName && (
@@ -85,7 +104,7 @@ function ShiftEntryCard({
         <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>
           {entry.activityName} ({entry.activityCode})
         </p>
-        <p style={{ color: "#64748B", fontSize: 12 }}>
+        <p style={{ color: cfg.color, fontSize: 12, fontWeight: 600 }}>
           {cfg.label}
           {entry.hours ? ` · ${entry.hours} ч` : ""}
         </p>
@@ -193,10 +212,27 @@ export function TimesheetCalendar({
                 const workShifts = dayEntries.filter(isWorkShift);
                 const shiftDay = workShifts[0] ?? dayEntries[0];
                 const visual = shiftDay ? entryVisualType(shiftDay) : "off";
-                const cfg = typeConfig[visual];
+                const cfg = SCHEDULE_DAY_VISUAL[visual];
                 const isSelected = date === selectedDate;
                 const isToday = isCurrentMonth && date === today.getDate();
                 const hasEntries = dayEntries.length > 0;
+                const dayBackground = isSelected
+                  ? "#16A34A"
+                  : hasEntries
+                    ? cfg.bg
+                    : "transparent";
+                const dayBorder = isToday
+                  ? "2px solid #C41E3A"
+                  : hasEntries && !isSelected
+                    ? `2px solid ${cfg.border}`
+                    : "2px solid transparent";
+                const dayTextColor = isSelected
+                  ? "#fff"
+                  : isToday
+                    ? "#C41E3A"
+                    : hasEntries
+                      ? cfg.color
+                      : "#94A3B8";
 
                 return (
                   <button
@@ -206,37 +242,27 @@ export function TimesheetCalendar({
                     className="flex flex-col items-center py-1"
                   >
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
                       style={{
-                        background: isSelected ? "#2E7D32" : "transparent",
-                        border: isToday && !isSelected ? "2px solid #C41E3A" : "none",
+                        background: dayBackground,
+                        border: dayBorder,
                       }}
                     >
                       <span
                         style={{
                           fontSize: 13,
-                          fontWeight: isToday || isSelected ? 700 : 400,
-                          color: isSelected ? "#fff" : isToday ? "#C41E3A" : hasEntries ? cfg.color : "#94A3B8",
+                          fontWeight: isToday || isSelected || hasEntries ? 700 : 400,
+                          color: dayTextColor,
                         }}
                       >
                         {date}
                       </span>
                     </div>
-                    {hasEntries && !isSelected && (
-                      <div className="flex gap-0.5 mt-0.5">
-                        {(workShifts.length > 0 ? workShifts : dayEntries.slice(0, 1)).map((entry, index) => (
-                          <div
-                            key={`${entry.id}-${index}`}
-                            className="w-1 h-1 rounded-full"
-                            style={{ background: typeConfig[entryVisualType(entry)].color }}
-                          />
-                        ))}
-                      </div>
-                    )}
                   </button>
                 );
               })}
             </div>
+            <ScheduleLegend />
           </>
         )}
       </div>

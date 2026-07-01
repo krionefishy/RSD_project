@@ -117,7 +117,7 @@ export default function EmployeeDetailPage() {
       })
       .catch((error) => {
         if (isAbortError(error)) return;
-        setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель"));
+        setTimesheetError(getErrorMessage(error, "Не удалось загрузить график"));
         setTimesheetEntries([]);
         setTimesheetTotalHours("0");
       })
@@ -318,10 +318,10 @@ export default function EmployeeDetailPage() {
 
           <section className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <h3 style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-              Табель сотрудника
+              График сотрудника
             </h3>
             <p style={{ color: "#64748B", fontSize: 12, marginBottom: 12 }}>
-              Просмотр графика. Назначение и изменение смен — в разделе «Табель».
+              Просмотр графика. Назначение и изменение смен — в разделе «Графики».
             </p>
             <TimesheetCalendar
               entries={timesheetEntries}

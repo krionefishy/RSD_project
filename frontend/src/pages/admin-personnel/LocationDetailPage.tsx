@@ -105,7 +105,7 @@ export default function LocationDetailPage() {
       })
       .catch((error) => {
         if (isAbortError(error)) return;
-        setTimesheetError(getErrorMessage(error, "Не удалось загрузить табель точки"));
+        setTimesheetError(getErrorMessage(error, "Не удалось загрузить график точки"));
         setTimesheetEntries([]);
         setTimesheetTotalHours("0");
       })
@@ -281,7 +281,7 @@ export default function LocationDetailPage() {
         </div>
 
         <div className="rounded-2xl p-4" style={{ background: "#fff" }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>Табель точки</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#1E293B", marginBottom: 12 }}>График точки</p>
           <TimesheetCalendar
             entries={timesheetEntries}
             totalHours={timesheetTotalHours}

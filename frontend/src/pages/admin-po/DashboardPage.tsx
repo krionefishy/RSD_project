@@ -17,7 +17,7 @@ const MODULES = [
   },
   {
     title: "Персонал",
-    description: "Профили, табели, структура точек и блоков",
+    description: "Профили, графики, структура точек и блоков",
     icon: Users,
     path: "/admin-po/preview/personnel",
     color: "#2E7D32",

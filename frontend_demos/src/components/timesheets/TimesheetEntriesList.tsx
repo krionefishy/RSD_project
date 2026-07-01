@@ -46,7 +46,7 @@ export function TimesheetEntriesList({
   if (loading) {
     return (
       <div className="rounded-xl px-3 py-4 text-center" style={{ background: "#F8FAFC", color: "#64748B", fontSize: 13 }}>
-        Загрузка табеля...
+        Загрузка графика...
       </div>
     );
   }
