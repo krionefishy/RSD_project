@@ -84,7 +84,7 @@ class ListLocationsUseCase:
         block_id: int | None = None,
         location_id: int | None = None,
     ) -> LocationsListDTO:
-        query = select(LocationModel).order_by(LocationModel.name)
+        query = select(LocationModel).order_by(LocationModel.created_at.desc(), LocationModel.id.desc())
         if location_id is not None:
             query = query.where(LocationModel.id == location_id)
 

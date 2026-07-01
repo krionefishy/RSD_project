@@ -356,6 +356,7 @@ export default function TimesheetsPage() {
               emptyMessage="Нет смен по выбранной точке"
               showEmployee
               mode="shifts"
+              maxVisibleItems={5}
               deletingEntryId={deletingEntryId}
               onDeleteEntry={(entryId) => void handleDeleteEntry(entryId)}
             />

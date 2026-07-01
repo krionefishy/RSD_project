@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Search, ChevronRight } from "lucide-react";
 import { Avatar } from "../../components/Avatar";
 import { UserAPI } from "../../api/UserAPI";
+import { LocationsAPI } from "../../api/LocationsAPI";
 import { AppUser } from "../../types/user";
 import { SellingsAPI } from "../../api/SellingsAPI";
 import { useApp } from "../../context/AppContext";
@@ -30,6 +31,7 @@ export default function EmployeesPage() {
   const [query, setQuery] = useState("");
   const [filterStore, setFilterStore] = useState("all");
   const [employees, setEmployees] = useState<EmployeeWithStats[]>([]);
+  const [storeOrder, setStoreOrder] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,10 +46,13 @@ export default function EmployeesPage() {
           return;
         }
 
-        const users = await UserAPI.listManagedUsers({
-          blockId,
-          isActive: true,
-        }, controller.signal);
+        const [users, locations] = await Promise.all([
+          UserAPI.listManagedUsers({
+            blockId,
+            isActive: true,
+          }, controller.signal),
+          LocationsAPI.listLocations({ blockId }, controller.signal).catch(() => []),
+        ]);
 
         const employeesWithStats = await Promise.all(
           users.map(async (u) => {
@@ -71,6 +76,7 @@ export default function EmployeesPage() {
         );
 
         setEmployees(employeesWithStats);
+        setStoreOrder(locations.map((location) => location.name));
       } catch (error) {
         if (isAbortError(error)) return;
         toast.error(getErrorMessage(error, "Не удалось загрузить список сотрудников"));
@@ -82,10 +88,14 @@ export default function EmployeesPage() {
     return () => controller.abort();
   }, [user?.blockId]);
 
-  const storeNames = [
-    "all",
-    ...Array.from(new Set(employees.map((e) => e.storeName ?? e.store).filter(Boolean) as string[])),
+  const employeeStoreNames = Array.from(
+    new Set(employees.map((e) => e.storeName ?? e.store).filter(Boolean) as string[]),
+  );
+  const orderedStoreNames = [
+    ...storeOrder.filter((name) => employeeStoreNames.includes(name)),
+    ...employeeStoreNames.filter((name) => !storeOrder.includes(name)),
   ];
+  const storeNames = ["all", ...orderedStoreNames];
   const filtered = employees.filter((e) => {
     const matchQuery = e.name.toLowerCase().includes(query.toLowerCase());
     const storeLabel = e.storeName ?? e.store;
