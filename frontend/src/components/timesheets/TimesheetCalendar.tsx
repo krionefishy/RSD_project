@@ -216,18 +216,21 @@ export function TimesheetCalendar({
                 const isSelected = date === selectedDate;
                 const isToday = isCurrentMonth && date === today.getDate();
                 const hasEntries = dayEntries.length > 0;
+                const selectedCfg = SCHEDULE_DAY_VISUAL.work;
                 const dayBackground = isSelected
-                  ? "#16A34A"
+                  ? selectedCfg.bg
                   : hasEntries
                     ? cfg.bg
                     : "transparent";
-                const dayBorder = isToday
-                  ? "2px solid #C41E3A"
-                  : hasEntries && !isSelected
-                    ? `2px solid ${cfg.border}`
-                    : "2px solid transparent";
+                const dayBorder = isSelected
+                  ? `2px solid ${selectedCfg.border}`
+                  : isToday
+                    ? "2px solid #C41E3A"
+                    : hasEntries
+                      ? `2px solid ${cfg.border}`
+                      : "2px solid transparent";
                 const dayTextColor = isSelected
-                  ? "#fff"
+                  ? selectedCfg.color
                   : isToday
                     ? "#C41E3A"
                     : hasEntries

@@ -40,7 +40,9 @@ export function TimesheetEntriesList({
   onSaveEntry,
   onDeleteEntry,
 }: TimesheetEntriesListProps) {
-  const visibleEntries = mode === "shifts" ? entries.filter(isWorkShift) : entries;
+  const visibleEntries = (mode === "shifts" ? entries.filter(isWorkShift) : entries).sort((a, b) =>
+    a.workDate.localeCompare(b.workDate),
+  );
   const scrollMaxHeight = maxVisibleItems ? `${maxVisibleItems * 96}px` : undefined;
 
   if (loading) {
@@ -68,7 +70,11 @@ export function TimesheetEntriesList({
       ) : (
         <div
           className="flex flex-col gap-2 overflow-y-auto pr-1"
-          style={scrollMaxHeight ? { maxHeight: scrollMaxHeight } : undefined}
+          style={
+            scrollMaxHeight
+              ? { maxHeight: scrollMaxHeight, WebkitOverflowScrolling: "touch" }
+              : undefined
+          }
         >
           {visibleEntries.map((entry) => {
             const timeRange = formatShiftTimeRange(entry.startsAt, entry.endsAt);

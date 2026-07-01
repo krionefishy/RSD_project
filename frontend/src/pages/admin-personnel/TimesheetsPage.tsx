@@ -96,9 +96,9 @@ export default function TimesheetsPage() {
   }, [selectedLocationId]);
 
   const loadLocationTimesheet = useCallback(
-    async (signal?: AbortSignal) => {
+    async (signal?: AbortSignal, options?: { silent?: boolean }) => {
       if (!selectedLocationId) return;
-      setLocationLoading(true);
+      if (!options?.silent) setLocationLoading(true);
       setLocationError(null);
       try {
         const data = await PersonnelAPI.getLocationTimesheet(Number(selectedLocationId), locationPeriod, signal);
@@ -110,16 +110,16 @@ export default function TimesheetsPage() {
         setLocationEntries([]);
         setLocationTotalHours("0");
       } finally {
-        if (!signal?.aborted) setLocationLoading(false);
+        if (!signal?.aborted && !options?.silent) setLocationLoading(false);
       }
     },
     [selectedLocationId, locationPeriod.periodFrom, locationPeriod.periodTo],
   );
 
   const loadEmployeeTimesheet = useCallback(
-    async (signal?: AbortSignal) => {
+    async (signal?: AbortSignal, options?: { silent?: boolean }) => {
       if (!selectedUserId) return;
-      setEmployeeLoading(true);
+      if (!options?.silent) setEmployeeLoading(true);
       setEmployeeError(null);
       try {
         const data = await PersonnelAPI.getEmployeeTimesheet(selectedUserId, employeePeriod, signal);
@@ -131,11 +131,22 @@ export default function TimesheetsPage() {
         setEmployeeEntries([]);
         setEmployeeTotalHours("0");
       } finally {
-        if (!signal?.aborted) setEmployeeLoading(false);
+        if (!signal?.aborted && !options?.silent) setEmployeeLoading(false);
       }
     },
     [selectedUserId, employeePeriod.periodFrom, employeePeriod.periodTo],
   );
+
+  const refreshTimesheets = useCallback(async () => {
+    const scrollY = window.scrollY;
+    await Promise.all([
+      loadLocationTimesheet(undefined, { silent: true }),
+      loadEmployeeTimesheet(undefined, { silent: true }),
+    ]);
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
+  }, [loadEmployeeTimesheet, loadLocationTimesheet]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -164,7 +175,7 @@ export default function TimesheetsPage() {
       } else {
         toast.success("Файл графика загружен");
       }
-      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
+      await refreshTimesheets();
     } catch (error) {
       toast.error(mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось загрузить файл")));
     } finally {
@@ -185,7 +196,7 @@ export default function TimesheetsPage() {
       toast.success("Смена удалена");
       setDeleteConfirmEntry(null);
       setAssignShiftOpen(false);
-      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
+      await refreshTimesheets();
     } catch (error) {
       toast.error(
         mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось удалить смену")),
@@ -222,7 +233,7 @@ export default function TimesheetsPage() {
       if (existingShiftsForAssign.length + 1 >= 2) {
         setAssignShiftOpen(false);
       }
-      await Promise.all([loadLocationTimesheet(), loadEmployeeTimesheet()]);
+      await refreshTimesheets();
     } catch (error) {
       const message = mapTimesheetErrorMessage(getErrorMessage(error, "Не удалось назначить смену"));
       if (isAPIError(error) && error.status === 409) {
@@ -439,6 +450,7 @@ export default function TimesheetsPage() {
               error={employeeError}
               emptyMessage="Нет смен по выбранному сотруднику"
               mode="shifts"
+              maxVisibleItems={5}
               deletingEntryId={deletingEntryId}
               onDeleteEntry={requestDeleteEntry}
             />
