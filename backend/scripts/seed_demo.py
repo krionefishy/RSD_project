@@ -810,14 +810,15 @@ async def _seed_knowledge_base(session: AsyncSession, users: dict[str, UserModel
 
 
 async def seed_demo1(session: AsyncSession) -> None:
-    """Seed only Demo 1 scope: auth users, structure, compensation, timesheets."""
+    """Seed Demo 1 scope: auth users, structure, compensation, timesheets, knowledge base."""
     password, accounts = _load_demo_accounts()
     await _reset_database(session)
     users = await _seed_users(session, password, accounts)
     await _seed_locations(session, users)
     await _seed_personnel(session, users)
+    await _seed_knowledge_base(session, users)
     await session.commit()
-    logger.info("Demo 1 dataset seeded (users, structure, personnel). Knowledge/sales skipped.")
+    logger.info("Demo 1 dataset seeded (users, structure, personnel, knowledge). Sales skipped.")
     _log_demo_credentials(password, accounts)
 
 

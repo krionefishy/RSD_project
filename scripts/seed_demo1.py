@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Reset DB and seed Demo 1 demonstration data.
 
-Scope (Этап 6): users/roles, org structure, compensation, timesheets.
-Does not seed knowledge base or sales — those are mocked in frontend_demos.
+Scope (Этап 6): users/roles, org structure, compensation, timesheets, knowledge base.
+Does not seed sales.
 
 Usage:
     CONFIG_PATH=backend/shared/settings/config.demo.yaml just demo1-seed

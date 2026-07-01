@@ -107,11 +107,11 @@ db-migrate: db-create
 [doc('Alias for db-migrate')]
 migrate: db-migrate
 
-[doc('Reset DB, migrate and seed Demo 1 demonstration data (Этап 6 scope)')]
+[doc('Reset DB, migrate and seed Demo 1 demonstration data (Этап 6 + knowledge base)')]
 demo1-seed: db-migrate
     CONFIG_PATH={{ demo_config_path }} DATABASE_URL={{ DATABASE_URL }} {{ python }} scripts/seed_demo1.py
 
-[doc('Local Demo 1 prep: infra up, DB rebuild, Demo 1 seed')]
+[doc('Local Demo 1 prep: infra up, DB rebuild, Demo 1 seed with knowledge base')]
 demo1-setup: infra-up db-rebuild
     CONFIG_PATH={{ demo_config_path }} DATABASE_URL={{ DATABASE_URL }} {{ python }} scripts/seed_demo1.py
 
