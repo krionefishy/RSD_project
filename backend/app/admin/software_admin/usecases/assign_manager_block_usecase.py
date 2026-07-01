@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timezone
 from typing import Optional
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +42,19 @@ class AssignManagerBlockUseCase:
                 manager_id=existing.manager_id,
                 block_id=existing.block_id,
                 assigned_at=existing.assigned_at,
+            )
+
+        current_assignment_result = await self.session.execute(
+            select(ManagerBlockModel, BlockModel)
+            .join(BlockModel, BlockModel.id == ManagerBlockModel.block_id)
+            .where(ManagerBlockModel.manager_id == manager_id)
+        )
+        current_assignment = current_assignment_result.first()
+        if current_assignment is not None:
+            _, current_block = current_assignment
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Менеджер уже назначен на блок «{current_block.name}». Один менеджер может быть привязан только к одному блоку.",
             )
 
         assignment = ManagerBlockModel(

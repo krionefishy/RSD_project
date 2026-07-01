@@ -118,7 +118,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-edu",
     element: (
-      <RequireAuth allowedRoles={["admin-edu"]}>
+      <RequireAuth allowedRoles={["admin-edu", "admin-po", "superadmin"]}>
         <AdminEduTemplate />
       </RequireAuth>
     ),
@@ -135,7 +135,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-sales",
     element: (
-      <RequireAuth allowedRoles={["admin-sales"]}>
+      <RequireAuth allowedRoles={["admin-sales", "admin-po", "superadmin"]}>
         <AdminSalesTemplate />
       </RequireAuth>
     ),
@@ -150,7 +150,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin-personnel",
     element: (
-      <RequireAuth allowedRoles={["admin-personnel", "superadmin"]}>
+      <RequireAuth allowedRoles={["admin-personnel", "admin-po", "superadmin"]}>
         <AdminPersonnelTemplate />
       </RequireAuth>
     ),

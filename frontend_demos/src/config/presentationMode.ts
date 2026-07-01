@@ -36,8 +36,12 @@ export function useMockKB(): boolean {
   return useMockApiModule("knowledge");
 }
 
+export function useMockSales(): boolean {
+  return useMockApiModule("sellings") || (typeof window !== "undefined" && window.location.pathname.startsWith("/admin-po"));
+}
+
 export function useMocks(): boolean {
-  return useMockKB() || useMockAuth();
+  return useMockKB() || useMockAuth() || useMockSales();
 }
 
 /** Presentation-style UI — full presentation mode or a non-live route in demo1 mode. */

@@ -65,6 +65,12 @@ export default function BlockDetailPage() {
     }
   }, [blockId]);
 
+  const loadAllLocations = useCallback(async (signal?: AbortSignal) => {
+    if (!canEdit) return;
+    const locations = await LocationsAPI.listLocations(undefined, signal);
+    setAllLocations(locations.map((location) => ({ id: location.id, name: location.name, code: location.code })));
+  }, [canEdit]);
+
   useEffect(() => {
     const controller = new AbortController();
     void loadBlock(controller.signal);
@@ -74,11 +80,9 @@ export default function BlockDetailPage() {
   useEffect(() => {
     if (!canEdit) return;
     const controller = new AbortController();
-    LocationsAPI.listLocations(undefined, controller.signal)
-      .then((locations) => setAllLocations(locations.map((l) => ({ id: l.id, name: l.name, code: l.code }))))
-      .catch(() => undefined);
+    loadAllLocations(controller.signal).catch(() => undefined);
     return () => controller.abort();
-  }, [canEdit]);
+  }, [canEdit, loadAllLocations]);
 
   useEffect(() => {
     if (!canEdit) return;
@@ -151,7 +155,7 @@ export default function BlockDetailPage() {
       await LocationsAPI.assignLocationToBlock(blockId, assignLocationId);
       setAssignLocationId("");
       toast.success("Точка добавлена в блок");
-      await loadBlock();
+      await Promise.all([loadBlock(), loadAllLocations()]);
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось привязать точку"));
     }

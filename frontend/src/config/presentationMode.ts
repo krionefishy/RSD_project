@@ -12,6 +12,10 @@ export function useMockKB(): boolean {
   return isPresentationMode() || import.meta.env.VITE_MOCK_KB === "true";
 }
 
+export function useMockSales(): boolean {
+  return useMockAuth() || (typeof window !== "undefined" && window.location.pathname.startsWith("/admin-po"));
+}
+
 export function useMocks(): boolean {
-  return useMockAuth() || useMockKB();
+  return useMockAuth() || useMockKB() || useMockSales();
 }

@@ -152,7 +152,7 @@ class AdminSoftwareAPIImpl {
   async changeUserRole(userId: string, newRole: UserRole): Promise<AppUser> {
     const response = await apiClient.request<UserResponse>(`/admin/software/users/${userId}/role`, {
       method: "PATCH",
-      body: JSON.stringify({ role: toBackendRole(newRole) }),
+      body: { role: toBackendRole(newRole) },
     });
     return mapUserResponse(response);
   }
