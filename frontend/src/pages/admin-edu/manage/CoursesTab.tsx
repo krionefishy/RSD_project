@@ -13,6 +13,8 @@ export function CoursesTab() {
   const location = useLocation();
   const isPoPreview = location.pathname.startsWith("/admin-po/preview");
   const manageBasePath = isPoPreview ? "/admin-po/preview/edu/manage" : "/admin-edu/manage";
+  const editMaterialPath = (materialId: number) =>
+    isPoPreview ? `/admin-po/preview/edu/edit-material/${materialId}` : `/admin-edu/manage/edit-material/${materialId}`;
   const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
@@ -241,7 +243,7 @@ export function CoursesTab() {
                       <button
                         type="button"
                         className="text-sm text-slate-700 text-left"
-                        onClick={() => navigate(`/admin-edu/manage/edit-material/${mat.materialId}`)}
+                        onClick={() => navigate(editMaterialPath(mat.materialId))}
                       >
                         {mat.name}
                       </button>

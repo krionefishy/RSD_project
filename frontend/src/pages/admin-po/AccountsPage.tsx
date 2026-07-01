@@ -185,7 +185,7 @@ export default function AccountsPage() {
           </h1>
           <Hint content="Создать пользователя">
             <button
-              onClick={() => navigate("/admin-personnel/manage/create")}
+              onClick={() => navigate("/admin-po/preview/personnel/create")}
               className="p-2 rounded-xl"
               style={{ background: "rgba(255,255,255,0.2)" }}
               aria-label="Создать пользователя"

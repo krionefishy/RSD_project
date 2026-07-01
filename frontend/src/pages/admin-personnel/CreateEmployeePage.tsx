@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { AppSelect } from "../../components/AppSelect";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import type { BlockMemberStatus } from "../../types/profile";
@@ -15,6 +15,10 @@ const inputStyle = {
 
 export default function CreateEmployeePage() {
   const navigate = useNavigate();
+  const isPoPreview = useLocation().pathname.startsWith("/admin-po/preview");
+  const backPath = isPoPreview ? "/admin-po/preview/personnel" : "/admin-personnel/manage";
+  const detailPath = (userId: string) =>
+    isPoPreview ? `/admin-po/preview/personnel/${userId}` : `/admin-personnel/manage/${userId}`;
   const { blocks: structureBlocks, locations: structureLocations } = useStructureOptions();
   const [saving, setSaving] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
@@ -70,7 +74,7 @@ export default function CreateEmployeePage() {
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <button
-          onClick={() => navigate("/admin-personnel/manage")}
+          onClick={() => navigate(backPath)}
           className="flex items-center gap-1 mb-4"
           style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}
         >
@@ -160,7 +164,7 @@ export default function CreateEmployeePage() {
 
         {createdUserId && (
           <button
-            onClick={() => navigate(`/admin-personnel/manage/${createdUserId}`)}
+            onClick={() => navigate(detailPath(createdUserId))}
             className="w-full h-11 rounded-xl"
             style={{ background: "#F1F5F9", color: "#1E293B", fontSize: 14, fontWeight: 500 }}
           >

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Trash2 } from "lucide-react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import type { Material } from "../../types/knowledge";
@@ -10,6 +10,9 @@ import { ConfirmDialog } from "./manage/ConfirmDialog";
 export default function EditMaterialPage() {
   const { materialId } = useParams<{ materialId: string }>();
   const navigate = useNavigate();
+  const managePath = useLocation().pathname.startsWith("/admin-po/preview")
+    ? "/admin-po/preview/edu?tab=materials"
+    : "/admin-edu/manage?tab=materials";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const id = Number(materialId);
 
@@ -29,7 +32,7 @@ export default function EditMaterialPage() {
         const found = items.find((item) => item.id === id);
         if (!found) {
           toast.error("Материал не найден");
-          navigate("/admin-edu/manage");
+          navigate(managePath);
           return;
         }
         setMaterial(found);
@@ -46,7 +49,7 @@ export default function EditMaterialPage() {
       }
     }
     void load();
-  }, [id, navigate]);
+  }, [id, managePath, navigate]);
 
   const handleSave = async () => {
     if (!material) return;
@@ -101,7 +104,7 @@ export default function EditMaterialPage() {
     try {
       await KnowledgeAPI.deleteMaterial(material.id);
       toast.success("Материал удалён");
-      navigate("/admin-edu/manage");
+      navigate(managePath);
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось удалить материал"));
     } finally {
@@ -121,7 +124,7 @@ export default function EditMaterialPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="px-4 pt-4 pb-5 bg-gradient-to-br from-[#2E7D32] to-[#1B5E20]">
         <button
-          onClick={() => navigate("/admin-edu/manage")}
+          onClick={() => navigate(managePath)}
           className="flex items-center gap-1 mb-3 text-white/80 text-sm"
         >
           <ChevronLeft size={18} />

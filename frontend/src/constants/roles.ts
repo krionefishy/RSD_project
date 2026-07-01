@@ -4,7 +4,7 @@ export const ROLE_LABELS: Record<string, string> = {
   "admin-edu": "Администратор обучения",
   "admin-sales": "Администратор продаж",
   "admin-personnel": "Администратор персонала",
-  "admin-po": "Администратор PO",
+  "admin-po": "Администратор ПО",
   superadmin: "Суперадминистратор",
 };
 
@@ -14,6 +14,6 @@ export const ROLE_LABELS_SHORT: Record<string, string> = {
   "admin-edu": "Админ обучения",
   "admin-sales": "Админ продаж",
   "admin-personnel": "Админ персонала",
-  "admin-po": "Админ PO",
+  "admin-po": "Админ ПО",
   superadmin: "Суперадмин",
 };

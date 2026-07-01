@@ -177,9 +177,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminPODashboardPage /> },
       { path: "preview/personnel", element: <AdminPOPersonnelPreviewPage /> },
+      { path: "preview/personnel/create", element: <CreateEmployeePage /> },
+      { path: "preview/personnel/:userId", element: <AdminEmployeeDetailPage /> },
       { path: "preview/edu", element: <AdminPOEduPreviewPage /> },
       { path: "preview/edu/assignments", element: <AdminPOEduAssignmentsPreviewPage /> },
       { path: "preview/edu/manage/:courseId", element: <AdminPOCourseEnrollmentsPreviewPage /> },
+      { path: "preview/edu/edit-material/:materialId", element: <EditMaterialPage /> },
       { path: "preview/sales", element: <AdminPOSalesPreviewPage /> },
     ],
   },

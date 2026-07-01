@@ -39,6 +39,9 @@ const ROLE_FILTERS: Array<UserRole | "all"> = ["all", "seller", "manager"];
 export default function ManageUsersPage() {
   const navigate = useNavigate();
   const isPoPreview = useLocation().pathname.startsWith("/admin-po/preview");
+  const createPath = isPoPreview ? "/admin-po/preview/personnel/create" : "/admin-personnel/manage/create";
+  const detailPath = (userId: string) =>
+    isPoPreview ? `/admin-po/preview/personnel/${userId}` : `/admin-personnel/manage/${userId}`;
   const [query, setQuery] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "all">("all");
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
@@ -178,7 +181,7 @@ export default function ManageUsersPage() {
             Управление пользователями
           </h1>
           <button
-            onClick={() => navigate("/admin-personnel/manage/create")}
+            onClick={() => navigate(createPath)}
             className="p-2 rounded-xl"
             style={{ background: "rgba(255,255,255,0.2)" }}
             aria-label="Создать сотрудника"
@@ -305,7 +308,7 @@ export default function ManageUsersPage() {
                 <button
                   type="button"
                   className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                  onClick={() => navigate(`/admin-personnel/manage/${user.id}`)}
+                  onClick={() => navigate(detailPath(user.id))}
                 >
                   <Avatar name={user.name} size={40} src={user.avatar} />
                   <div className="flex-1 min-w-0">
@@ -325,7 +328,7 @@ export default function ManageUsersPage() {
                 </button>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button
-                    onClick={() => navigate(`/admin-personnel/manage/${user.id}`)}
+                    onClick={() => navigate(detailPath(user.id))}
                     className="p-2 rounded-lg"
                     style={{ background: "#F1F5F9" }}
                     aria-label="Редактировать"

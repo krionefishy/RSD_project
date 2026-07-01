@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Camera, TrendingUp } from "lucide-react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { Avatar } from "../../components/Avatar";
 import { AdminStaffAPI } from "../../api/AdminStaffAPI";
 import { PersonnelAPI } from "../../api/PersonnelAPI";
@@ -27,6 +27,8 @@ const inputStyle = { borderColor: "#E2E8F0", fontSize: 14 } as const;
 export default function EmployeeDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const isPoPreview = useLocation().pathname.startsWith("/admin-po/preview");
+  const backPath = isPoPreview ? "/admin-po/preview/personnel" : "/admin-personnel/manage";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { blocks: structureBlocks, locations: structureLocations } = useStructureOptions();
 
@@ -217,7 +219,7 @@ export default function EmployeeDetailPage() {
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
       <div className="px-4 pt-4 pb-5" style={{ background: "linear-gradient(160deg, #2E7D32 0%, #1B5E20 100%)" }}>
         <button
-          onClick={() => navigate("/admin-personnel/manage")}
+          onClick={() => navigate(backPath)}
           className="flex items-center gap-1 mb-4"
           style={{ color: "rgba(255,255,255,0.8)", fontSize: 14 }}
         >

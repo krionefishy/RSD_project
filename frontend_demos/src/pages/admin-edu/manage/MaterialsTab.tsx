@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Plus, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
 import type { Material } from "../../../types/knowledge";
@@ -9,6 +9,9 @@ import { ConfirmDialog } from "./ConfirmDialog";
 
 export function MaterialsTab() {
   const navigate = useNavigate();
+  const isPoPreview = useLocation().pathname.startsWith("/admin-po/preview");
+  const editMaterialPath = (materialId: number) =>
+    isPoPreview ? `/admin-po/preview/edu/edit-material/${materialId}` : `/admin-edu/manage/edit-material/${materialId}`;
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
@@ -49,7 +52,7 @@ export function MaterialsTab() {
       setShowCreate(false);
       setForm({ name: "", category: "", description: "", text: "" });
       await load();
-      navigate(`/admin-edu/manage/edit-material/${material.id}`);
+      navigate(editMaterialPath(material.id));
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось создать материал"));
     }
@@ -139,7 +142,7 @@ export function MaterialsTab() {
               <button
                 type="button"
                 className="text-left font-semibold text-slate-800 text-sm break-words"
-                onClick={() => navigate(`/admin-edu/manage/edit-material/${material.id}`)}
+                onClick={() => navigate(editMaterialPath(material.id))}
               >
                 {material.name}
               </button>
