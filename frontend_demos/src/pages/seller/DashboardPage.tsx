@@ -76,6 +76,9 @@ export default function DashboardPage() {
             <div>
               <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600 }}>План на сегодня</p>
               <p style={{ color: "#64748B", fontSize: 12 }}>Выручка точки</p>
+              <p style={{ color: "#94A3B8", fontSize: 11, marginTop: 4 }}>
+                Этот раздел появится в будущих версиях приложения.
+              </p>
             </div>
             <button onClick={() => navigate("/seller/sales")}>
               <ChevronRight size={18} color="#94A3B8" />
