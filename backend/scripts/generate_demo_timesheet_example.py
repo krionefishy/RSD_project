@@ -13,7 +13,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 
 
-OUTPUT_PATH = Path(__file__).resolve().parents[2] / "docs" / "demo" / "demo_timesheet_metro_july_2026.xlsx"
+OUTPUT_PATH = Path(__file__).resolve().parents[2] / "docs" / "demo" / "demo_timesheet_point_1_july_2026.xlsx"
 
 
 def build_demo_workbook() -> Workbook:
@@ -22,9 +22,9 @@ def build_demo_workbook() -> Workbook:
     sheet.title = "График"
 
     sheet["A1"] = "Название точки"
-    sheet["B1"] = "ТЦ Метрополис"
+    sheet["B1"] = "Точка 1"
     sheet["A2"] = "Идентификатор точки"
-    sheet["B2"] = "MSK-METRO"
+    sheet["B2"] = "POINT-1"
     sheet["A4"] = "Период"
     sheet["B4"] = "01.07.2026-07.07.2026"
     sheet["A5"] = "С1"
@@ -36,7 +36,7 @@ def build_demo_workbook() -> Workbook:
     sheet["B8"] = "День"
     sheet["C8"] = "seller_anna_001"
     sheet["D8"] = "seller_kirill_001"
-    sheet["C9"] = "Иванова А."
+    sheet["C9"] = "Смирнова А."
     sheet["D9"] = "Захаров К."
 
     rows = [

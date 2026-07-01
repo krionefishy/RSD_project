@@ -10,9 +10,9 @@ const blocks = [
 ];
 
 const locations = [
-  { name: "ТЦ Метрополис", block: "Север", plan: "820K ₽", fact: "790K ₽", percent: 96 },
-  { name: "ТЦ Авиапарк", block: "Центр", plan: "650K ₽", fact: "620K ₽", percent: 95 },
-  { name: "ТЦ Европейский", block: "Запад", plan: "480K ₽", fact: "410K ₽", percent: 85 },
+  { name: "Точка 1", block: "Север", plan: "820K ₽", fact: "790K ₽", percent: 96 },
+  { name: "Точка 2", block: "Центр", plan: "650K ₽", fact: "620K ₽", percent: 95 },
+  { name: "Точка 3", block: "Запад", plan: "480K ₽", fact: "410K ₽", percent: 85 },
 ];
 
 export default function AdminSalesManagePage() {

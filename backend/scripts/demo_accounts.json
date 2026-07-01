@@ -6,8 +6,8 @@
       "external_system_id": "superadmin_001",
       "role": "super_admin",
       "label": "Суперадмин",
-      "first_name": "Супер",
-      "last_name": "Админ",
+      "first_name": "Ирина",
+      "last_name": "Козлова",
       "show_on_login": true
     },
     {
@@ -15,8 +15,8 @@
       "external_system_id": "rootadmin_001",
       "role": "root_admin",
       "label": "Админ ПО",
-      "first_name": "Рут",
-      "last_name": "Админ",
+      "first_name": "Алексей",
+      "last_name": "Смирнов",
       "show_on_login": true
     },
     {
@@ -24,8 +24,8 @@
       "external_system_id": "staff_admin_001",
       "role": "admin_staff",
       "label": "Кадры",
-      "first_name": "Алина",
-      "last_name": "Кадровая",
+      "first_name": "Ирина",
+      "last_name": "Волкова",
       "show_on_login": true
     },
     {
@@ -34,7 +34,7 @@
       "role": "admin_education",
       "label": "Обучение",
       "first_name": "Елена",
-      "last_name": "Методист",
+      "last_name": "Морозова",
       "show_on_login": true
     },
     {
@@ -43,7 +43,7 @@
       "role": "admin_sales",
       "label": "Продажи",
       "first_name": "Сергей",
-      "last_name": "Продажи",
+      "last_name": "Лебедев",
       "show_on_login": true
     },
     {
@@ -51,8 +51,8 @@
       "external_system_id": "manager_north_001",
       "role": "manager",
       "label": "Менеджер Север",
-      "first_name": "Марина",
-      "last_name": "Северная",
+      "first_name": "Иван",
+      "last_name": "Иванов",
       "show_on_login": true
     },
     {
@@ -60,8 +60,8 @@
       "external_system_id": "manager_south_001",
       "role": "manager",
       "label": "Менеджер Юг",
-      "first_name": "Игорь",
-      "last_name": "Южный",
+      "first_name": "Павел",
+      "last_name": "Соколов",
       "show_on_login": false
     },
     {
@@ -70,7 +70,7 @@
       "role": "seller",
       "label": "Продавец",
       "first_name": "Анна",
-      "last_name": "Иванова",
+      "last_name": "Смирнова",
       "phone": "+7 900 100-10-01",
       "position": "Продавец",
       "is_active": true,
@@ -118,7 +118,7 @@
       "role": "seller",
       "label": "Продавец Иван",
       "first_name": "Иван",
-      "last_name": "Сидоров",
+      "last_name": "Козлов",
       "phone": "+7 900 100-10-05",
       "position": "Продавец",
       "is_active": true,
@@ -142,7 +142,7 @@
       "role": "seller",
       "label": "Продавец Светлана",
       "first_name": "Светлана",
-      "last_name": "Громова",
+      "last_name": "Морозова",
       "phone": "+7 900 100-10-07",
       "position": "Продавец",
       "is_active": true,

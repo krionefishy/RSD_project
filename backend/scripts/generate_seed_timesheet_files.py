@@ -27,31 +27,31 @@ THIN_BORDER = Border(
 
 FILES = [
     {
-        "filename": "timesheet_msk_metro_2026-07-01_2026-07-07.xlsx",
-        "point_name": "ТЦ Метрополис",
-        "point_code": "MSK-METRO",
+        "filename": "timesheet_point_1_2026-07-01_2026-07-07.xlsx",
+        "point_name": "Точка 1",
+        "point_code": "POINT-1",
         "shift_1": "05:00-13:30",
         "shift_2": "13:30-22:00",
         "employees": [
-            {"code": "seller_anna_001", "name": "Иванова А.", "shifts": ["С1", "С2", "В", "С1", "С1", "В", "С2"]},
+            {"code": "seller_anna_001", "name": "Смирнова А.", "shifts": ["С1", "С2", "В", "С1", "С1", "В", "С2"]},
             {"code": "seller_kirill_001", "name": "Захаров К.", "shifts": ["С2", "В", "С1", "С2", "В", "С2", "С1"]},
         ],
     },
     {
-        "filename": "timesheet_msk_aviapark_2026-07-01_2026-07-07.xlsx",
-        "point_name": "ТЦ Авиапарк",
-        "point_code": "MSK-AVIAPARK",
+        "filename": "timesheet_point_2_2026-07-01_2026-07-07.xlsx",
+        "point_name": "Точка 2",
+        "point_code": "POINT-2",
         "shift_1": "05:00-13:30",
         "shift_2": "13:30-22:00",
         "employees": [
             {"code": "seller_maria_001", "name": "Петрова М.", "shifts": ["С1", "В", "С2", "С1", "С2", "В", "С1"]},
-            {"code": "seller_ivan_001", "name": "Сидоров И.", "shifts": ["С2", "С1", "В", "С2", "В", "С1", "С2"]},
+            {"code": "seller_ivan_001", "name": "Козлов И.", "shifts": ["С2", "С1", "В", "С2", "В", "С1", "С2"]},
         ],
     },
     {
-        "filename": "timesheet_msk_euro_2026-07-01_2026-07-07.xlsx",
-        "point_name": "ТЦ Европарк",
-        "point_code": "MSK-EURO",
+        "filename": "timesheet_point_3_2026-07-01_2026-07-07.xlsx",
+        "point_name": "Точка 3",
+        "point_code": "POINT-3",
         "shift_1": "05:00-13:30",
         "shift_2": "13:30-22:00",
         "employees": [
@@ -59,13 +59,13 @@ FILES = [
         ],
     },
     {
-        "filename": "timesheet_msk_crocus_2026-07-01_2026-07-07.xlsx",
-        "point_name": "ТЦ Крокус Сити",
-        "point_code": "MSK-CROCUS",
+        "filename": "timesheet_point_4_2026-07-01_2026-07-07.xlsx",
+        "point_name": "Точка 4",
+        "point_code": "POINT-4",
         "shift_1": "06:00-14:00",
         "shift_2": "14:00-22:00",
         "employees": [
-            {"code": "seller_svetlana_001", "name": "Громова С.", "shifts": ["С1", "В", "С2", "С1", "С2", "В", "С1"]},
+            {"code": "seller_svetlana_001", "name": "Морозова С.", "shifts": ["С1", "В", "С2", "С1", "С2", "В", "С1"]},
             {"code": "seller_olga_001", "name": "Крылова О.", "shifts": ["С2", "С1", "В", "С2", "В", "С2", "С2"]},
         ],
     },

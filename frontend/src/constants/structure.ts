@@ -18,10 +18,10 @@ export const STRUCTURE_BLOCKS: StructureBlockOption[] = [
 ];
 
 export const STRUCTURE_LOCATIONS: StructureLocationOption[] = [
-  { id: "1", name: "ТЦ Метрополис", blockId: "1" },
-  { id: "2", name: "ТЦ Европарк", blockId: "1" },
-  { id: "3", name: "ТЦ Крокус Сити", blockId: "1" },
-  { id: "4", name: "ТЦ Рио", blockId: "2" },
-  { id: "5", name: "ТЦ Вегас", blockId: "3" },
-  { id: "6", name: "ТЦ Мега", blockId: "4" },
+  { id: "1", name: "Точка 1", blockId: "1" },
+  { id: "2", name: "Точка 2", blockId: "1" },
+  { id: "3", name: "Точка 3", blockId: "1" },
+  { id: "4", name: "Точка 4", blockId: "2" },
+  { id: "5", name: "Точка 5", blockId: "3" },
+  { id: "6", name: "Точка 6", blockId: "4" },
 ];

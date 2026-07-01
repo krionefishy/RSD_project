@@ -194,9 +194,9 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
     north = BlockModel(name="Северный блок", description="Демо-блок для менеджера")
     south = BlockModel(name="Южный блок", description="Демо-блок для второго менеджера")
     metro = LocationModel(
-        code="MSK-METRO",
-        name="ТЦ Метрополис",
-        address="Москва, Ленинградское шоссе, 16А",
+        code="POINT-1",
+        name="Точка 1",
+        address="Москва, ул. Первая, 10",
         city="Москва",
         s1_start_at=time(5, 0),
         s1_end_at=time(13, 30),
@@ -204,9 +204,9 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
         s2_end_at=time(22, 0),
     )
     aviapark = LocationModel(
-        code="MSK-AVIAPARK",
-        name="ТЦ Авиапарк",
-        address="Москва, Ходынский бульвар, 4",
+        code="POINT-2",
+        name="Точка 2",
+        address="Москва, ул. Центральная, 15",
         city="Москва",
         s1_start_at=time(5, 0),
         s1_end_at=time(13, 30),
@@ -214,9 +214,9 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
         s2_end_at=time(22, 0),
     )
     europe = LocationModel(
-        code="MSK-EURO",
-        name="ТЦ Европарк",
-        address="Москва, Рублевское шоссе, 62",
+        code="POINT-3",
+        name="Точка 3",
+        address="Москва, ул. Южная, 8",
         city="Москва",
         s1_start_at=time(5, 0),
         s1_end_at=time(13, 30),
@@ -224,9 +224,9 @@ async def _seed_locations(session: AsyncSession, users: dict[str, UserModel]) ->
         s2_end_at=time(22, 0),
     )
     crocus = LocationModel(
-        code="MSK-CROCUS",
-        name="ТЦ Крокус Сити",
-        address="Московская область, Красногорск, Международная улица, 12",
+        code="POINT-4",
+        name="Точка 4",
+        address="Красногорск, ул. Западная, 12",
         city="Красногорск",
         s1_start_at=time(6, 0),
         s1_end_at=time(14, 0),

@@ -26,12 +26,12 @@ export function mockOwnTimesheet(query: OwnTimesheetQuery): OwnTimesheet {
 export function mockLocationTimesheet(query: OwnTimesheetQuery) {
   const base = mockOwnTimesheet(query);
   return {
-    location: { id: 1, name: "ТЦ Метрополис" },
+    location: { id: 1, name: "Точка 1" },
     items: base.items.map((item, index) => ({
       ...item,
       userId: index % 2 === 0 ? "mock-seller-1" : "mock-seller-2",
       userName: index % 2 === 0 ? "Анна Иванова" : "Кирилл Захаров",
-      locationName: "ТЦ Метрополис",
+      locationName: "Точка 1",
     })),
     totalHours: base.totalHours,
   };

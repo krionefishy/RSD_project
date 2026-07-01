@@ -47,13 +47,13 @@ export const ratingData = {
     myValue: "387 420 ₽",
     total: 48,
     list: [
-      { rank: 1, name: "Ольга Крылова", store: "ТЦ Метрополис", value: "524 680 ₽", isMe: false },
-      { rank: 2, name: "Мария Федорова", store: "ТЦ Европарк", value: "498 120 ₽", isMe: false },
-      { rank: 3, name: "Анна Смирнова", store: "ТЦ Вегас", value: "476 850 ₽", isMe: false },
-      { rank: 4, name: "Кирилл Захаров", store: "ТЦ Крокус", value: "445 200 ₽", isMe: false },
-      { rank: 5, name: "Иван Волков", store: "ТЦ Мега", value: "412 340 ₽", isMe: false },
-      { rank: 6, name: "Алексей Петров", store: "ТЦ Рио", value: "401 890 ₽", isMe: false },
-      { rank: 7, name: "Анна Иванова", store: "ТЦ Метрополис", value: "387 420 ₽", isMe: true },
+      { rank: 1, name: "Ольга Крылова", store: "Точка 1", value: "524 680 ₽", isMe: false },
+      { rank: 2, name: "Мария Федорова", store: "Точка 3", value: "498 120 ₽", isMe: false },
+      { rank: 3, name: "Анна Смирнова", store: "Точка 5", value: "476 850 ₽", isMe: false },
+      { rank: 4, name: "Кирилл Захаров", store: "Точка 4", value: "445 200 ₽", isMe: false },
+      { rank: 5, name: "Иван Волков", store: "Точка 6", value: "412 340 ₽", isMe: false },
+      { rank: 6, name: "Алексей Петров", store: "Точка 7", value: "401 890 ₽", isMe: false },
+      { rank: 7, name: "Анна Смирнова", store: "Точка 1", value: "387 420 ₽", isMe: true },
     ],
   },
   learning: {
@@ -61,12 +61,12 @@ export const ratingData = {
     myValue: "85%",
     total: 48,
     list: [
-      { rank: 1, name: "Ольга Крылова", store: "ТЦ Метрополис", value: "98%", isMe: false },
-      { rank: 2, name: "Мария Федорова", store: "ТЦ Европарк", value: "94%", isMe: false },
-      { rank: 3, name: "Анна Иванова", store: "ТЦ Метрополис", value: "85%", isMe: true },
-      { rank: 4, name: "Кирилл Захаров", store: "ТЦ Крокус", value: "82%", isMe: false },
-      { rank: 5, name: "Иван Волков", store: "ТЦ Мега", value: "78%", isMe: false },
-      { rank: 6, name: "Мария Сидорова", store: "ТЦ Рио", value: "75%", isMe: false },
+      { rank: 1, name: "Ольга Крылова", store: "Точка 1", value: "98%", isMe: false },
+      { rank: 2, name: "Мария Федорова", store: "Точка 3", value: "94%", isMe: false },
+      { rank: 3, name: "Анна Смирнова", store: "Точка 1", value: "85%", isMe: true },
+      { rank: 4, name: "Кирилл Захаров", store: "Точка 4", value: "82%", isMe: false },
+      { rank: 5, name: "Иван Волков", store: "Точка 6", value: "78%", isMe: false },
+      { rank: 6, name: "Мария Сидорова", store: "Точка 7", value: "75%", isMe: false },
     ],
   },
 };
@@ -87,17 +87,17 @@ export const scheduleData = {
 // Manager Data
 // ────────────────────────────────────────────────
 export const managerStores: ManagerStore[] = [
-  { id: "s1", name: "ТЦ Метрополис", plan: 850000, fact: 742000, percent: 87, employees: 8 },
-  { id: "s2", name: "ТЦ Европарк", plan: 920000, fact: 891000, percent: 97, employees: 10 },
-  { id: "s3", name: "ТЦ Крокус Сити", plan: 780000, fact: 654000, percent: 84, employees: 7 },
+  { id: "s1", name: "Точка 1", plan: 850000, fact: 742000, percent: 87, employees: 8 },
+  { id: "s2", name: "Точка 3", plan: 920000, fact: 891000, percent: 97, employees: 10 },
+  { id: "s3", name: "Точка 4", plan: 780000, fact: 654000, percent: 84, employees: 7 },
 ];
 
 export const managerEmployees: ManagerEmployee[] = [
-  { id: "e1", name: "Анна Иванова", store: "ТЦ Метрополис", position: "Продавец", salesPercent: 92, learningPercent: 85, status: "work" },
-  { id: "e2", name: "Кирилл Захаров", store: "ТЦ Метрополис", position: "Продавец", salesPercent: 88, learningPercent: 78, status: "work" },
-  { id: "e3", name: "Мария Федорова", store: "ТЦ Европарк", position: "Старший продавец", salesPercent: 98, learningPercent: 94, status: "vacation" },
-  { id: "e4", name: "Ольга Крылова", store: "ТЦ Крокус", position: "Продавец", salesPercent: 95, learningPercent: 98, status: "work" },
-  { id: "e5", name: "Иван Волков", store: "ТЦ Метрополис", position: "Продавец", salesPercent: 76, learningPercent: 72, status: "sick" },
+  { id: "e1", name: "Анна Смирнова", store: "Точка 1", position: "Продавец", salesPercent: 92, learningPercent: 85, status: "work" },
+  { id: "e2", name: "Кирилл Захаров", store: "Точка 1", position: "Продавец", salesPercent: 88, learningPercent: 78, status: "work" },
+  { id: "e3", name: "Мария Федорова", store: "Точка 3", position: "Старший продавец", salesPercent: 98, learningPercent: 94, status: "vacation" },
+  { id: "e4", name: "Ольга Крылова", store: "Точка 4", position: "Продавец", salesPercent: 95, learningPercent: 98, status: "work" },
+  { id: "e5", name: "Иван Козлов", store: "Точка 1", position: "Продавец", salesPercent: 76, learningPercent: 72, status: "sick" },
 ];
 
 export const managerReports = [

@@ -300,7 +300,7 @@ const MOCK_COURSE_ENROLLMENTS: Record<number, Array<{ userId: string; name: stri
   1: [
     { userId: "mock-seller_anna_001", name: "Анна Иванова", progress: 72, isCompleted: false },
     { userId: "mock-seller_maria_001", name: "Мария Петрова", progress: 100, isCompleted: true },
-    { userId: "mock-seller_ivan_001", name: "Иван Сидоров", progress: 45, isCompleted: false },
+    { userId: "mock-seller_ivan_001", name: "Иван Козлов", progress: 45, isCompleted: false },
   ],
   2: [
     { userId: "mock-seller_anna_001", name: "Анна Иванова", progress: 30, isCompleted: false },
