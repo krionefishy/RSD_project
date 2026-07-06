@@ -100,9 +100,9 @@ async def delete_material(
 async def upload_material_attachment(
     material_id: int,
     file: UploadFile,
-    material_mode: Annotated[str | None, Form()] = None,
     auth: Annotated[AuthContext, Depends(require_education_admin)],
     usecase: FromDishka[UploadMaterialAttachmentUseCase],
+    material_mode: Annotated[str | None, Form()] = None,
 ) -> MaterialAttachmentDTO:
     if file.content_type not in ALLOWED_ATTACHMENT_TYPES:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid file type")
