@@ -3,11 +3,13 @@ import { ChevronLeft, ExternalLink, Trash2 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
-import { MarkdownEditor } from "../../components/markdown/MarkdownEditor";
+import { MarkdownEditor, type MarkdownEditorHandle } from "../../components/markdown/MarkdownEditor";
+import { extractEmbeddedAttachmentIds } from "../../components/markdown/markdownUtils";
 import type { Material } from "../../types/knowledge";
 import { getErrorMessage } from "../../utils/errors";
 import {
   isPdfOnlyMaterial,
+  isImageAttachmentFormat,
   MATERIAL_ATTACHMENT_ACCEPT,
   PDF_ONLY_ATTACHMENT_ACCEPT,
 } from "../../utils/knowledgeMaterials";
@@ -20,6 +22,7 @@ export default function EditMaterialPage() {
     ? "/admin-po/preview/edu?tab=materials"
     : "/admin-edu/manage?tab=materials";
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const markdownEditorRef = useRef<MarkdownEditorHandle>(null);
   const id = Number(materialId);
 
   const [material, setMaterial] = useState<Material | null>(null);
@@ -28,6 +31,7 @@ export default function EditMaterialPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [attachmentUrls, setAttachmentUrls] = useState<Record<number, string>>({});
 
   const [form, setForm] = useState({ name: "", category: "", description: "", text: "" });
 
@@ -59,20 +63,28 @@ export default function EditMaterialPage() {
   }, [id, managePath, navigate]);
 
   useEffect(() => {
-    if (!material || !isPdfOnlyMaterial(material)) {
+    if (!material || material.attachments.length === 0) {
       setPdfUrl(null);
+      setAttachmentUrls({});
       return;
     }
     let cancelled = false;
     KnowledgeAPI.resolveAdminMaterialAttachments(material.id, material.attachments.map((item) => item.id))
       .then((items) => {
         if (!cancelled) {
-          setPdfUrl(items[0]?.url ?? null);
+          const urls = Object.fromEntries(items.map((item) => [item.attachmentId, item.url]));
+          setAttachmentUrls(urls);
+          if (isPdfOnlyMaterial(material)) {
+            setPdfUrl(items[0]?.url ?? null);
+          } else {
+            setPdfUrl(null);
+          }
         }
       })
       .catch(() => {
         if (!cancelled) {
           setPdfUrl(null);
+          setAttachmentUrls({});
         }
       });
     return () => {
@@ -82,6 +94,17 @@ export default function EditMaterialPage() {
 
   const handleSave = async () => {
     if (!material) return;
+    const invalidEmbeddedAttachmentIds = extractEmbeddedAttachmentIds(form.text).filter((attachmentId) => {
+      const attachment = material.attachments.find((item) => item.id === attachmentId);
+      return !attachment || !isImageAttachmentFormat(attachment.format);
+    });
+    if (invalidEmbeddedAttachmentIds.length > 0) {
+      toast.error(
+        `В тексте есть недопустимые изображения: ${invalidEmbeddedAttachmentIds.join(", ")}. ` +
+          "Используйте только существующие графические вложения.",
+      );
+      return;
+    }
     setSaving(true);
     try {
       const updated = await KnowledgeAPI.updateMaterial(material.id, {
@@ -100,20 +123,35 @@ export default function EditMaterialPage() {
   };
 
   const handleUpload = async (file: File) => {
-    if (!material) return;
+    if (!material) return null;
     try {
       const attachment = await KnowledgeAPI.uploadMaterialAttachment(material.id, file);
       setMaterial((prev) =>
         prev ? { ...prev, attachments: [...prev.attachments, attachment] } : prev,
       );
+      try {
+        const resolved = await KnowledgeAPI.resolveAdminMaterialAttachments(material.id, [attachment.id]);
+        const url = resolved[0]?.url;
+        if (url) {
+          setAttachmentUrls((prev) => ({ ...prev, [attachment.id]: url }));
+        }
+      } catch {
+        // Preview can still show a placeholder until the next resolve.
+      }
       toast.success("Вложение загружено");
+      return attachment;
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось загрузить вложение"));
+      return null;
     }
   };
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!material) return;
+    if (embeddedAttachmentIds.has(attachmentId)) {
+      toast.error("Нельзя удалить вложение, пока оно используется в тексте материала");
+      return;
+    }
     try {
       await KnowledgeAPI.deleteMaterialAttachment(material.id, attachmentId);
       setMaterial((prev) =>
@@ -121,6 +159,11 @@ export default function EditMaterialPage() {
           ? { ...prev, attachments: prev.attachments.filter((item) => item.id !== attachmentId) }
           : prev,
       );
+      setAttachmentUrls((prev) => {
+        const next = { ...prev };
+        delete next[attachmentId];
+        return next;
+      });
       toast.success("Вложение удалено");
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось удалить вложение"));
@@ -150,6 +193,7 @@ export default function EditMaterialPage() {
   }
 
   const pdfMaterial = isPdfOnlyMaterial(material);
+  const embeddedAttachmentIds = new Set(extractEmbeddedAttachmentIds(form.text));
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -204,9 +248,12 @@ export default function EditMaterialPage() {
             <label className="flex flex-col gap-1">
               <span className="text-xs font-medium text-slate-500">Содержание материала</span>
               <MarkdownEditor
+                ref={markdownEditorRef}
                 value={form.text}
                 onChange={(text) => setForm((prev) => ({ ...prev, text }))}
                 placeholder="Содержание (Markdown)"
+                attachmentUrls={attachmentUrls}
+                onUploadImage={handleUpload}
               />
             </label>
           )}
@@ -255,12 +302,33 @@ export default function EditMaterialPage() {
           ) : (
             material.attachments.map((att) => (
               <div key={att.id} className="flex items-start justify-between gap-2 border-t border-slate-50 py-2">
-                <span className="break-all text-sm text-slate-700">
-                  {att.name}.{att.format}
-                </span>
-                <button type="button" className="flex-shrink-0" onClick={() => void handleDeleteAttachment(att.id)}>
-                  <Trash2 size={14} color="#DC2626" />
-                </button>
+                <div className="min-w-0 flex-1">
+                  <span className="break-all text-sm text-slate-700">
+                    {att.name}.{att.format}
+                  </span>
+                  {embeddedAttachmentIds.has(att.id) ? (
+                    <p className="mt-0.5 text-xs text-slate-400">Используется в тексте</p>
+                  ) : null}
+                </div>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {!pdfMaterial && isImageAttachmentFormat(att.format) ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[#2E7D32]"
+                      onClick={() => markdownEditorRef.current?.insertAttachmentImage(att.id, att.name)}
+                    >
+                      Вставить в текст
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={embeddedAttachmentIds.has(att.id)}
+                    className={embeddedAttachmentIds.has(att.id) ? "cursor-not-allowed opacity-50" : undefined}
+                    onClick={() => void handleDeleteAttachment(att.id)}
+                  >
+                    <Trash2 size={14} color="#DC2626" />
+                  </button>
+                </div>
               </div>
             ))
           )}

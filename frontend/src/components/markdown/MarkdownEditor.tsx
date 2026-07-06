@@ -1,13 +1,21 @@
-import { Bold, Hash, Italic, List, ListOrdered, Underline } from "lucide-react";
-import { useRef } from "react";
+import { Bold, Hash, ImagePlus, Italic, List, ListOrdered, Underline } from "lucide-react";
+import { forwardRef, useImperativeHandle, useRef } from "react";
 
+import { isImageAttachmentFormat } from "../../utils/knowledgeMaterials";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { sanitizeAttachmentAltText } from "./markdownUtils";
+
+export interface MarkdownEditorHandle {
+  insertAttachmentImage: (attachmentId: number, alt: string) => void;
+}
 
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
   rows?: number;
   placeholder?: string;
+  attachmentUrls?: Record<number, string>;
+  onUploadImage?: (file: File) => Promise<{ id: number; name: string } | null>;
 }
 
 type ToolbarAction = "bold" | "italic" | "underline" | "heading" | "bullet" | "numbered";
@@ -47,13 +55,52 @@ function prefixSelectedLines(
   };
 }
 
-export function MarkdownEditor({
-  value,
-  onChange,
-  rows = 12,
-  placeholder = "Содержание (Markdown)",
-}: MarkdownEditorProps) {
+function insertAtCursor(
+  value: string,
+  start: number,
+  end: number,
+  insertion: string,
+) {
+  const nextValue = `${value.slice(0, start)}${insertion}${value.slice(end)}`;
+  const cursor = start + insertion.length;
+  return {
+    nextValue,
+    selectionStart: cursor,
+    selectionEnd: cursor,
+  };
+}
+
+export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(function MarkdownEditor(
+  {
+    value,
+    onChange,
+    rows = 12,
+    placeholder = "Содержание (Markdown)",
+    attachmentUrls = {},
+    onUploadImage,
+  },
+  ref,
+) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const applyResult = (result: { nextValue: string; selectionStart: number; selectionEnd: number }) => {
+    onChange(result.nextValue);
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return;
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(result.selectionStart, result.selectionEnd);
+    });
+  };
+
+  const insertAttachmentImage = (attachmentId: number, alt: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const markdown = `![${sanitizeAttachmentAltText(alt)}](attachment:${attachmentId})`;
+    applyResult(insertAtCursor(value, textarea.selectionStart, textarea.selectionEnd, markdown));
+  };
+
+  useImperativeHandle(ref, () => ({ insertAttachmentImage }), [value]);
 
   const applyAction = (action: ToolbarAction) => {
     const textarea = textareaRef.current;
@@ -77,7 +124,7 @@ export function MarkdownEditor({
         result = withSelection(value, start, end, "*");
         break;
       case "underline":
-        result = withSelection(value, start, end, "++");
+        result = withSelection(value, start, end, "<u>", "</u>");
         break;
       case "heading":
         result = prefixSelectedLines(value, start, end, () => "## ");
@@ -91,13 +138,18 @@ export function MarkdownEditor({
     }
 
     if (!result) return;
+    applyResult(result);
+  };
 
-    onChange(result.nextValue);
-    requestAnimationFrame(() => {
-      if (!textareaRef.current) return;
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(result.selectionStart, result.selectionEnd);
-    });
+  const handleImageUpload = async (file: File) => {
+    if (!onUploadImage) return;
+    const extension = file.name.split(".").pop() ?? "";
+    if (!(file.type.startsWith("image/") || isImageAttachmentFormat(extension))) {
+      return;
+    }
+    const attachment = await onUploadImage(file);
+    if (!attachment) return;
+    insertAttachmentImage(attachment.id, attachment.name);
   };
 
   return (
@@ -113,6 +165,26 @@ export function MarkdownEditor({
           onClick={() => applyAction("numbered")}
           icon={<ListOrdered size={14} />}
         />
+        {onUploadImage ? (
+          <>
+            <ToolbarButton
+              label="Изображение"
+              onClick={() => imageInputRef.current?.click()}
+              icon={<ImagePlus size={14} />}
+            />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleImageUpload(file);
+                event.target.value = "";
+              }}
+            />
+          </>
+        ) : null}
       </div>
 
       <textarea
@@ -129,13 +201,14 @@ export function MarkdownEditor({
         <div className="rounded-lg bg-white p-3 sm:p-4">
           <MarkdownRenderer
             content={value}
+            attachmentUrls={attachmentUrls}
             emptyFallback={<p className="text-sm text-slate-400">Введите текст, чтобы увидеть предпросмотр.</p>}
           />
         </div>
       </div>
     </div>
   );
-}
+});
 
 function ToolbarButton({
   label,

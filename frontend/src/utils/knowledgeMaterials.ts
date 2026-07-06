@@ -27,6 +27,12 @@ const MATERIAL_ATTACHMENT_ACCEPT_PARTS = [
 export const MATERIAL_ATTACHMENT_ACCEPT = MATERIAL_ATTACHMENT_ACCEPT_PARTS.join(",");
 export const PDF_ONLY_ATTACHMENT_ACCEPT = ".pdf,application/pdf";
 
+const IMAGE_ATTACHMENT_FORMATS = new Set(["jpg", "jpeg", "png", "webp"]);
+
+export function isImageAttachmentFormat(format: string): boolean {
+  return IMAGE_ATTACHMENT_FORMATS.has(format.toLowerCase());
+}
+
 export function getSinglePdfAttachment(
   attachments: Pick<MaterialAttachment, "format">[],
 ): Pick<MaterialAttachment, "format"> | null {

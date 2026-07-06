@@ -4,11 +4,12 @@ import { CheckCircle, ExternalLink, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "../../components/AppHeader";
 import { MarkdownRenderer } from "../../components/markdown/MarkdownRenderer";
+import { extractEmbeddedAttachmentIds } from "../../components/markdown/markdownUtils";
 import { PageLoader } from "../../components/PageLoader";
 import { APIError } from "../../api/APIClient";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { Material } from "../../types/knowledge";
-import { isPdfOnlyMaterial } from "../../utils/knowledgeMaterials";
+import { isPdfOnlyMaterial, isImageAttachmentFormat } from "../../utils/knowledgeMaterials";
 
 export default function MaterialPage() {
   const { sectionId, materialId } = useParams<{ sectionId: string; materialId: string }>();
@@ -110,6 +111,8 @@ export default function MaterialPage() {
     );
   }
 
+  const embeddedAttachmentIds = new Set(extractEmbeddedAttachmentIds(material.text));
+
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <AppHeader title={material.name} showBack white />
@@ -170,6 +173,7 @@ export default function MaterialPage() {
             <MarkdownRenderer
               content={material.text}
               className="space-y-4"
+              attachmentUrls={attachmentUrls}
               emptyFallback={
                 <p style={{ color: "#64748B", fontSize: 14 }}>
                   Контент для этого материала появится позже.
@@ -210,7 +214,10 @@ export default function MaterialPage() {
                     <p style={{ color: "#1E293B", fontSize: 13, fontWeight: 500 }} className="truncate">
                       {a.name}
                     </p>
-                    <p style={{ color: "#94A3B8", fontSize: 11 }}>{a.format.toUpperCase()}</p>
+                    <p style={{ color: "#94A3B8", fontSize: 11 }}>
+                      {a.format.toUpperCase()}
+                      {embeddedAttachmentIds.has(a.id) ? " · используется в тексте" : ""}
+                    </p>
                   </div>
                   {attachmentUrls[a.id] && (
                     <a
@@ -230,14 +237,18 @@ export default function MaterialPage() {
           </div>
         )}
 
-        {material.attachments.some((item) => ["jpg", "jpeg", "png", "webp"].includes(item.format.toLowerCase())) && (
+        {material.attachments.some(
+          (item) => isImageAttachmentFormat(item.format) && !embeddedAttachmentIds.has(item.id),
+        ) && (
           <div className="px-4 pb-4">
             <p style={{ color: "#64748B", fontSize: 13, marginBottom: 10, fontWeight: 600 }}>
               Изображения
             </p>
             <div className="grid grid-cols-1 gap-3">
               {material.attachments
-                .filter((item) => ["jpg", "jpeg", "png", "webp"].includes(item.format.toLowerCase()))
+                .filter(
+                  (item) => isImageAttachmentFormat(item.format) && !embeddedAttachmentIds.has(item.id),
+                )
                 .map((item) =>
                   attachmentUrls[item.id] ? (
                     <a
