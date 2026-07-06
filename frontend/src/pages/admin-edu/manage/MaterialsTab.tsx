@@ -3,15 +3,24 @@ import { FileText, Plus, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { KnowledgeAPI } from "../../../api/KnowledgeAPI";
-import { MarkdownEditor } from "../../../components/markdown/MarkdownEditor";
+import { MarkdownEditor, type MarkdownEditorHandle } from "../../../components/markdown/MarkdownEditor";
+import { extractEmbeddedAttachmentIds } from "../../../components/markdown/markdownUtils";
 import type { Material } from "../../../types/knowledge";
 import { getErrorMessage } from "../../../utils/errors";
 import {
   isPdfOnlyMaterial,
+  isImageAttachmentFormat,
   MATERIAL_ATTACHMENT_ACCEPT,
   PDF_ONLY_ATTACHMENT_ACCEPT,
 } from "../../../utils/knowledgeMaterials";
 import { ConfirmDialog } from "./ConfirmDialog";
+
+interface PendingCreateImageAttachment {
+  tempId: number;
+  file: File;
+  url: string;
+  name: string;
+}
 
 export function MaterialsTab() {
   const navigate = useNavigate();
@@ -32,7 +41,11 @@ export function MaterialsTab() {
     pdfFile: null as File | null,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const createMarkdownEditorRef = useRef<MarkdownEditorHandle>(null);
   const [uploadMaterialId, setUploadMaterialId] = useState<number | null>(null);
+  const [createAttachmentUrls, setCreateAttachmentUrls] = useState<Record<number, string>>({});
+  const [pendingCreateImages, setPendingCreateImages] = useState<PendingCreateImageAttachment[]>([]);
+  const [nextTempAttachmentId, setNextTempAttachmentId] = useState(1_000_000_000);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,9 +60,24 @@ export function MaterialsTab() {
 
   const uploadTarget = uploadMaterialId === null ? null : materials.find((material) => material.id === uploadMaterialId) ?? null;
 
+  const resetCreateState = useCallback(() => {
+    setForm({ name: "", category: "", description: "", text: "", mode: "text", pdfFile: null });
+    setCreateAttachmentUrls((prev) => {
+      Object.values(prev).forEach((url) => URL.revokeObjectURL(url));
+      return {};
+    });
+    setPendingCreateImages([]);
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(createAttachmentUrls).forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [createAttachmentUrls]);
 
   const handleCreate = async () => {
     if (!form.name.trim() || !form.category.trim()) {
@@ -64,12 +92,25 @@ export function MaterialsTab() {
       toast.error("Загрузите PDF-файл");
       return;
     }
+    const embeddedAttachmentIds = extractEmbeddedAttachmentIds(form.text);
+    const pendingImageMap = new Map(pendingCreateImages.map((item) => [item.tempId, item]));
+    const invalidEmbeddedAttachmentIds = embeddedAttachmentIds.filter((attachmentId) => {
+      const pending = pendingImageMap.get(attachmentId);
+      return !pending || !isImageAttachmentFormat(pending.file.name.split(".").pop() ?? "");
+    });
+    if (invalidEmbeddedAttachmentIds.length > 0) {
+      toast.error(
+        `В тексте есть недопустимые изображения: ${invalidEmbeddedAttachmentIds.join(", ")}. ` +
+          "Используйте только изображения, добавленные через тулбар.",
+      );
+      return;
+    }
     try {
       const material = await KnowledgeAPI.createMaterial({
         name: form.name.trim(),
         category: form.category.trim(),
         description: form.description.trim() || undefined,
-        text: form.mode === "pdf" ? "" : form.text,
+        text: form.mode === "pdf" || pendingCreateImages.length > 0 ? "" : form.text,
       });
       if (form.mode === "pdf" && form.pdfFile) {
         try {
@@ -80,14 +121,46 @@ export function MaterialsTab() {
           return;
         }
       }
+      if (form.mode === "text" && pendingCreateImages.length > 0) {
+        const tempToRealAttachmentId = new Map<number, number>();
+        try {
+          for (const pendingImage of pendingCreateImages) {
+            const attachment = await KnowledgeAPI.uploadMaterialAttachment(material.id, pendingImage.file);
+            tempToRealAttachmentId.set(pendingImage.tempId, attachment.id);
+          }
+          const finalText = form.text.replace(/attachment:(\d+)/g, (match, rawId: string) => {
+            const realId = tempToRealAttachmentId.get(Number(rawId));
+            return realId ? `attachment:${realId}` : match;
+          });
+          await KnowledgeAPI.updateMaterial(material.id, { text: finalText });
+        } catch (error) {
+          toast.error(getErrorMessage(error, "Материал создан, но изображения в текст не удалось прикрепить"));
+          navigate(editMaterialPath(material.id));
+          return;
+        }
+      }
       toast.success("Материал создан");
       setShowCreate(false);
-      setForm({ name: "", category: "", description: "", text: "", mode: "text", pdfFile: null });
+      resetCreateState();
       await load();
       navigate(editMaterialPath(material.id));
     } catch (error) {
       toast.error(getErrorMessage(error, "Не удалось создать материал"));
     }
+  };
+
+  const handleCreateImageUpload = async (file: File) => {
+    const extension = file.name.split(".").pop() ?? "";
+    if (!(file.type.startsWith("image/") || isImageAttachmentFormat(extension))) {
+      toast.error("Через кнопку изображения можно добавлять только графические файлы");
+      return null;
+    }
+    const tempId = nextTempAttachmentId;
+    const url = URL.createObjectURL(file);
+    setNextTempAttachmentId((prev) => prev + 1);
+    setPendingCreateImages((prev) => [...prev, { tempId, file, url, name: file.name }]);
+    setCreateAttachmentUrls((prev) => ({ ...prev, [tempId]: url }));
+    return { id: tempId, name: file.name };
   };
 
   const handleDelete = async () => {
@@ -159,7 +232,10 @@ export function MaterialsTab() {
       />
 
       <button
-        onClick={() => setShowCreate(true)}
+        onClick={() => {
+          resetCreateState();
+          setShowCreate(true);
+        }}
         className="w-full h-11 rounded-[10px] flex items-center justify-center gap-2 bg-[#C41E3A] text-white text-sm font-semibold"
       >
         <Plus size={18} />
@@ -275,10 +351,13 @@ export function MaterialsTab() {
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-slate-500">Содержание материала</span>
                 <MarkdownEditor
+                  ref={createMarkdownEditorRef}
                   value={form.text}
                   onChange={(text) => setForm((prev) => ({ ...prev, text }))}
                   rows={8}
                   placeholder="Содержание (Markdown)"
+                  attachmentUrls={createAttachmentUrls}
+                  onUploadImage={handleCreateImageUpload}
                 />
               </label>
             ) : (
@@ -305,7 +384,10 @@ export function MaterialsTab() {
             )}
             <div className="sticky bottom-0 -mx-4 mt-2 flex flex-col gap-2 border-t border-slate-200 bg-white px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+0.25rem)] sm:static sm:mx-0 sm:border-t-0 sm:px-0 sm:pt-0 sm:pb-0 sm:flex-row">
               <button
-                onClick={() => setShowCreate(false)}
+                onClick={() => {
+                  setShowCreate(false);
+                  resetCreateState();
+                }}
                 className="h-12 shrink-0 rounded-lg bg-slate-100 px-4 text-sm font-semibold max-sm:h-14 max-sm:text-base sm:min-w-32 sm:flex-1"
               >
                 Отмена
