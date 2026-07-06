@@ -22,6 +22,7 @@ class UploadMaterialAttachmentUseCase:
         filename: str,
         content_type: str,
         payload: bytes,
+        material_mode: str | None,
         ctx: UserContext,
     ) -> MaterialAttachmentDTO | None:
         if ctx.role.value not in KB_ADMIN_ROLES:
@@ -38,7 +39,16 @@ class UploadMaterialAttachmentUseCase:
         if material is None:
             return None
 
-        is_pdf_material = not (material.text or "").strip()
+        if material_mode is not None:
+            normalized_material_mode = material_mode.strip().lower()
+            if normalized_material_mode not in {"text", "pdf"}:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Invalid material mode",
+                )
+            is_pdf_material = normalized_material_mode == "pdf"
+        else:
+            is_pdf_material = not (material.text or "").strip()
         if is_pdf_material and content_type != "application/pdf":
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

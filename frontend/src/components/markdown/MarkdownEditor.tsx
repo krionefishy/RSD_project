@@ -70,6 +70,24 @@ function insertAtCursor(
   };
 }
 
+function insertBlockAtCursor(
+  value: string,
+  start: number,
+  end: number,
+  block: string,
+) {
+  const needsLeadingBreak = start > 0 && value[start - 1] !== "\n";
+  const needsDoubleLeadingBreak = start > 1 && value[start - 1] === "\n" && value[start - 2] !== "\n";
+  const needsTrailingBreak = end < value.length && value[end] !== "\n";
+  const needsDoubleTrailingBreak =
+    end + 1 < value.length && value[end] === "\n" && value[end + 1] !== "\n";
+
+  const prefix = needsLeadingBreak ? "\n\n" : needsDoubleLeadingBreak ? "\n" : "";
+  const suffix = needsTrailingBreak ? "\n\n" : needsDoubleTrailingBreak ? "\n" : "";
+
+  return insertAtCursor(value, start, end, `${prefix}${block}${suffix}`);
+}
+
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(function MarkdownEditor(
   {
     value,
@@ -97,7 +115,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const textarea = textareaRef.current;
     if (!textarea) return;
     const markdown = `![${sanitizeAttachmentAltText(alt)}](attachment:${attachmentId})`;
-    applyResult(insertAtCursor(value, textarea.selectionStart, textarea.selectionEnd, markdown));
+    applyResult(insertBlockAtCursor(value, textarea.selectionStart, textarea.selectionEnd, markdown));
   };
 
   useImperativeHandle(ref, () => ({ insertAttachmentImage }), [value]);

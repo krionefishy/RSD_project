@@ -125,7 +125,8 @@ export default function EditMaterialPage() {
   const handleUpload = async (file: File) => {
     if (!material) return null;
     try {
-      const attachment = await KnowledgeAPI.uploadMaterialAttachment(material.id, file);
+      const materialMode = isPdfOnlyMaterial(material) ? "pdf" : "text";
+      const attachment = await KnowledgeAPI.uploadMaterialAttachment(material.id, file, materialMode);
       setMaterial((prev) =>
         prev ? { ...prev, attachments: [...prev.attachments, attachment] } : prev,
       );

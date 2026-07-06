@@ -114,7 +114,7 @@ export function MaterialsTab() {
       });
       if (form.mode === "pdf" && form.pdfFile) {
         try {
-          await KnowledgeAPI.uploadMaterialAttachment(material.id, form.pdfFile);
+          await KnowledgeAPI.uploadMaterialAttachment(material.id, form.pdfFile, "pdf");
         } catch (error) {
           toast.error(getErrorMessage(error, "Материал создан, но PDF не удалось загрузить"));
           navigate(editMaterialPath(material.id));
@@ -125,7 +125,7 @@ export function MaterialsTab() {
         const tempToRealAttachmentId = new Map<number, number>();
         try {
           for (const pendingImage of pendingCreateImages) {
-            const attachment = await KnowledgeAPI.uploadMaterialAttachment(material.id, pendingImage.file);
+            const attachment = await KnowledgeAPI.uploadMaterialAttachment(material.id, pendingImage.file, "text");
             tempToRealAttachmentId.set(pendingImage.tempId, attachment.id);
           }
           const finalText = form.text.replace(/attachment:(\d+)/g, (match, rawId: string) => {
@@ -181,7 +181,11 @@ export function MaterialsTab() {
   const handleUpload = async (file: File) => {
     if (uploadMaterialId === null) return;
     try {
-      const attachment = await KnowledgeAPI.uploadMaterialAttachment(uploadMaterialId, file);
+      const attachment = await KnowledgeAPI.uploadMaterialAttachment(
+        uploadMaterialId,
+        file,
+        uploadTarget && isPdfOnlyMaterial(uploadTarget) ? "pdf" : "text",
+      );
       setMaterials((prev) =>
         prev.map((material) =>
           material.id === uploadMaterialId

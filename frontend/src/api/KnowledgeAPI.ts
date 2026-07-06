@@ -1014,7 +1014,11 @@ class KnowledgeAPIImpl {
 
   // ============ ATTACHMENTS ============
 
-  async uploadMaterialAttachment(materialId: number, file: File): Promise<MaterialAttachment> {
+  async uploadMaterialAttachment(
+    materialId: number,
+    file: File,
+    materialMode?: "text" | "pdf",
+  ): Promise<MaterialAttachment> {
     if (isMockKB()) {
       const material = MOCK_MATERIALS[materialId];
       const attachment: MaterialAttachment = {
@@ -1027,6 +1031,9 @@ class KnowledgeAPIImpl {
     }
     const formData = new FormData();
     formData.append("file", file);
+    if (materialMode) {
+      formData.append("material_mode", materialMode);
+    }
 
     const response = await apiClient.post<MaterialAttachmentDTO>(`/admin/education/materials/${materialId}/attachments`, formData);
     return mapAttachment(response);

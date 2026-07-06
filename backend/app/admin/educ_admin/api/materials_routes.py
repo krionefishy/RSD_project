@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
 
 from app.admin.educ_admin.domain import CreateMaterialRequest, UpdateMaterialRequest
 from app.admin.educ_admin.usecases.materials.create_material_usecase import CreateMaterialUseCase
@@ -100,6 +100,7 @@ async def delete_material(
 async def upload_material_attachment(
     material_id: int,
     file: UploadFile,
+    material_mode: Annotated[str | None, Form()] = None,
     auth: Annotated[AuthContext, Depends(require_education_admin)],
     usecase: FromDishka[UploadMaterialAttachmentUseCase],
 ) -> MaterialAttachmentDTO:
@@ -113,6 +114,7 @@ async def upload_material_attachment(
         filename=file.filename or "attachment",
         content_type=file.content_type or "application/octet-stream",
         payload=payload,
+        material_mode=material_mode,
         ctx=_ctx(auth),
     )
     if result is None:
