@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { KnowledgeAPI } from "../../api/KnowledgeAPI";
 import { MarkdownEditor, type MarkdownEditorHandle } from "../../components/markdown/MarkdownEditor";
 import { extractEmbeddedAttachmentIds } from "../../components/markdown/markdownUtils";
+import { usePrefersTouch } from "../../hooks/usePrefersTouch";
 import type { Material } from "../../types/knowledge";
 import { getErrorMessage } from "../../utils/errors";
 import {
@@ -32,6 +33,7 @@ export default function EditMaterialPage() {
   const [deleting, setDeleting] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [attachmentUrls, setAttachmentUrls] = useState<Record<number, string>>({});
+  const prefersTouch = usePrefersTouch();
 
   const [form, setForm] = useState({ name: "", category: "", description: "", text: "" });
 
@@ -354,12 +356,33 @@ export default function EditMaterialPage() {
                 Открыть отдельно
               </a>
             </div>
-            <iframe
-              src={pdfUrl}
-              title={material.name}
-              className="w-full rounded-lg"
-              style={{ height: "min(70vh, 680px)", border: "1px solid #E2E8F0" }}
-            />
+            {prefersTouch ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+                <p className="text-sm font-medium text-slate-700">
+                  На телефоне PDF лучше проверять во внешнем просмотрщике
+                </p>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Мобильные браузеры часто ограничивают встроенный просмотр PDF первой страницей и
+                  некорректно масштабируют документ.
+                </p>
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[#2E7D32] px-4 text-sm font-semibold text-white"
+                >
+                  <ExternalLink size={14} />
+                  Открыть PDF
+                </a>
+              </div>
+            ) : (
+              <iframe
+                src={pdfUrl}
+                title={material.name}
+                className="w-full rounded-lg"
+                style={{ height: "min(82vh, 960px)", border: "1px solid #E2E8F0" }}
+              />
+            )}
           </div>
         )}
       </div>

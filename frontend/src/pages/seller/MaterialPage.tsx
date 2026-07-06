@@ -4,6 +4,7 @@ import { CheckCircle, ExternalLink, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { AppHeader } from "../../components/AppHeader";
 import { MarkdownRenderer } from "../../components/markdown/MarkdownRenderer";
+import { usePrefersTouch } from "../../hooks/usePrefersTouch";
 import { extractEmbeddedAttachmentIds } from "../../components/markdown/markdownUtils";
 import { PageLoader } from "../../components/PageLoader";
 import { APIError } from "../../api/APIClient";
@@ -23,6 +24,7 @@ export default function MaterialPage() {
   const [submitting, setSubmitting] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [attachmentUrls, setAttachmentUrls] = useState<Record<number, string>>({});
+  const prefersTouch = usePrefersTouch();
 
   useEffect(() => {
     if (!Number.isFinite(courseId) || !Number.isFinite(materialIdNum)) {
@@ -147,12 +149,35 @@ export default function MaterialPage() {
                 className="rounded-2xl overflow-hidden"
                 style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}
               >
-                <iframe
-                  src={pdfUrl}
-                  title={material.name}
-                  className="w-full"
-                  style={{ height: "70vh", border: "none" }}
-                />
+                {prefersTouch ? (
+                  <div className="px-4 py-5">
+                    <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+                      PDF лучше открывается в системном просмотрщике телефона
+                    </p>
+                    <p style={{ color: "#64748B", fontSize: 13, lineHeight: 1.5, marginBottom: 14 }}>
+                      Во встроенном окне мобильные браузеры часто показывают только первую страницу или
+                      обрезают документ. Откройте PDF отдельно, чтобы листать и масштабировать его без
+                      ограничений.
+                    </p>
+                    <a
+                      href={pdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] text-sm font-semibold"
+                      style={{ background: "#22C55E", color: "#fff" }}
+                    >
+                      <ExternalLink size={16} />
+                      Открыть PDF
+                    </a>
+                  </div>
+                ) : (
+                  <iframe
+                    src={pdfUrl}
+                    title={material.name}
+                    className="w-full"
+                    style={{ height: "min(82vh, 960px)", border: "none" }}
+                  />
+                )}
                 <div className="px-4 py-3 border-t border-slate-100">
                   <a
                     href={pdfUrl}
