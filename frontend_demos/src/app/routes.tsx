@@ -32,6 +32,7 @@ import ManagerReportsPage from "../pages/manager/ReportsPage";
 import EmployeesPage from "../pages/manager/EmployeesPage";
 import ManagerEmployeeDetailPage from "../pages/manager/EmployeeDetailPage";
 import ManagerProfilePage from "../pages/manager/ProfilePage";
+import ManagerInstructionsPage from "../pages/manager/InstructionsPage";
 
 // Pages - Admin Edu
 import AdminEduDashboardPage from "../pages/admin-edu/DashboardPage";
@@ -40,6 +41,8 @@ import CourseEnrollmentsPage from "../pages/admin-edu/CourseEnrollmentsPage";
 import AdminEduAssignmentsPage from "../pages/admin-edu/AssignmentsPage";
 import AdminEduReportsPage from "../pages/admin-edu/ReportsPage";
 import EditMaterialPage from "../pages/admin-edu/EditMaterialPage";
+import AdminEduProfilePage from "../pages/admin-edu/ProfilePage";
+import AdminEduInstructionsPage from "../pages/admin-edu/InstructionsPage";
 
 // Pages - Admin Sales
 import AdminSalesDashboardPage from "../pages/admin-sales/DashboardPage";
@@ -54,6 +57,7 @@ import CreateEmployeePage from "../pages/admin-personnel/CreateEmployeePage";
 import AdminEmployeeDetailPage from "../pages/admin-personnel/EmployeeDetailPage";
 import AdminPersonnelProfilePage from "../pages/admin-personnel/ProfilePage";
 import TimesheetsPage from "../pages/admin-personnel/TimesheetsPage";
+import AdminPersonnelInstructionsPage from "../pages/admin-personnel/InstructionsPage";
 
 // Pages - Admin PO
 import AdminPODashboardPage from "../pages/admin-po/DashboardPage";
@@ -66,6 +70,7 @@ import AdminPOSalesPreviewPage from "../pages/admin-po/preview/SalesPreviewPage"
 // Pages - SuperAdmin
 import SuperAdminDashboardPage from "../pages/superadmin/DashboardPage";
 import SuperAdminProfilePage from "../pages/superadmin/ProfilePage";
+import SuperAdminInstructionsPage from "../pages/superadmin/InstructionsPage";
 import BlocksListPage from "../pages/admin-personnel/BlocksListPage";
 import BlockDetailPage from "../pages/admin-personnel/BlockDetailPage";
 import LocationsListPage from "../pages/admin-personnel/LocationsListPage";
@@ -111,6 +116,7 @@ export const router = createBrowserRouter([
       { path: "locations", element: <LocationsListPage /> },
       { path: "locations/:locationId", element: <LocationDetailPage /> },
       { path: "profile", element: <ManagerProfilePage /> },
+      { path: "profile/instructions", element: <ManagerInstructionsPage /> },
     ],
   },
 
@@ -128,6 +134,8 @@ export const router = createBrowserRouter([
       { path: "manage/edit-material/:materialId", element: <EditMaterialPage /> },
       { path: "assignments", element: <AdminEduAssignmentsPage /> },
       { path: "reports", element: <AdminEduReportsPage /> },
+      { path: "profile", element: <AdminEduProfilePage /> },
+      { path: "profile/instructions", element: <AdminEduInstructionsPage /> },
     ],
   },
 
@@ -164,6 +172,7 @@ export const router = createBrowserRouter([
       { path: "locations/:locationId", element: <LocationDetailPage /> },
       { path: "timesheets", element: <TimesheetsPage /> },
       { path: "profile", element: <AdminPersonnelProfilePage /> },
+      { path: "profile/instructions", element: <AdminPersonnelInstructionsPage /> },
     ],
   },
 
@@ -201,6 +210,7 @@ export const router = createBrowserRouter([
       { path: "structure/locations", element: <LocationsListPage /> },
       { path: "structure/locations/:locationId", element: <LocationDetailPage /> },
       { path: "profile", element: <SuperAdminProfilePage /> },
+      { path: "profile/instructions", element: <SuperAdminInstructionsPage /> },
     ],
   },
 

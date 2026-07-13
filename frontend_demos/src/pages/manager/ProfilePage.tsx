@@ -4,6 +4,8 @@ import { LogOut, Phone } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { ScreenBackButton } from "../../components/ScreenBackButton";
+import { InstructionsProfileButton } from "../../components/instructions/InstructionsProfileButton";
+import { managerInstructions } from "../../data/adminInstructions";
 
 export default function ManagerProfilePage() {
   const { user, logout } = useApp();
@@ -38,6 +40,7 @@ export default function ManagerProfilePage() {
             <p style={{ color: "#1E293B", fontSize: 14, fontWeight: 500 }}>{user.phone || "Не указан"}</p>
           </div>
         </div>
+        <InstructionsProfileButton to="/manager/profile/instructions" count={managerInstructions.length} />
         <button onClick={() => { logout(); navigate("/"); }} className="w-full h-12 rounded-[10px] flex items-center justify-center gap-2" style={{ background: "#FEF2F2", color: "#DC2626", fontSize: 14, fontWeight: 600 }}>
           <LogOut size={18} />
           Выйти из аккаунта

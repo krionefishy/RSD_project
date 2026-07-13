@@ -4,12 +4,20 @@ import { useApp } from "../../context/AppContext";
 import { Avatar } from "../Avatar";
 import { ScreenBackButton } from "../ScreenBackButton";
 import { ROLE_LABELS } from "../../constants/roles";
+import { InstructionsProfileButton } from "../instructions/InstructionsProfileButton";
 interface AccountProfileViewProps {
   backTo: string;
   roleLabel?: string;
+  instructionsTo?: string;
+  instructionsCount?: number;
 }
 
-export function AccountProfileView({ backTo, roleLabel }: AccountProfileViewProps) {
+export function AccountProfileView({
+  backTo,
+  roleLabel,
+  instructionsTo,
+  instructionsCount = 0,
+}: AccountProfileViewProps) {
   const { user, logout } = useApp();
   const navigate = useNavigate();
   if (!user) return null;
@@ -49,6 +57,8 @@ export function AccountProfileView({ backTo, roleLabel }: AccountProfileViewProp
             </div>
           </div>
         </div>
+
+        {instructionsTo && <InstructionsProfileButton to={instructionsTo} count={instructionsCount} />}
 
         <button
           type="button"

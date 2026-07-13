@@ -29,6 +29,7 @@ export function AppHeader({ title, showBack = false, backTo, rightAction, white 
             onClick={handleBack}
             className="mr-3 w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#F1F5F9] active:bg-[#E2E8F0] transition-colors cursor-pointer"
             type="button"
+            aria-label="Назад"
           >
             <ChevronLeft size={24} color="#1E293B" />
           </button>
@@ -52,6 +53,7 @@ export function AppHeader({ title, showBack = false, backTo, rightAction, white 
           className="mr-3 w-10 h-10 flex items-center justify-center rounded-full cursor-pointer hover:bg-white/20 transition-colors"
           style={{ background: "rgba(255,255,255,0.15)" }}
           type="button"
+          aria-label="Назад"
         >
           <ChevronLeft size={24} color="#fff" />
         </button>

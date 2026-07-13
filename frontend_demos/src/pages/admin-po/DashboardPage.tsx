@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { Avatar } from "../../components/Avatar";
 import { accounts } from "../../mock/mockData";
 import { showDemoActionToast } from "../../utils/demoToast";
+import { AdminPOInstructionsPanel } from "../../components/instructions/AdminPOInstructionsPanel";
 
 const MODULES = [
   {
@@ -141,6 +142,8 @@ export default function AdminPODashboardPage() {
             ))}
           </div>
         </div>
+
+        <AdminPOInstructionsPanel />
 
         <div className="rounded-2xl p-4" style={{ background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <p style={{ color: "#1E293B", fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Учётные записи</p>

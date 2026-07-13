@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { LayoutDashboard, FolderOpen, Users, FileText } from "lucide-react";
+import { LayoutDashboard, FolderOpen, Users, FileText, User } from "lucide-react";
 import { Demo1DesignBadge } from "../components/Demo1DesignBadge";
 
 const BOTTOM_MENU_HEIGHT = 64;
@@ -9,6 +9,7 @@ const TABS = [
   { path: "/admin-edu/manage", label: "Контент", Icon: FolderOpen },
   { path: "/admin-edu/assignments", label: "Назначения", Icon: Users },
   { path: "/admin-edu/reports", label: "Отчёты", Icon: FileText },
+  { path: "/admin-edu/profile", label: "Профиль", Icon: User },
 ];
 
 export default function AdminEduTemplate() {
