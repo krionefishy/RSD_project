@@ -1,10 +1,11 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { LayoutDashboard, Building, User } from "lucide-react";
+import { LayoutDashboard, Building, User, UserCog } from "lucide-react";
 
 const BOTTOM_MENU_HEIGHT = 64;
 
 const TABS = [
   { path: "/superadmin", label: "Обзор", Icon: LayoutDashboard, exact: true },
+  { path: "/superadmin/accounts", label: "Аккаунты", Icon: UserCog },
   { path: "/superadmin/structure", label: "Структура", Icon: Building },
   { path: "/superadmin/profile", label: "Профиль", Icon: User },
 ];

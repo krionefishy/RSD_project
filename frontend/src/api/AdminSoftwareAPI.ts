@@ -9,6 +9,7 @@ export interface CreateUserData {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  position?: string;
   blockId?: string;
   locationId?: string;
 }
@@ -30,6 +31,7 @@ interface CreateUserDTO {
   first_name?: string;
   last_name?: string;
   phone?: string;
+  position?: string;
   block_id?: string;
   location_id?: string;
 }
@@ -106,6 +108,7 @@ class AdminSoftwareAPIImpl {
       first_name: data.firstName,
       last_name: data.lastName,
       phone: data.phone,
+      position: data.position,
       block_id: data.blockId,
       location_id: data.locationId,
     };

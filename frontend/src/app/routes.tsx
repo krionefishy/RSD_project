@@ -198,6 +198,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <SuperAdminDashboardPage /> },
+      { path: "accounts", element: <AccountsPage /> },
       { path: "structure", element: <BlocksListPage /> },
       { path: "structure/blocks/:blockId", element: <BlockDetailPage /> },
       { path: "structure/locations", element: <LocationsListPage /> },
