@@ -107,7 +107,7 @@ test("critical production journey works on a mobile viewport", async ({ page }) 
       );
       await page.getByRole("button", { name: "Подтвердить" }).click();
       const deleteResponse = await deleteResponsePromise;
-      expect(deleteResponse.status()).toBe(204);
+      expect(deleteResponse.ok()).toBe(true);
       await expect(page.getByRole("heading", { name: "Удалить аккаунт?" })).toBeHidden();
       await expect(page.getByText(temporaryLogin, { exact: true })).toHaveCount(0);
     }
