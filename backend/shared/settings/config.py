@@ -55,6 +55,7 @@ class RedisConfig:
     host: str
     port: int = 6379
     db: int = 0
+    password: str | None = None
 
 
 @dataclass(frozen=True)
@@ -169,6 +170,19 @@ def _get_any(data: dict, *keys: str, default=None):
     return default
 
 
+def _load_rsa_private_key(jwt_data: dict) -> str | None:
+    inline_key = os.getenv("AUTH_RSA_PRIVATE_KEY_PEM") or jwt_data.get(
+        "rsa_private_key_pem"
+    )
+    if inline_key:
+        return inline_key
+
+    key_path = os.getenv("AUTH_RSA_PRIVATE_KEY_PEM_FILE")
+    if not key_path:
+        return None
+    return Path(key_path).read_text(encoding="utf-8")
+
+
 def _parse_database(db_data: dict, *, url_override: str | None = None) -> DatabaseConfig:
     return DatabaseConfig(
         host=db_data.get("host", "localhost"),
@@ -251,7 +265,7 @@ def load_settings(
         algorithm=jwt_data.get("algorithm", "HS256"),
         access_expire_seconds=int(jwt_data.get("access_expire_seconds", 900)),
         refresh_expire_seconds=int(jwt_data.get("refresh_expire_seconds", 259200)),
-        rsa_private_key_pem=jwt_data.get("rsa_private_key_pem"),
+        rsa_private_key_pem=_load_rsa_private_key(jwt_data),
         rsa_key_size=int(jwt_data.get("rsa_key_size", 2048)),
     )
 
@@ -261,6 +275,7 @@ def load_settings(
         host=redis_data.get("host", "localhost"),
         port=int(redis_data.get("port", 6379)),
         db=int(redis_data.get("db", 0)),
+        password=redis_data.get("password") or None,
     )
     kafka = KafkaConfig(
         bootstrap_servers=kafka_data.get("bootstrap_servers", "localhost:9092"),

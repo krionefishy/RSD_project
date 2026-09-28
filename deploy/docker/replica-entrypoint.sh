@@ -1,13 +1,14 @@
 #!/bin/sh
 set -eu
 
+primary_host="${PRIMARY_HOST:-db}"
+primary_port="${PRIMARY_PORT:-5432}"
+replication_user="${POSTGRES_REPLICATION_USER:-replicator}"
+replication_password="${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}"
+
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
     rm -rf "$PGDATA"/*
-    export PGPASSWORD="${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}"
-    primary_host="${PRIMARY_HOST:-db}"
-    primary_port="${PRIMARY_PORT:-5432}"
-    replication_user="${POSTGRES_REPLICATION_USER:-replicator}"
-    replication_password="${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}"
+    export PGPASSWORD="$replication_password"
 
     until pg_isready -h "$primary_host" -p "$primary_port" -U "$replication_user"; do
         sleep 2
@@ -21,11 +22,14 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
         -Xs \
         -P
     touch "$PGDATA/standby.signal"
-    cat > "$PGDATA/postgresql.auto.conf" <<EOF
-primary_conninfo = 'host=$primary_host port=$primary_port user=$replication_user password=$replication_password application_name=${REPLICA_APPLICATION_NAME:-main_db_replica}'
-EOF
     chmod 700 "$PGDATA"
 fi
+
+# Refresh credentials on every start so replication password rotation does not
+# require rebuilding the replica volume.
+cat > "$PGDATA/postgresql.auto.conf" <<EOF
+primary_conninfo = 'host=$primary_host port=$primary_port user=$replication_user password=$replication_password application_name=${REPLICA_APPLICATION_NAME:-main_db_replica}'
+EOF
 
 exec docker-entrypoint.sh postgres \
     -c hot_standby=on \

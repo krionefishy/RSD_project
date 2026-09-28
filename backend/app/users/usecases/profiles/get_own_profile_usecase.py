@@ -1,16 +1,16 @@
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from storage.s3.client import S3Client
 
 from app.auth.deps import AuthContext
 from app.users.dto import UserProfileDTO
 from app.users.profile_errors import ProfileForbiddenError, ProfileNotFoundError
 from app.users.profile_mapper import load_user_for_profile, map_user_profile
-from storage.s3.client import S3Client
 
 
 class GetOwnProfileUseCase:
-    def __init__(self, session: AsyncSession, s3_client: S3Client):
+    def __init__(self, session: AsyncSession, s3_client: S3Client = None):  # type: ignore[assignment]
         self.session = session
         self.s3_client = s3_client
 

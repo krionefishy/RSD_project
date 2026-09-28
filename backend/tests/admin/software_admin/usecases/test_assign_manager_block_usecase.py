@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin.software_admin.usecases.assign_manager_block_usecase import AssignManagerBlockUseCase
@@ -14,11 +13,10 @@ class TestAssignManagerBlockUseCase:
         db_session: AsyncSession,
         builder: Builder,
     ) -> None:
-        manager, _, _ = await builder.build_manager_with_block(
-            user_kwargs={
-                "external_system_id": "manager_assign_test",
-                "first_name": "John",
-            },
+        manager = await builder.build_user(
+            external_system_id="manager_assign_test",
+            first_name="John",
+            role=UserRole.MANAGER,
         )
         new_block = await builder.build_block(name="New Block")
         usecase = AssignManagerBlockUseCase(db_session)

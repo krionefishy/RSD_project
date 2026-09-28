@@ -1,0 +1,17 @@
+.git
+.github
+.idea
+.vscode
+.cursor
+.venv
+**/venv
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+*.pyc
+*.log
+.DS_Store
+deploy/certbot
+backend/shared/settings/config.production.yaml

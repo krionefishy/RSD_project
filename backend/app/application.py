@@ -6,8 +6,6 @@ from dishka import make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.api.router import api_router
 from shared.di.providers import ALL_PROVIDERS
 from shared.kafka_streams.kafka import start_kafka, stop_kafka
 from shared.kafka_streams.producer import KafkaProducerWrapper
@@ -16,6 +14,8 @@ from shared.settings.config import Settings, default_config_path, load_settings
 from storage.pg.database import Database
 from storage.redis.client import RedisClient
 from storage.s3.client import S3Client
+
+from app.api.router import api_router
 
 
 class Application:
@@ -33,6 +33,7 @@ class Application:
             host=self.settings.redis.host,
             port=self.settings.redis.port,
             db=self.settings.redis.db,
+            password=self.settings.redis.password,
         )
         self.s3_client: S3Client | None = None
         self.kafka_producer = KafkaProducerWrapper(None)

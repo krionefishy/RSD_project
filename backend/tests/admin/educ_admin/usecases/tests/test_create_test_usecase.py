@@ -12,13 +12,16 @@ class TestCreateTestUseCase:
     async def test_creates_test_when_education_admin(
         self,
         db_session: AsyncSession,
+        builder: Builder,
         education_admin: UserModel,
     ) -> None:
+        course = await builder.build_course(name="Safety Course")
         result = await CreateTestUseCase(db_session).execute(
             CreateTestRequest(
                 name="Safety Quiz",
                 category="compliance",
                 is_final=True,
+                course_id=course.id,
                 pass_score_percent=80,
             ),
             admin_ctx(education_admin),

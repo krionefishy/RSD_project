@@ -1,5 +1,4 @@
-from datetime import UTC, datetime, timezone
-from typing import Optional
+from datetime import datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -14,7 +13,7 @@ class AssignManagerBlockUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def execute(self, manager_id, block_id: int) -> Optional[ManagerBlockDTO]:
+    async def execute(self, manager_id, block_id: int) -> ManagerBlockDTO | None:
         user_result = await self.session.execute(
             select(UserModel).where(UserModel.id == manager_id)
         )
@@ -60,7 +59,7 @@ class AssignManagerBlockUseCase:
         assignment = ManagerBlockModel(
             manager_id=manager_id,
             block_id=block_id,
-            assigned_at=datetime.now(UTC),
+            assigned_at=datetime.now(),
         )
         self.session.add(assignment)
         await self.session.commit()

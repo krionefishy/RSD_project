@@ -22,8 +22,8 @@ class UploadMaterialAttachmentUseCase:
         filename: str,
         content_type: str,
         payload: bytes,
-        material_mode: str | None,
         ctx: UserContext,
+        material_mode: str | None = None,
     ) -> MaterialAttachmentDTO | None:
         if ctx.role.value not in KB_ADMIN_ROLES:
             return None

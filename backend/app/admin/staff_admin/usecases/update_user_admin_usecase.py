@@ -1,5 +1,4 @@
-from datetime import UTC, datetime, timezone
-from typing import Optional
+from datetime import datetime
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +15,7 @@ class UpdateUserAdminUseCase:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def execute(self, user_id, request: UserAdminUpdate, ctx: AuthContext) -> Optional[UserDTO]:
+    async def execute(self, user_id, request: UserAdminUpdate, ctx: AuthContext) -> UserDTO | None:
         user_result = await self.session.execute(
             select(UserModel).where(UserModel.id == user_id)
         )
@@ -75,12 +74,12 @@ class UpdateUserAdminUseCase:
                 assignment = UserLocationModel(
                     user_id=user_id,
                     location_id=request.location_id,
-                    assigned_at=datetime.now(UTC),
+                    assigned_at=datetime.now(),
                 )
                 self.session.add(assignment)
             else:
                 assignment.location_id = request.location_id
-                assignment.assigned_at = datetime.now(UTC)
+                assignment.assigned_at = datetime.now()
 
         await self.session.commit()
         await self.session.refresh(user)

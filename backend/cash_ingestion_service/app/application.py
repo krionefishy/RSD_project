@@ -31,6 +31,7 @@ class Application:
             host=self.settings.redis.host,
             port=self.settings.redis.port,
             db=self.settings.redis.db,
+            password=self.settings.redis.password,
         )
         self.s3_client: S3Client | None = None
         self.kafka_producer = KafkaProducerWrapper(None)

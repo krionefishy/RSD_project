@@ -1,10 +1,10 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
 from sqlalchemy import case, delete, distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.knowledge_base.db_models import CourseUserModel
+from app.knowledge_base.db_models import UserCourseTestModel
 from app.locations.db_models import BlockLocationModel, BlockMemberModel
 from app.reports.db_models import RatingSnapshotItemModel, RatingSnapshotModel
 from app.users.db_models import UserModel, UserRole
@@ -23,19 +23,23 @@ class CalculateLearningRatingUseCase:
     ) -> RatingSnapshotModel:
         aggregates = (
             select(
-                CourseUserModel.user_id,
-                func.sum(func.coalesce(CourseUserModel.user_points_by_course, 0)).label("total_points"),
-                func.count(distinct(CourseUserModel.course_id)).label("course_count"),
+                UserCourseTestModel.user_id,
+                func.sum(func.coalesce(UserCourseTestModel.score, 0)).label("total_points"),
+                func.count(distinct(UserCourseTestModel.course_id)).label("course_count"),
                 func.count(
                     distinct(
                         case(
-                            (CourseUserModel.is_course_completed_successfully.is_(True), CourseUserModel.course_id),
+                            (UserCourseTestModel.is_passed.is_(True), UserCourseTestModel.course_id),
                             else_=None,
                         )
                     )
                 ).label("completed_count"),
             )
-            .group_by(CourseUserModel.user_id)
+            .where(
+                UserCourseTestModel.completed_at >= datetime.combine(period_from, time.min),
+                UserCourseTestModel.completed_at <= datetime.combine(period_to, time.max),
+            )
+            .group_by(UserCourseTestModel.user_id)
         )
 
         eligible_users = select(UserModel.id, UserModel.last_name, UserModel.first_name, UserModel.middle_name).where(
@@ -48,7 +52,7 @@ class CalculateLearningRatingUseCase:
                 BlockMemberModel.block_id == scope_id
             )
             eligible_users = eligible_users.where(UserModel.id.in_(scoped_users))
-            aggregates = aggregates.where(CourseUserModel.user_id.in_(scoped_users))
+            aggregates = aggregates.where(UserCourseTestModel.user_id.in_(scoped_users))
         elif scope_type == "location" and scope_id is not None:
             location_blocks = select(BlockLocationModel.block_id).where(
                 BlockLocationModel.location_id == scope_id
@@ -57,7 +61,7 @@ class CalculateLearningRatingUseCase:
                 BlockMemberModel.block_id.in_(location_blocks)
             )
             eligible_users = eligible_users.where(UserModel.id.in_(scoped_users))
-            aggregates = aggregates.where(CourseUserModel.user_id.in_(scoped_users))
+            aggregates = aggregates.where(UserCourseTestModel.user_id.in_(scoped_users))
 
         eligible_users_subquery = eligible_users.subquery()
         aggregates_subquery = aggregates.subquery()

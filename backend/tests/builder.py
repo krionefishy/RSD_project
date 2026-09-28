@@ -662,7 +662,7 @@ class Builder:
                 started_at=started_at or created_at or self._default_datetime,
                 created_at=created_at or self._default_datetime,
                 updated_at=created_at or self._default_datetime,
-                completed_at=completed_at,
+                completed_at=completed_at or (self._default_datetime if is_passed else None),
             )
             .returning(UserCourseTestModel)
         )

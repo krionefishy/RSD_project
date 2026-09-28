@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import HTTPException, status
 from shared.kafka_streams.producer import KafkaProducerWrapper
@@ -6,13 +6,13 @@ from shared.kafka_streams.storage_events import publish_s3_upload, sanitize_key_
 from shared.kafka_streams.topics import StorageTopics
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from storage.s3.client import S3Client
 
 from app.auth.deps import AuthContext
 from app.personnel.domain import ALLOWED_AVATAR_CONTENT_TYPES, MAX_AVATAR_BYTES
 from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel
 from app.users.profile_scope import ensure_staff_admin_can_manage_user
-from storage.s3.client import S3Client
 
 
 class UploadAvatarUseCase:
@@ -63,7 +63,7 @@ class UploadAvatarUseCase:
         key = f"avatars/{user_id}/{safe_name}"
 
         user.avatar_url = key
-        user.updated_at = datetime.now(UTC)
+        user.updated_at = datetime.now()
         await self.session.commit()
 
         # Publish Kafka event after DB commit so the avatar_url is persisted

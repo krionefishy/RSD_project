@@ -1,23 +1,22 @@
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from storage.s3.client import S3Client
 
 from app.locations.db_models import BlockMemberModel, ManagerBlockModel, UserLocationModel
 from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel
 from app.users.dto import BlockBriefDTO, LocationBriefDTO, UserDTO
-from storage.s3.client import S3Client
 
 
 class GetUserUseCase:
-    def __init__(self, session: AsyncSession, s3_client: S3Client):
+    def __init__(self, session: AsyncSession, s3_client: S3Client = None):  # type: ignore[assignment]
         self.session = session
         self.s3_client = s3_client
 
-    async def execute(self, user_id: UUID) -> Optional[UserDTO]:
+    async def execute(self, user_id: UUID) -> UserDTO | None:
         result = await self.session.execute(
             select(UserModel)
             .where(UserModel.id == user_id)

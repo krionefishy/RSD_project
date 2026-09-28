@@ -1,29 +1,28 @@
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from storage.s3.client import S3Client
 
 from app.locations.db_models import BlockMemberModel, ManagerBlockModel, UserLocationModel
 from app.users.avatar_url import resolve_avatar_url
 from app.users.db_models import UserModel, UserRole
 from app.users.dto import BlockBriefDTO, LocationBriefDTO, UserDTO, UsersListDTO
-from storage.s3.client import S3Client
 
 
 class ListUsersUseCase:
-    def __init__(self, session: AsyncSession, s3_client: S3Client):
+    def __init__(self, session: AsyncSession, s3_client: S3Client = None):  # type: ignore[assignment]
         self.session = session
         self.s3_client = s3_client
 
     async def execute(
         self,
         *,
-        block_id: Optional[int] = None,
-        location_id: Optional[int] = None,
-        role: Optional[str] = None,
-        is_active: Optional[bool] = None,
+        block_id: int | None = None,
+        location_id: int | None = None,
+        role: str | None = None,
+        is_active: bool | None = None,
         manager_id: UUID | None = None,
         viewer_role: str | None = None,
     ) -> UsersListDTO:

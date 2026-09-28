@@ -48,12 +48,12 @@ services:
       - "shared_preload_libraries=pg_stat_statements"
     environment:
       POSTGRES_USER: app
-      POSTGRES_PASSWORD: appsecret
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: rsd_db
       POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
-      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:?POSTGRES_REPLICATION_PASSWORD is required}
       MAIN_REPLICA_READONLY_USER: ${MAIN_REPLICA_READONLY_USER:-report_reader}
-      MAIN_REPLICA_READONLY_PASSWORD: ${MAIN_REPLICA_READONLY_PASSWORD:-reportreadersecret}
+      MAIN_REPLICA_READONLY_PASSWORD: ${MAIN_REPLICA_READONLY_PASSWORD:?MAIN_REPLICA_READONLY_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../deploy/docker/init-main-db.sh:/docker-entrypoint-initdb.d/20-init-main-db.sh:ro
@@ -73,7 +73,7 @@ services:
       PRIMARY_HOST: db
       PRIMARY_PORT: 5432
       POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replicator}
-      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-replicatorsecret}
+      POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:?POSTGRES_REPLICATION_PASSWORD is required}
       POSTGRES_SHARED_BUFFERS: ${REPLICA_POSTGRES_SHARED_BUFFERS:-256MB}
       POSTGRES_WORK_MEM: ${REPLICA_POSTGRES_WORK_MEM:-8MB}
       POSTGRES_MAINTENANCE_WORK_MEM: ${REPLICA_POSTGRES_MAINTENANCE_WORK_MEM:-128MB}
@@ -122,10 +122,10 @@ services:
       - "shared_preload_libraries=pg_stat_statements"
     environment:
       POSTGRES_USER: ${REPORT_DB_SUPERUSER:-report_admin}
-      POSTGRES_PASSWORD: ${REPORT_DB_SUPERUSER_PASSWORD:-reportadminsecret}
+      POSTGRES_PASSWORD: ${REPORT_DB_SUPERUSER_PASSWORD:?REPORT_DB_SUPERUSER_PASSWORD is required}
       POSTGRES_DB: ${REPORT_DB_NAME:-rsd_reports}
       REPORT_DB_APP_USER: ${REPORT_DB_APP_USER:-report_service}
-      REPORT_DB_APP_PASSWORD: ${REPORT_DB_APP_PASSWORD:-reportsecret}
+      REPORT_DB_APP_PASSWORD: ${REPORT_DB_APP_PASSWORD:?REPORT_DB_APP_PASSWORD is required}
     volumes:
       - report_postgres_data:/var/lib/postgresql/data
       - ../deploy/docker/init-report-service-db.sh:/docker-entrypoint-initdb.d/20-init-report-service-db.sh:ro
@@ -140,11 +140,13 @@ services:
   redis:
     image: redis:7.2-alpine
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" --no-auth-warning ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 3
@@ -193,7 +195,12 @@ services:
       dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
-      CONFIG_PATH: /backend/shared/settings/config.production.yaml
+      CONFIG_PATH: /run/secrets/rsd-config.yaml
+      CORS_ORIGINS: https://rsdobin.ru
+      AUTH_RSA_PRIVATE_KEY_PEM_FILE: /run/secrets/auth-private-key.pem
+    volumes:
+      - ../backend/shared/settings/config.production.yaml:/run/secrets/rsd-config.yaml:ro
+      - ../backend/shared/settings/auth.production.pem:/run/secrets/auth-private-key.pem:ro
     networks:
       - proxy
       - internal
@@ -220,9 +227,13 @@ services:
       dockerfile: backend/report_service/Dockerfile
     restart: unless-stopped
     environment:
-      CONFIG_PATH: /service/shared/settings/config.production.yaml
+      CONFIG_PATH: /run/secrets/rsd-config.yaml
+      CORS_ORIGINS: https://rsdobin.ru
+    volumes:
+      - ../backend/shared/settings/config.production.yaml:/run/secrets/rsd-config.yaml:ro
     networks:
       - internal
+      - proxy
     depends_on:
       db:
         condition: service_healthy

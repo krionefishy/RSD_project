@@ -41,6 +41,7 @@ class GetEmployeeTimesheetUseCase:
         if ctx.role not in {
             UserRole.MANAGER.value,
             UserRole.ADMIN_STAFF.value,
+            UserRole.ADMIN_EDUCATION.value,
             UserRole.ROOT_ADMIN.value,
             UserRole.SUPER_ADMIN.value,
         }:
