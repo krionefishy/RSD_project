@@ -147,6 +147,8 @@ class UserModel(Base):
     rating_snapshot_items: Mapped[list["RatingSnapshotItemModel"]] = relationship(
         "RatingSnapshotItemModel",
         back_populates="user",
+        cascade="all, delete",
+        passive_deletes=True,
     )
     report_exports: Mapped[list["ReportExportModel"]] = relationship(
         "ReportExportModel",
